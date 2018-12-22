@@ -76,21 +76,25 @@ Snippets
 Developements
 ---
 - [ ] split into files: synthdefs, library (?)
+- [ ] modularise TD components
+
 - [ ] pbinds: wait for fadeout/last sound before stopping Bus
 - [ ] check if different postfixes from single control works
 - [ ] add option to have multiple busses in one group
 - [ ] sending audio between groups
+- [ ] autocreate control busses for pattern sequences? -> or only wanted ones
 - [ ] route everything to a master bus
 - [ ] rewrite hardware mapping system
 - [ ] make functions for play/stop/presets etc... for future UI and automatisation
 - [ ] multiple notefx chaining
 - [ ] routing from proxysynth to pbind
+- [ ] generic mixing/sculpting fx: lowpass, reverb... etc
+
 - [ ] **metactrl:** interpolating through preset list, with deviation
 - [ ] **metactrl:** action button, accumulates actions for simulteanous execution
 - [ ] **metactrl:** shiftall up/down, randomize all
 - [ ] **metactrl:** automatic trajectory (different easings) over X time
-- [ ] generic mixing/sculpting fx: lowpass, reverb... etc
-- [ ] metactrl: represent all controls as XY or single multifader
+- [ ] **metactrl:** represent all controls as XY or single multifader
 - [ ] **architecture:** make a diagram of current library
 
 
