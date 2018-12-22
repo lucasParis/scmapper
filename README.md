@@ -75,6 +75,7 @@ Snippets
 
 Developements
 ---
+- [ ] split into files: synthdefs, library (?)
 - [ ] pbinds: wait for fadeout/last sound before stopping Bus
 - [ ] check if different postfixes from single control works
 - [ ] add option to have multiple busses in one group
