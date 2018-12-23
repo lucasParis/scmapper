@@ -822,11 +822,12 @@ s.waitForBoot({
 			var assignedID;
 			assignedID = [];
 
+			//setup for group and assignedIDs in data structure
 			if(pgroups[group] == nil, {pgroups[group] = ()});// create dict if doesn't exist'
 			if(pgroups[group]['assignedIDs'] == nil, {pgroups[group]['assignedIDs'] = ()});// create dict if doesn't exist'
 			if(pgroups[group]['assignedIDs'][instrument] == nil, {pgroups[group]['assignedIDs'][instrument] = []});// create dict if doesn't exist'
 
-			//count is the number of IDs asked for
+			//count is the number of IDs asked for and set in data structure
 			count.do{
 				replyIDCount = replyIDCount+1;//increment ID counter/allocator
 				pgroups[group]['assignedIDs'][instrument] = pgroups[group]['assignedIDs'][instrument].add(replyIDCount);// append to array of group's ids
@@ -840,13 +841,14 @@ s.waitForBoot({
 				SynthDescLib.global[instrument].metadata[\oscReplies].do
 				{
 					arg addr;
+					//OSC callback for the replies (rerouting to touch), based on replyids stored in database
 					OSCdef(
-						(group ++ addr).asSymbol, //instance name with group
+						(group ++ addr).asSymbol, //osccallback name with group
 						{
 							arg msg;
-							var values, id, idIndex, addrOut;
-							id = msg[2];
-							idIndex = pgroups[group]['assignedIDs'][instrument].find([id]);
+							var values, replyID, idIndex, addrOut;
+							replyID = msg[2];//get the replyID in the osc message
+							idIndex = pgroups[group]['assignedIDs'][instrument].find([replyID]);//search for the replyID in the database
 							(idIndex != nil).if // corresponding id
 							{
 								values = msg[3..];
