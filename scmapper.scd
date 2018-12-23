@@ -45,23 +45,17 @@ s.waitForBoot({
 
 		replyIDCount = 0;//counter for allocation of reply ids
 
+		//colors for lemur, for changing widgets according to mode
 		normalColor = 4868682;
 		shiftJumpColor = 8336384;
 
+		//setup ctrlrs (lemur) osc outputs
 		ctrlrs = [];
 		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 7000));
 		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 8000));
 
-		/*{
-		touchdesignerDAT = NetAddr("10.10.10.4", 10000);
-		touchdesignerCHOP = NetAddr("10.10.10.4", 10001);
-		"connecting to 10.10.10.4".postln;
-		}.try{*/
-		"failed, connecting to localHost".postln;
-
 		touchdesignerDAT = NetAddr(~touchIP, 10000);
 		touchdesignerCHOP = NetAddr(~touchIP, 10001);
-		// };
 
 
 		setTempo = {
@@ -986,40 +980,3 @@ s.waitForBoot({
 
 });
 )
-
-//
-// (
-// ~mapper = ~mapperMaker.value;
-//
-// ~mapper.proxySpace[\softHighs] = {
-// 	arg fb, detuneFB, volume, fasterSines, subSines, noise, sinFB, t60, modVerb;
-// 	var sines, notes, amps, fbSig, verb, lowBeating;
-// 	notes = [60,72,79].midicps;
-//
-//
-// 	sines = notes.collect({ arg item; SinOscFB.ar((item * LFNoise1.ar(0.001!4).range(-0.12,0.12).midiratio )+(WhiteNoise.ar(noise.lag(2)*100)),sinFB.lag.linlin(0,1,0.04,0.2), mul:0.1*SinOsc.ar(0.01+ fasterSines.linlin(0,1,0,10),2pi.rand).range(0,1));});
-// 	sines  = Splay.ar(sines.sum);
-//
-// 	lowBeating = SinOsc.ar(36.midicps +[0,0.5,0.1], mul:0.08*subSines.pow(1.5).lag(0.5));
-// 	sines = sines + (lowBeating.sum!2);
-// 	// sines;
-// 	fbSig = LocalIn.ar(2);
-// 	fbSig  = PitchShift.ar(fbSig, 1,(5+detuneFB.linlin(0,1,-0.5,0.5)).midiratio,mul:fb.linlin(0,1,0,0.6).lag)+sines;
-// 	fbSig = LPF.ar(fbSig,4000);
-// 	LocalOut.ar(fbSig);
-//
-//
-// 	verb = JPverb.ar(fbSig* volume,t60:t60.linlin(0,1,1,10),damp:0.1,size:20,earlyDiff:0.2,modDepth:modVerb.lag(1),modFreq:0.2,low:1,mid:1,high:1, lowcut:100, highcut:6000);
-// 	verb ;
-// 	// Limiter.ar(fb, 0.1);
-//
-//
-// };
-//
-// ~mapper.proxySpace[\softHighs].play;
-// ~mapper.newProxyGroup(\softHighs);
-//
-// // ~mapper.proxySpace[\softHighs].set(\volume_x, 0.2);
-//
-// )
-//
