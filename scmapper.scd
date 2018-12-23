@@ -1,83 +1,78 @@
-// "18_10_23_perfoResources_fxChain.scd".loadRelative;
 
 (
-/*~visualSync*/
 "loading resources".postln;
-// SynthDescLib.getLib(\lib1).browse;
-// TempoClock.default.tempo = 120/60;
-//check notes in old versions
-// s.options.latency
-~visualSync = 0;
 
+~visualSync = 0; //for visual sync: delays the sending of OSC messages to delay visual synthesis
 
-~touchIP = "127.0.0.1";
+~touchIP = "127.0.0.1"; // ip of the computer running touchdesigner
 // ~touchIP = "10.10.10.4";
 
-// s.options.numOutputBusChannels = 9;
+// s.options.numOutputBusChannels = 9; // option for surround projects, copy to project directory, before executing this file
+
+//options memory/max connections
 s.options.memSize_(2.pow(20));
-// s.options.numWireBufs = 128;
 s.options.numWireBufs = 512;
 
+//boot server
 s.waitForBoot({
+	"synthlib.scd".loadRelative; // load synth library
+	"noteFX.scd".loadRelative; // load custom fx events
 
-
-	// "/Users/lucas/Dropbox/MyWork/00_supercolliderResources/synthlib1.scd".load;
-	"synthlib.scd".loadRelative;
-	"noteFX.scd".loadRelative;
-
-
-
-
+	//convert events to python format, for touchdesigner, filters types that can be problematic in python
 	~evtToPythonDictString =
 	{
 		arg evt;
 		var result;
-		evt.removeAt(\scale);
-		result = "{";
 
+		evt.removeAt(\scale);//remove scale
 
-		evt.keysValuesDo{
+		result = "{";//open python dict
+
+		evt.keysValuesDo{//loop through every key/value to format data
 			arg key, value;
-			// value.postln;
-			result = result++"" ++'"' ++ key.asString ++ '"' ++ ": ";
+			result = result++"" ++'"' ++ key.asString ++ '"' ++ ": ";//append key name
+
+			// loop through array keys to format data
 			value.isKindOf(Array).if{
 				value = value.collect{
 					arg val;
+					// if not Symbol or String or Boolean or Float or Integer, pass valid type (empty string)
 					(val.isKindOf(Symbol).not).if{
 						(val.isKindOf(String).not).if{
 							(val.isKindOf(Boolean).not).if{
 								(val.isKindOf(Float).not).if{
 									(val.isKindOf(Integer).not).if{
-										// "dont send".postln;
-										// val.postln;
 										val =  "empty";
 									};
 								};
 							};
 						};
 					};
+					//format string as python string
 					val.isKindOf(String).if
 					{
 						val =  '"'++ val.asString ++  '"';
 					};
+					//format symbol as python string
 					val.isKindOf(Symbol).if
 					{
 						val =  '"'++ val.asString ++  '"';
 					};
+					//format boolean as python string
 					val.isKindOf(Boolean).if
 					{
 						val =  val.asString.asInteger;
 					};
+					//round floats, for floating point imprecision
 					val.isFloat.if{
 						val.round(0.001);
 					}
 					{
-						val;
+						val;//return value
 					};
-
-
 				};
 			};
+
 			value.isFloat.if{
 				value = value.round(0.001);
 			};
@@ -309,35 +304,11 @@ s.waitForBoot({
 			};
 
 			evt[\dur] = evt[\dur] / proxySpace.clock.tempo;
-			/*(evt.isRest).if{
-				evt[\isRest] = true;
-			}
-			{
-				evt[\isRest] = false;
-			};*/
+
 			stringEvent = ~evtToPythonDictString.value(evt);
-			// (adr +/+ evt[\instrument].asString).postln;
 			{
-				// sendAddr.postln;
-				// stringEvent.asSymbol.postln;
-				// touchdesignerDAT.postln;
-				// touchdesignerDAT.sendMsg("/lalal", 1);
 				touchdesignerDAT.sendMsg(sendAddr , *["stringEvent", stringEvent.asSymbol]);
-
 			}.defer(max(s.latency-(~visualSync), 0));
-			// }
-			/*,{
-
-			sendAddr = ('/restEvent/'++ adr +/+ evt[\instrument].asString);
-			(evt[\osc_post] != nil).if{
-			sendAddr = sendAddr +/+ (evt[\osc_post].asString);
-			};
-			(evt[\osc_post2] != nil).if{
-			sendAddr = sendAddr +/+ (evt[\osc_post2].asString);
-			};
-
-			{touchdesignerDAT.sendMsg(sendAddr +/+ "rest", *["rest", 1]);}.defer(s.latency);
-			}*///);
 
 			event;
 		};
