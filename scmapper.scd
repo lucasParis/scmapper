@@ -66,10 +66,9 @@ s.waitForBoot({
 					//round floats, for floating point imprecision
 					val.isFloat.if{
 						val.round(0.001);
-					}
-					{
-						val;//return value
 					};
+					//return array value
+					val;
 				};
 			};
 
