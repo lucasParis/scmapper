@@ -15,8 +15,10 @@ s.options.numWireBufs = 512;
 
 //boot server
 s.waitForBoot({
-	"synthlib.scd".loadRelative; // load synth library
-	"noteFX.scd".loadRelative; // load custom fx events
+	"resourcesSC/synthlib.scd".loadRelative; // load synth library
+	"resourcesSC/noteFX.scd".loadRelative;  // load custom fx events
+	"resourcesSC/makeTwister.scd".loadRelative; // load midi twister stuff
+
 
 	//convert events to python format, for touchdesigner, filters types that can be problematic in python
 	~evtToPythonDictString =
@@ -27,6 +29,7 @@ s.waitForBoot({
 		evt.removeAt(\scale);//remove scale
 
 		result = "{";//open python dict
+
 
 		evt.keysValuesDo{//loop through every key/value to format data
 			arg key, value;
@@ -88,18 +91,18 @@ s.waitForBoot({
 			{
 				value =  '"'++ value.asString ++  '"';
 			};
+			//format symbol as python string
 			value.isKindOf(Symbol).if
 			{
 				value =  '"'++ value.asString ++  '"';
 			};
+			//filter out non valid types
 			(value.isKindOf(Symbol).not).if{
 				(value.isKindOf(String).not).if{
 					(value.isKindOf(Boolean).not).if{
 						(value.isKindOf(Float).not).if{
 							(value.isKindOf(Integer).not).if{
 								(value.isKindOf(Array).not).if{
-									// "dont send".postln;
-									// value.postln;
 									value = '"'++ "empty" ++  '"';
 								};
 							};
@@ -108,117 +111,14 @@ s.waitForBoot({
 				};
 			};
 
-
+			//add value to result string
 			result = result ++ value.asString ++ ", ";
-			// value.postln;
 		};
 
+
+		//return result string
 		result = result ++ "}";
 	};
-	~makeTwister = {
-		MIDIClient.init;
-		MIDIIn.connectAll;
-		// try
-		~twisterHues =  [10, 70, 84, 24];
-		m = nil;
-
-		{m = MIDIOut.newByName("Midi Fighter Twister", "Midi Fighter Twister");}.try{"failed to connect to midiout".postln;};
-		(m != nil).if
-		{
-			m.latency = 0;
-			~twister = ( lastTime: SystemClock.seconds, lastValue:0, count:0, normValue:0, speed:1, button:0, toggle:1, knobCallback: nil, buttonCallback:nil, set:nil, setButton:nil, mapped:0)!16;
-
-			~twister.do{
-				arg item, i;
-				var hue, hues;
-
-				//setup colors
-				hues = ~twisterHues;
-				hue = hues[(i/4).floor];
-				m.control(chan:1,ctlNum:i,val:hue); //ringvalue //10 24 70 84
-				m.control(chan:2,ctlNum:i,val:item[\button].linlin(0,1,27,47));
-				m.control(chan:2,ctlNum:i,val:18);//off
-				//knob
-				MIDIFunc.cc(
-					{
-						arg value;
-						var time, speed;
-						// calculate speed
-						time = SystemClock.seconds;
-						speed = (SystemClock.seconds-item[\lastTime]);
-						item[\lastTime] = SystemClock.seconds;
-						speed = speed.reciprocal.linexp(0,300,0.2,3);
-						// speed.postln;
-						value = (value-64);//convert to -1 > 1
-						item[\count] = item[\count] + (value*speed);// set value
-						item[\count] = item[\count].clip(0,127);
-						item[\normValue] = item[\count].linlin(0,127,0,1);
-						// item[\count].postln;
-
-						//send led value
-						(item[\knobCallback] != nil).if{
-							m.control(chan:0,ctlNum:i,val:item[\count].wrap(0,128).round);
-						};
-
-
-
-						// (item[\mapped] > 0.5).if()
-						//callback
-						item[\knobCallback].isKindOf(Function).if{
-							item[\knobCallback].value(item[\normValue]);
-						};
-
-
-
-				},i, 0);
-
-				item[\set] = {
-					arg value;
-					item[\count] = value.linlin(0,1,0,127);
-					item[\normValue] = item[\count].linlin(0,127,0,1);
-					//send led value
-					// value.postln;risers
-
-					m.control(chan:0,ctlNum:i,val:item[\count].wrap(0,128).round);
-
-				};
-
-				m.control(chan:0,ctlNum:i,val:item[\count].wrap(0,127));
-
-				//button
-				MIDIFunc.cc(
-					{
-						arg value;
-						(item[\toggle] == 1).if(
-							{
-								(value>1).if{item[\button] = 1-item[\button]};//toggle
-							},
-							{
-								item[\button] = value.min(1);//momentary
-							}
-						);
-						//send led value
-						m.control(chan:2,ctlNum:i,val:item[\button].linlin(0,1,27,47));
-
-						item[\buttonCallback].isKindOf(Function).if{
-							item[\buttonCallback].value(item[\button]);
-						};
-					},i,1
-				);
-				item[\setButton] = {
-					arg value;
-					item[\button] = value;
-
-					m.control(chan:2,ctlNum:i,val:item[\button].linlin(0,1,27,47));
-				};
-				// m.control(chan:2,ctlNum:i,val:item[\button].linlin(0,1,27,47));
-			};
-		};
-	};
-
-	// ~twister[15].knobCallback = {arg val; val.postln};
-
-	//test twister callback
 
 	~mapperMaker = {
 		var pMap, bMap, fMap, pgroups, newPGroup, makeCtrlUI, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo;
