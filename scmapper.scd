@@ -43,8 +43,7 @@ s.waitForBoot({
 		proxySpace = ProxySpace.new(s);
 		proxySpace.makeTempoClock(2);//create a tempoclock, for syncing server side and client side sequencing
 
-
-		replyIDCount = 0;
+		replyIDCount = 0;//counter for allocation of reply ids
 
 		normalColor = 4868682;
 		shiftJumpColor = 8336384;
@@ -817,6 +816,7 @@ s.waitForBoot({
 
 		};
 
+		//assign a reply id and add a callback for rerouting value to TouchDesigner
 		newID = {
 			arg group, count, instrument;
 			var assignedID;
@@ -826,22 +826,22 @@ s.waitForBoot({
 			if(pgroups[group]['assignedIDs'] == nil, {pgroups[group]['assignedIDs'] = ()});// create dict if doesn't exist'
 			if(pgroups[group]['assignedIDs'][instrument] == nil, {pgroups[group]['assignedIDs'][instrument] = []});// create dict if doesn't exist'
 
+			//count is the number of IDs asked for
 			count.do{
-				replyIDCount = replyIDCount+1;
-				pgroups[group]['assignedIDs'][instrument] = pgroups[group]['assignedIDs'][instrument].add(replyIDCount);
-				assignedID = assignedID.add(replyIDCount);
+				replyIDCount = replyIDCount+1;//increment ID counter/allocator
+				pgroups[group]['assignedIDs'][instrument] = pgroups[group]['assignedIDs'][instrument].add(replyIDCount);// append to array of group's ids
+				assignedID = assignedID.add(replyIDCount);// add to local array
 			};
-			// (SynthDescLib.global[instrument].metadata != nil).if
-			// {
-			// instrument.postln;
-			// SynthDescLib.global[instrument].metadata[\oscReplies].postln;
+
+			//if synthdef is setup to reroute OSC replies
 			SynthDescLib.global[instrument].metadata.includesKey(\oscReplies).if
 			{
+				// loop through the synthdef's osc reply addresses
 				SynthDescLib.global[instrument].metadata[\oscReplies].do
 				{
 					arg addr;
 					OSCdef(
-						addr,//here is the problem, using the same OSC address for multiple instruments, overrides the last one...
+						(group ++ addr).asSymbol, //instance name with group
 						{
 							arg msg;
 							var values, id, idIndex, addrOut;
