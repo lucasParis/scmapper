@@ -58,10 +58,10 @@ s.waitForBoot({
 					{
 						val =  '"'++ val.asString ++  '"';
 					};
-					//format boolean as python string
+					//format boolean as integer and string
 					val.isKindOf(Boolean).if
 					{
-						val =  val.asString.asInteger;
+						val =  '"'++val.asInteger.asString++ '"';
 					};
 					//round floats, for floating point imprecision
 					val.isFloat.if{
@@ -72,10 +72,13 @@ s.waitForBoot({
 				};
 			};
 
+			// __ Single value formating
+
+			//round floats, for floating point imprecision
 			value.isFloat.if{
 				value = value.round(0.001);
 			};
-
+			//format boolean as integer and string
 			value.isKindOf(Boolean).if
 			{
 				value =  value.asInteger;
