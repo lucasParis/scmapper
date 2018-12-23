@@ -36,7 +36,7 @@ s.waitForBoot({
 	... etc
 	*/
 	~mapperMaker = {
-		var pMap, bMap, fMap, pgroups, newPGroup, makeCtrlUI, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo;
+		var pMap, bMap, fMap, pgroups, newPGroup, makeCtrlUI, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo, newIDOverlap;
 
 		//init a common proxyspace
 		proxySpace.clear;
@@ -841,6 +841,7 @@ s.waitForBoot({
 				SynthDescLib.global[instrument].metadata[\oscReplies].do
 				{
 					arg addr;
+
 					//OSC callback for the replies (rerouting to touch), based on replyids stored in database
 					OSCdef(
 						(group ++ addr).asSymbol, //osccallback name with group
@@ -849,22 +850,40 @@ s.waitForBoot({
 							var values, replyID, idIndex, addrOut;
 							replyID = msg[2];//get the replyID in the osc message
 							idIndex = pgroups[group]['assignedIDs'][instrument].find([replyID]);//search for the replyID in the database
-							(idIndex != nil).if // corresponding id
+							(idIndex != nil).if // if replyID is indexed in database
 							{
+								//get signal value(s) from reply
 								values = msg[3..];
-								addrOut = addr.replace("/" ++ instrument.asString, "");
-								addrOut= "/" ++ group.asString ++ "/" ++ instrument.asString ++ "/" ++ idIndex.asString ++ addrOut;
+								//rename & prepare addr to touch
+								addrOut = addr.replace("/" ++ instrument.asString, "");//remove instrument from address
+								addrOut= "/" ++ group.asString ++ "/" ++ instrument.asString ++ "/" ++ idIndex.asString ++ addrOut;// format address with group/instrmnt/indx/par
 
+								//send values
 								touchdesignerCHOP.sendMsg(addrOut, *values);
 							}
-
 						},
 						addr
 					);
 				};
 			};
-			// };
-			assignedID;
+
+			assignedID;//return assigned id
+		};
+
+		// iterativeOverlap replyID
+		newIDOverlap = {
+			//poly is the number of voices in the pbind
+			//overlaps is the number of visual overlaps for sustained synths
+			arg group, poly, overlaps, instrument;
+			var count, ids;
+			//calculate needed ids for voices * overlap
+			count  = poly * overlaps;
+
+			//get ids from scmapper's newID method
+			ids = newID.value(group, count, instrument);
+
+			//return a Pseq with values clumped for overlap (iteration technique in TD) - iterativeOverlap
+			Pseq(ids.clump(poly), inf);
 		};
 
 
@@ -949,6 +968,7 @@ s.waitForBoot({
 			newPGroup: {arg self, pGroupName, pattern, quant = 4; newPGroup.value(pGroupName, pattern, quant)},
 			makeCtrlUI: {arg self, pGroupName; makeCtrlUI.value(pGroupName)},
 			newID: {arg self, group, count=1, instrument; newID.value(group, count, instrument)},
+			newIDOverlap: {arg self, group, poly = 2, overlaps = 2, instrument; newIDOverlap.value(group, poly, overlaps, instrument)},
 			linkEncoder: {arg self, pGroupName, ctrlName, encoder; linkEncoder.value(pGroupName, ctrlName, encoder)},
 			linkButton: {arg self, pGroupName, ctrlName, button, toggle = 1; linkButton.value(pGroupName, ctrlName, button, toggle)},
 			proxySpace: {arg self; proxySpace;},
