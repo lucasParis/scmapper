@@ -15,25 +15,34 @@ s.options.numWireBufs = 512;
 
 //boot server
 s.waitForBoot({
+
+	//load resources
 	"resourcesSC/synthlib.scd".loadRelative; // load synth library
 	"resourcesSC/noteFX.scd".loadRelative;  // load custom fx events
 	"resourcesSC/makeTwister.scd".loadRelative; // load midi twister stuff
 	"resourcesSC/evtToPyDict.scd".loadRelative; // load note event to python dict converter
 
+	~makeTwister.value;//setup twister
+
+	/*
+	mapperMaker
+	a master thing that contains:
+	- groups
+	- each containing parameters and their various callbacks
+	- simplification of mapping to a pattern
+	- preset management
+	- metactrl
+	- automatic sending to touchdesigner
+	... etc
+	*/
 	~mapperMaker = {
 		var pMap, bMap, fMap, pgroups, newPGroup, makeCtrlUI, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo;
 
+		//init a common proxyspace
 		proxySpace.clear;
 		proxySpace = ProxySpace.new(s);
-		proxySpace.makeTempoClock(2);
-		// proxySpace[\tempo]
-		// proxySpace.clock;
+		proxySpace.makeTempoClock(2);//create a tempoclock, for syncing server side and client side sequencing
 
-
-
-
-		// visualSync = 0.04;//milliseconds
-		~makeTwister.value;
 
 		replyIDCount = 0;
 
