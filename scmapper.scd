@@ -61,7 +61,7 @@ s.waitForBoot({
 					//format boolean as integer and string
 					val.isKindOf(Boolean).if
 					{
-						val =  '"'++val.asInteger.asString++ '"';
+						val =  val.asInteger;
 					};
 					//round floats, for floating point imprecision
 					val.isFloat.if{
@@ -83,6 +83,7 @@ s.waitForBoot({
 			{
 				value =  value.asInteger;
 			};
+			//format string as python string
 			value.isKindOf(String).if
 			{
 				value =  '"'++ value.asString ++  '"';
