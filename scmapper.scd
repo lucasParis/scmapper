@@ -336,53 +336,46 @@ s.waitForBoot({
 										//loop through dict and load values
 										dict.keysValuesDo{
 											arg key, value;
+
+											//set value (for pbind)
 											pgroups[pGroupName][\ctrls][key][\value] = value;
-											//make a unocersal set function
+
+											//set bus value
 											(pgroups[pGroupName][\ctrls][key][\type] == \bus).if{
 												pgroups[pGroupName][\ctrls][key][\bus].set(*(value.linlin(0,1,pgroups[pGroupName][\ctrls][key][\minMap],pgroups[pGroupName][\ctrls][key][\maxMap])));
 											};
 
-											(pgroups[pGroupName][\ctrls][key][\type] == \nodeproxy).if
-											{
-												// proxySpace[pGroupName].set(key, *(pgroups[pGroupName][\ctrls][key][\value].linlin(0,1,pgroups[pGroupName][\ctrls][key][\minMap],pgroups[pGroupName][\ctrls][key][\maxMap])));
+											//set proxy value
+											(pgroups[pGroupName][\ctrls][key][\type] == \nodeproxy).if{
 												proxySpace[pGroupName].set(key, *(pgroups[pGroupName][\ctrls][key][\value]));
-
-												// pgroups[pGroupName][\ctrls][ctrlName][\bus] = Bus.control(s,defaultValue.size.max(1));
-												// pgroups[pGroupName][\ctrls][ctrlName][\bus].set(defaultValue.linlin(0,1,minMap,maxMap));
 											};
-
 
 											//send to lemurs
 											ctrlrs.do{
 												arg ctrlr;
 												ctrlr.sendMsg(pgroups[pGroupName][\ctrls][key][\addr], *pgroups[pGroupName][\ctrls][key][\value]);
 											};
-											touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][key][\addr], *pgroups[pGroupName][\ctrls][key][\value]);
 
+											//send to touch CHOP \touchAddr
+											touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][key][\touchAddr], *pgroups[pGroupName][\ctrls][key][\value]);
+
+											//if twister knob is mapped, update ctrlr visual feedback
 											(pgroups[pGroupName][\ctrls][key][\twisterKnob] != nil).if{
 												~twister[pgroups[pGroupName][\ctrls][key][\twisterKnob]][\set].value(pgroups[pGroupName][\ctrls][key][\value]);
 											};
+											//if twister button is mapped, update ctrlr visual feedback
 											(pgroups[pGroupName][\ctrls][key][\twisterButton] != nil).if{
 												~twister[pgroups[pGroupName][\ctrls][key][\twisterButton]][\setButton].value(pgroups[pGroupName][\ctrls][key][\value]);
 											};
-
-											//set manual
-
-											// dict[\sinFB].postln;
-											// file.readAllString.postln;
 										};
 									};
 								};
 							};
-
 						};
-					},
-					addrPreset
-				);
-
+					},addrPreset);//OSCdef address
 			};
 
-			// map
+			//osc listener for map to twister
 			4.do{
 				arg mapNumber;
 				var mapAddr;
@@ -692,6 +685,7 @@ s.waitForBoot({
 			pgroups[pGroupName][\ctrls][ctrlName][\presets] = defaultValue!4;
 			pgroups[pGroupName][\ctrls][ctrlName][\shiftValue] = defaultValue;
 			pgroups[pGroupName][\ctrls][ctrlName][\addr] = ('/'++ pGroupName ++ '/'++ ctrlName ++ postfix).asSymbol;
+			pgroups[pGroupName][\ctrls][ctrlName][\touchAddr] = ('/' ++ 'controls' ++ '/'++ pGroupName ++ '/'++ ctrlName ++ postfix).asSymbol;
 			// pgroups[pGroupName][\ctrls][ctrlName][\addr].postln;
 			(type == \bus).if{
 				pgroups[pGroupName][\ctrls][ctrlName][\minMap] = minMap;
@@ -746,8 +740,6 @@ s.waitForBoot({
 							// pgroups[pGroupName][\ctrls][ctrlName][\bus].set(defaultValue.linlin(0,1,minMap,maxMap));
 						};
 
-
-
 						//OSC feedback
 						ctrlrs.do{
 							arg ctrlr;
@@ -755,7 +747,7 @@ s.waitForBoot({
 								ctrlr.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
 							};
 						};
-						touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
+						touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\touchAddr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
 
 
 						(pgroups[pGroupName][\ctrls][ctrlName][\twisterKnob] != nil).if{
