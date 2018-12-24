@@ -12,6 +12,7 @@
 //options memory/max connections
 s.options.memSize_(2.pow(20));
 s.options.numWireBufs = 512;
+s.options.maxSynthDefs  =2048;
 
 //boot server
 s.waitForBoot({
@@ -86,14 +87,14 @@ s.waitForBoot({
 			arg event, adr = "instrumentName";
 			var evt = event.copy, stringEvent, sendAddr;//copy event, leave the original event unmodified
 
-			//add instrument name and patternEvent tag to OSC address
+			//add patternEvent tag and instrument name to OSC address
 			sendAddr = ('/patternEvent/'++ adr ++ '/' ++ evt[\instrument].asString);
-			(evt[\osc_post] != nil).if{
-				sendAddr = sendAddr +/+ (evt[\osc_post].asString);
+
+			//optional osc address append, to diferentiate the same instrument in multiple patterns of the same group
+			(evt[\osc_append] != nil).if{
+				sendAddr = sendAddr ++ '/' ++ (evt[\osc_append].asString);//add string to ending
 			};
-			(evt[\osc_post2] != nil).if{
-				sendAddr = sendAddr +/+ (evt[\osc_post2].asString);
-			};
+
 			evt[\isRest] = evt.isRest;
 			evt[\isRest].if{
 				evt[\dur] = evt[\dur].value;
@@ -785,7 +786,7 @@ s.waitForBoot({
 		sendSignal = {
 			arg group, name, signal;
 			var address;
-			address = "/" + group.asString+/+ "proxy" +/+ name;
+			address = "/" + group.asString++ '/' ++ "proxy" ++ '/' ++ name;
 			address = address.replace(" ", "");
 			address.postln;
 			OSCdef(
@@ -876,7 +877,7 @@ s.waitForBoot({
 
 
 		newProxyGroup = {
-			arg group, listen, targetGroup, fadeOut = 2, fadeIn = 2;
+			arg group, listen, targetGroup, fadeOut = 2, fadeIn = 0;
 
 			(pgroups[group] == nil).if{
 				"creating new group".postln;
