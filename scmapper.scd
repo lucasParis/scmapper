@@ -95,20 +95,27 @@ s.waitForBoot({
 				sendAddr = sendAddr ++ '/' ++ (evt[\osc_append].asString);//add string to ending
 			};
 
+			//store rest in key for TD
 			evt[\isRest] = evt.isRest;
+			//convert dur from Rest to Int if Rest
 			evt[\isRest].if{
 				evt[\dur] = evt[\dur].value;
 			};
-
+			//convert dur from beat to seconds
 			evt[\dur] = evt[\dur] / proxySpace.clock.tempo;
 
+			//format event into a python dictionnary
 			stringEvent = ~evtToPythonDictString.value(evt);
+
+			//send to TD with a delay for visual sync
 			{
 				touchdesignerDAT.sendMsg(sendAddr , *["stringEvent", stringEvent.asSymbol]);
 			}.defer(max(s.latency-(~visualSync), 0));
 
+			//return original event for OSC
 			event;
 		};
+
 
 		pgroups = ();
 
