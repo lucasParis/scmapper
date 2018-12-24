@@ -49,54 +49,45 @@ s.waitForBoot({
 		normalColor = 4868682;
 		shiftJumpColor = 8336384;
 
-		//setup ctrlrs (lemur) osc outputs
+		//setup ctrlrs (lemur/open-stage-control) osc outputs
 		ctrlrs = [];
-		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 7000));
-		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 8000));
+		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 7000));//ipad 1
+		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 8000));//ipad 2
 
-		touchdesignerDAT = NetAddr(~touchIP, 10000);
-		touchdesignerCHOP = NetAddr(~touchIP, 10001);
+		//touchdesigner/visuals OSC outputs (for pbind events, synthdef replies, proxy signals, and group play/stop)
+		touchdesignerDAT = NetAddr(~touchIP, 10000);//DAT for note events
+		touchdesignerCHOP = NetAddr(~touchIP, 10001);// CHOP for signals
 
-
-		setTempo = {
-			arg tempo;
-			proxySpace.clock.tempo = tempo/60;
-		};
-
+		//initial setup of ctrlr's loading/navigation menu
+		//todo pass2: gather groups names in datastructure and send them automatically: .sendLoadData
 		ctrlrs.do{
 			arg ctrlr;
-			var keysLight, keys =["shortIntroA", "darkSection",  "candy", "risers", "killRythm", "pattern1", "neural"];// ["pattern1", "neural"];//pgroups.keys
-			ctrlr.sendMsg("/browser/groupsSelector",'@labels', *keys);
-			keysLight = 0!(keys.size) ++ (-1!(28-keys.size));
-			ctrlr.sendMsg("/browser/groupsSelector/light", *keysLight);
-
+			var keysLight, keys =["shortIntroA", "darkSection",  "candy", "risers", "killRythm", "pattern1", "neural"];//keys can be gathered from data structure
+			ctrlr.sendMsg("/browser/groupsSelector",'@labels', *keys);//send group names to loading menu
+			keysLight = 0!(keys.size) ++ (-1!(28-keys.size));//disactivate light on empty group slots in loading buttons
+			ctrlr.sendMsg("/browser/groupsSelector/light", *keysLight);//send lights
 		};
 
+		//simple rerouting to monitor touchdesigner's FPS on ipads
 		OSCdef(\fpsReroute,
 			{
 				arg msg;
-				// msg[1].postln;
-
+				//loop through controlers
 				ctrlrs.do{
 					arg ctrlr;
-					ctrlr.sendMsg("/fps/value", msg[1]);
+					ctrlr.sendMsg("/fps/value", msg[1]);//send fps
 				};
-
 			}, "/touch/fps"
 		);
 
+
+		//collect formating of event data for touchdesigner as python dicts
 		collectToOsc = {
-			arg event, adr = "/default";
-			var evt = event.copy, stringEvent, sendAddr;
+			arg event, adr = "instrumentName";
+			var evt = event.copy, stringEvent, sendAddr;//copy event, leave the original event unmodified
 
-
-			// evt.includes(Rest()).postln;
-			// evt.postln;
-
-			// " ".postln;
-			/*if(evt.isRest.not, {*/
-
-			sendAddr = ('/patternEvent/'++ adr +/+ evt[\instrument].asString);
+			//add instrument name and patternEvent tag to OSC address
+			sendAddr = ('/patternEvent/'++ adr ++ '/' ++ evt[\instrument].asString);
 			(evt[\osc_post] != nil).if{
 				sendAddr = sendAddr +/+ (evt[\osc_post].asString);
 			};
@@ -120,10 +111,13 @@ s.waitForBoot({
 
 		pgroups = ();
 
-		/*	newProxyGroup = {
-		arg pGroupName, pattern;
-		newGroup.value(pGroupName, pattern);
-		};*/
+
+
+		//function to set proxyspace clock tempo in BPM
+		setTempo = {
+			arg tempo;
+			proxySpace.clock.tempo = tempo/60;
+		};
 
 		newPGroup = {
 			arg pGroupName, pattern, quant;
