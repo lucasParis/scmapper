@@ -117,8 +117,8 @@ s.waitForBoot({
 		};
 
 
+		//database for dictionnaries of all groups, containing parameters, presets, and more
 		pgroups = ();
-
 
 
 		//function to set proxyspace clock tempo in BPM
@@ -127,9 +127,10 @@ s.waitForBoot({
 			proxySpace.clock.tempo = tempo/60;
 		};
 
+		//create a new pattern group (add OSC play/stop, reset), calls parent newGroup
 		newPGroup = {
 			arg pGroupName, pattern, quant;
-			newGroup.value(pGroupName);
+			newGroup.value(pGroupName);// parent method newGroup
 
 			// pgroups[pGroupName][\bus] = Bus.audio(s,2);
 			// pgroups[pGroupName][\pbindGroup] = Group(s);
@@ -237,98 +238,110 @@ s.waitForBoot({
 			pgroups[group][\bus];
 		};
 
+		//create a new group
 		newGroup = {
 			arg pGroupName;
-			var addrSave;
+			var addrSave;//osc address of save preset button
+
+			//double check that is symbol, better then string for identity comparison
 			pGroupName = pGroupName.asSymbol;
-			if(pgroups[pGroupName] == nil, {pgroups[pGroupName] = ()});// create dict if doesn't exist'
 
-			pgroups[pGroupName][\jumpShift] = 0;
-			pgroups[pGroupName][\bus] = Bus.audio(s,2);
-			pgroups[pGroupName][\pbindGroup] = Group(s);
-			pgroups[pGroupName][\fxGroup] =  Group(pgroups[pGroupName][\synthGroup] , \addToTail);
-			pgroups[pGroupName][\pbindListen] =  true;
+			// create dict if doesn't exist'
+			if(pgroups[pGroupName] == nil, {pgroups[pGroupName] = ()});
 
+			//prepare group variables
+			pgroups[pGroupName][\jumpShift] = 0;//jump shift mode state
+			pgroups[pGroupName][\bus] = Bus.audio(s,2);//bus for pbind output
+			pgroups[pGroupName][\pbindGroup] = Group(s);//group for pbind
+			pgroups[pGroupName][\fxGroup] =  Group(pgroups[pGroupName][\pbindGroup] , \addToTail);//add fx group for chained proxy to tail of pbind group
+			pgroups[pGroupName][\pbindListen] =  true;//used to hear only wet signal when used with proxy
 
-
+			//osc address of save preset button
 			addrSave =  ('/' ++ pGroupName ++ '/pctrl/save/x').asSymbol;
-			// ctrlr.sendMsg("/browser/groupsSelector",'@label_off', *keys);
-			OSCdef((addrSave ++ pGroupName.asString).asSymbol,
+
+			//Next: various OSC callbacks for save preset, load preset, map encoder, jump/shift
+
+			//Save OSC callback
+			OSCdef((addrSave ++ pGroupName.asString).asSymbol,//unique symbol with group name
 				{
 					arg msg;
-					msg[1].postln;
-					if(msg[1]>0.5)
+					if(msg[1]>0.5)//on button down
 					{
-						{
+						{//defered to other thread
+							//create popup UI for save dialog
 							w = Window.new("save", Rect(Window.availableBounds.center.x-100,Window.availableBounds.center.y , 200,50)).front;
+							//textfield with callback
 							TextField.new(w,Rect(10,10,180,30)).action_( {
 								arg obj;
-								"save".postln;
-								obj.value.postln;
 								{
 									var file, dir, saveDict;
-									// s.getcwd
-									dir = "/Users/lucas/Dropbox/MyWork/00_evdSupercollider/presets/";
-									dir = dir ++ pGroupName.asString ++"_"++ obj.value.asString;
-									// dir.postln;
-									// File.getcwd
+
+									//preset files on HD
+									dir = "/Users/lucas/Dropbox/MyWork/00_evdSupercollider/presets/";//hardcoded
+									dir = dir ++ pGroupName.asString ++"_"++ obj.value.asString;//new file name according to group and entered name
+
+									//create writable file
 									file = File.new(dir,"w");
-									// pgroups[pGroupName].postln;
+
+									//datastructure to fill with save values
 									saveDict = ();
+									//get values for preset from ctrls in group's datastructure
 									pgroups[pGroupName][\ctrls].keysValuesDo
 									{
 										arg key, value;
-										// key.postln;
-										// value.postln;
-										saveDict[key] = value[\value];
-
+										saveDict[key] = value[\value];//add key/value from ctrls to dict
 									};
-
+									//write preset dict to file
 									file.write(saveDict.asCompileString);
 									file.close;
+								}.defer;//defered to other thread
 
-									// f
-								}.defer;
+								//close window
+								{w.close}.defer;
 
-								{w.close}.defer;});
-						}.defer;
+							});
+						}.defer;//defered to other thread
 					}
-				},
-				addrSave
+				}, addrSave //OSCdef address, for save
 			);
 
-
-
-			//presets:
+			//4 preset loading buttons
 			4.do{
 				arg mapNumber;
 				var addrPreset;
+				//prepare OSC address of loadPreset button
 				addrPreset =  ('/' ++ pGroupName ++ '/pctrl/preset'++(mapNumber+1).asString++'/x').asSymbol;
-				// ctrlr.sendMsg("/browser/groupsSelector",'@label_off', *keys);
+
+				//osc listener for preset load
 				OSCdef((addrPreset ++ pGroupName.asString).asSymbol,
 					{
 						arg msg;
-						msg[1].postln;
-						(msg[1]>0.5).if
-						{
-							(pgroups[pGroupName][\presets][mapNumber] != nil).if{
+						(msg[1]>0.5).if{// on button down
+							(pgroups[pGroupName][\presets][mapNumber] != nil).if{//if presets have been setup
 								var presetName;
-								presetName = pgroups[pGroupName][\presets][mapNumber][\name];
-								(presetName.asSymbol != \empty).if
-								{
+								presetName = pgroups[pGroupName][\presets][mapNumber][\name];// get the assigned preset name
+								(presetName.asSymbol != \empty).if{// if a preset has been assigned to this button
 									var file, path, dict;
-									path = "/Users/lucas/Dropbox/MyWork/00_evdSupercollider/presets/";
-									path = path ++ pGroupName.asString ++"_"++ presetName;
-									path.postln;
-									File.exists(path).if
-									{
+
+									//make path
+									path = "/Users/lucas/Dropbox/MyWork/00_evdSupercollider/presets/";//hardcoded preset path, change to configurable path
+									path = path ++ pGroupName.asString ++"_"++ presetName;//append group/preset to get file name
+
+									File.exists(path).if{
 										file = File.open(path, "r");
+
+										//read string and execute it to get the savec dict
 										dict = file.readAllString.compile.value;
-										dict.postln;
+
+										//loop through dict and load values
 										dict.keysValuesDo{
 											arg key, value;
 											pgroups[pGroupName][\ctrls][key][\value] = value;
 											//make a unocersal set function
+											(pgroups[pGroupName][\ctrls][key][\type] == \bus).if{
+												pgroups[pGroupName][\ctrls][key][\bus].set(*(value.linlin(0,1,pgroups[pGroupName][\ctrls][key][\minMap],pgroups[pGroupName][\ctrls][key][\maxMap])));
+											};
+
 											(pgroups[pGroupName][\ctrls][key][\type] == \nodeproxy).if
 											{
 												// proxySpace[pGroupName].set(key, *(pgroups[pGroupName][\ctrls][key][\value].linlin(0,1,pgroups[pGroupName][\ctrls][key][\minMap],pgroups[pGroupName][\ctrls][key][\maxMap])));
