@@ -101,7 +101,7 @@
 			// callback to set this button from outside (for example from preset recall or OSC input)
 			item[\setButton] = {
 				arg value;
-				item[\button] = value;//set button value
+				item[\button] = value.round.clip(0,1);//set button value and round to make sure it's clipped for toggle math
 				m.control(chan:2,ctlNum:i,val:item[\button].linlin(0,1,27,47));//send button value to leds
 			};
 

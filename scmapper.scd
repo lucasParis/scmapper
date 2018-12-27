@@ -200,7 +200,7 @@ s.waitForBoot({
 
 		};
 
-		//link and preset name to load preset button
+		//link and setup preset name to load preset button
 		setupPreset = {
 			arg pGroupName, presetName, index;
 			var addrPreset;
@@ -224,31 +224,38 @@ s.waitForBoot({
 		//link a NodeProxy to a group's pattern
 		chainProxyFX = {
 			arg group, graph;
-			//set flag to not listen to pbind bus (on play/stop)
-			pgroups[group][\pbindListen] =  false;//add it to play/stop
+			//set flag to not listen to pbind bus (on play/stop), the Nodeproxy is supposed to route the audio from the bus (automatically add audio in to argument?)
+			pgroups[group][\pbindListen] =  false;
 
-			// **** add group/bus pbindf to newgroup
-			//map like proxygroup
+			//set NodeProxy in proxyspace
 			proxySpace[group] = graph;
-			newProxyGroup.value(group, true, pgroups[group][\fxGroup]);
 
+			//apply setup and mappings like a proxygroup
+			newProxyGroup.value(group, true, pgroups[group][\fxGroup]);
 		};
 
+		//get the pattern bus for this group
 		pbus = {
 			arg group;
-			group.postln;
-			pgroups[group][\bus];
+			pgroups[group][\bus];//return saved bus
 		};
 
-		//create a new group
+		//common group creation, for proxy and pbind
+		//- setup of datastructure
+		// OSC listeners:
+		//- save
+		//- load
+		//- twister mapping
+		//- jump
+		//- shift
 		newGroup = {
 			arg pGroupName;
 			var addrSave;//osc address of save preset button
 
-			//double check that is symbol, better then string for identity comparison
+			//double check that is a symbol, better then string for identity comparison
 			pGroupName = pGroupName.asSymbol;
 
-			// create dict if doesn't exist'
+			// create dict if doesn't exist for this group
 			if(pgroups[pGroupName] == nil, {pgroups[pGroupName] = ()});
 
 			//prepare group variables
@@ -378,7 +385,7 @@ s.waitForBoot({
 			};
 
 			//osc listener for mapping button to twister row
-			//group has a key \encoderMappings which holds a array of names that are mapped the ctrlrs assigned to the knobs
+			//group datastructure has a key \encoderMappings which holds a array of names that are mapped the ctrlrs assigned to the knobs
 			4.do{//4 buttons
 				arg mapNumber;
 				var mapAddr;
@@ -474,44 +481,47 @@ s.waitForBoot({
 						};
 
 						// SAME for buttons
-						// pgroups[pGroupName][\buttonMappings].postln;
 						(pgroups[pGroupName][\buttonMappings] != nil).if{//check if encoder mapping exists
 							pgroups[pGroupName][\buttonMappings].do{//loop through and look for mapped value
 								arg ctrlName, i;
 								var knobIndex, hues, hue;
-								// pGroupName = pGroupName.asSymbol;
 
 								knobIndex = (mapNumber*4) + i;
 
-
-								(ctrlName != nil).if{//if it was linked
-									(msg[1] > 0.5).if{
+								//if it was linked
+								(ctrlName != nil).if{
+									(msg[1] > 0.5).if{//on button down
 										ctrlName = ctrlName.asSymbol;
 										pGroupName = pGroupName.asSymbol;
 
-										// map
-
+										//get color for this row
 										hues = ~twisterHues;
-										hue = hues[(knobIndex/4).floor];
-										m.control(chan:1,ctlNum:knobIndex,val:hue); //ringvalue //10 24 70 84
+										hue = hues[mapNumber];//each map button has it's own color
+
+										// send color (already sent on ctrlr initialisation)
+										m.control(chan:1,ctlNum:knobIndex,val:hue);
+										//send button state
 										m.control(chan:2,ctlNum:knobIndex,val:~twister[knobIndex][\button].linlin(0,1,27,47));
-										//set current value to twister:
-										// ctrlName.postln;
-										// pgroups[pGroupName].postln;
-										// pgroups[pGroupName][\ctrls][ctrlName].postln;
+
+										//set twister feedback and data structure to the mapped ctrlr
 										~twister[knobIndex][\setButton].value(pgroups[pGroupName][\ctrls][ctrlName][\value]);
 
-
+										//set button mode on twister, from the argument when button was mapped
 										~twister[knobIndex][\toggle] = pgroups[pGroupName][\buttonMappingsToggle][i];
 
+										//save this mapping in the group datastructure, for unmapping, osc in, preset, etc... (used as condition to update twister on changing parameter)
+										pgroups[pGroupName][\ctrls][ctrlName][\twisterButton] = knobIndex;
 
-										pgroups[pGroupName][\ctrls][ctrlName][\twisterButton] = knobIndex;//store for OSC
-
+										//set in twister's datastructure the function that will be called when midi comes in
 										~twister[knobIndex].buttonCallback = {
 											arg twisterValue;
+
+											//set value (for pbind)
 											pgroups[pGroupName][\ctrls][ctrlName][\value] = twisterValue;
+
+											//set bus value
 											(pgroups[pGroupName][\ctrls][ctrlName][\type] == \bus).if{
-												pgroups[pGroupName][\ctrls][ctrlName][\bus].set(*(pgroups[pGroupName][\ctrls][ctrlName]['value'].linlin(0,1,pgroups[pGroupName][\ctrls][ctrlName][\minMap],pgroups[pGroupName][\ctrls][ctrlName][\maxMap])));
+												pgroups[pGroupName][\ctrls][ctrlName][\bus].set(*(twisterValue.linlin(0,1,pgroups[pGroupName][\ctrls][ctrlName][\minMap],pgroups[pGroupName][\ctrls][ctrlName][\maxMap])));
 											};
 
 											//send to lemurs
@@ -535,8 +545,6 @@ s.waitForBoot({
 								};
 							};
 						};
-						// pgroups[pGroupName].postln;// pGroupName.postln;
-
 				} , mapAddr);
 
 			};
