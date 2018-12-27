@@ -381,7 +381,7 @@ s.waitForBoot({
 								};
 							};
 						};
-					},addrPreset);//OSCdef address
+				},addrPreset);//OSCdef address
 			};
 
 			//osc listener for mapping button to twister row
@@ -812,29 +812,28 @@ s.waitForBoot({
 			return;
 		};
 
-
-
-
+		// send a signal from a node proxy
 		sendSignal = {
 			arg group, name, signal;
 			var address;
+
+			//prepare osc output address
 			address = "/" + group.asString++ '/' ++ "proxy" ++ '/' ++ name;
-			address = address.replace(" ", "");
-			address.postln;
+			address = address.replace(" ", "");//remove empty spaces
+
+			// osc listener for sendReply
 			OSCdef(
-				address,//here is the problem, using the same OSC address for multiple instruments, overrides the last one...
+				address,
 				{
 					arg msg;
 					var values;
-					values = msg[3..];
-					// values.postln;
+					values = msg[3..];//get the signal values
+					//send to touch, with sync delay
 					{touchdesignerCHOP.sendMsg(address, *values)}.defer(~visualSync);
+			}, address);//oscdef addr for signal reply
 
-
-				}, address
-			);
+			//create sendreply
 			SendReply.kr(Impulse.kr(60), address, signal, -1);
-
 		};
 
 		//assign a reply id and add a callback for rerouting value to TouchDesigner
@@ -907,85 +906,100 @@ s.waitForBoot({
 			Pseq(ids.clump(poly), inf);
 		};
 
-
+		//new group from proxy node
 		newProxyGroup = {
 			arg group, listen, targetGroup, fadeOut = 2, fadeIn = 0;
 
+			// if group doesn't already exist
 			(pgroups[group] == nil).if{
-				"creating new group".postln;
-				newGroup.value(group);
+				newGroup.value(group);//call parent setup stuff
 			};
-			//create default group structure
-			pgroups[group][\listen] = listen;//store init variable
 
-			{proxySpace[group].pause; proxySpace[group].stop;}.defer(1);//stops all on initialisation
+			//option to listen or not to group, when rerouting it through another proxy
+			pgroups[group][\listen] = listen;
+
+			//forced to defer pause and stop, otherwise doesn't work...
+			//stops all on initialisation
+			{proxySpace[group].pause; proxySpace[group].stop;}.defer(1);
 
 			//if is a nodeproxy, gather key values to map
 			(proxySpace[group].isKindOf(NodeProxy)).if{
 				var pairs;
-				if(proxySpace[group].source.isKindOf(Function),
-					{
-						pairs = proxySpace[group].getKeysValues;
-					}
-				);
 
+				//get the pairs of ctrlnames and values from the node function
+				(proxySpace[group].source.isKindOf(Function)).if{
+					pairs = proxySpace[group].getKeysValues;
+				};
+
+				//if there a pairs to map
 				pairs.isNil.not.if{
+					//loop through pairs
 					pairs.do{
 						arg item, i;
+						//map with nodeproxy mapper (item[0] is name, item[1] is default value)
 						allMap.value(group, item[0], item[1], 0, 1, \nodeproxy, nil, '/x');
 					};
 				};
 
-				OSCdef(('/' ++ group ++ '/pctrl/play/x/proxy').asSymbol, // add?
+				//play listener specific to proxy
+				OSCdef(('/' ++ group ++ '/pctrl/play/x/proxy').asSymbol,
 					{
 						arg msg, time, addr;
-						(msg[1] > 0.5).if
-						{
 
+						//on button down: play
+						(msg[1] > 0.5).if{
+
+							//restart and play group
 							proxySpace[group].resume;
+
+							//if should be listened to
 							pgroups[group][\listen].if{
+								//if there is a target group for the addtotail
 								(targetGroup != nil).if
 								{
+									//play with right server orderm after the target group
 									proxySpace[group].play(group:targetGroup, addAction: 'addToTail', fadeTime: fadeIn);//if output//NodeProxy
 								}
 								{
-									proxySpace[group].play(fadeTime: fadeIn);//if output//NodeProxy
-
+									//play
+									proxySpace[group].play(fadeTime: fadeIn);
 								};
 							};
+							//send value to touch
 							touchdesignerCHOP.sendMsg('/' ++ group ++ '/pctrl/play/x', 1);
-
 						}
-						{
-							// "stopping".postln;
-							//pro
-							// proxySpace[group].stop;
+						{//on button up: stop
+							//stop with fadeout
 							proxySpace[group].stop(fadeOut);
+
+							//pause after fadeout
 							{proxySpace[group].pause;}.defer(fadeOut);
-							// proxySpace[group].pause;
+
+							//send quantized stop to TD
 							proxySpace.clock.playNextBar({touchdesignerCHOP.sendMsg('/' ++ group ++ '/pctrl/play/x', 0); });
 						};
+
+						//send value to other lemurs
 						ctrlrs.do{
 							arg ctrlr;
 							ctrlr.sendMsg(('/' ++ group ++ '/pctrl/play/x').asSymbol, msg[1]);
 						};
+				} , ('/' ++ group ++ '/pctrl/play/x').asSymbol);//OSCdef proxy play listener
 
-				} , ('/' ++ group ++ '/pctrl/play/x').asSymbol);
+				//send default value to lemurs
 				ctrlrs.do{
 					arg ctrlr;
 					ctrlr.sendMsg(('/' ++ group ++ '/pctrl/play/x').asSymbol, 0);
 				};
-
 			};
 		};
 
+
+		//return datastructure of scmapper
 		(
-			// pMap: {arg self, pGroupName, ctrlName, defaultValue = 0, encMap = -1;  pMap.value(pGroupName, ctrlName, defaultValue, encMap)},
-			// bMap: {arg self, pGroupName, ctrlName, defaultValue = 0, minMap = 0, maxMap = 1, encMap = -1; bMap.value(pGroupName, ctrlName, defaultValue, minMap, maxMap, encMap)},
 			pMap: {arg self, pGroupName, ctrlName, defaultValue = 0, postfix = '/x';  allMap.value(pGroupName, ctrlName, defaultValue, 0,1,\pfunc, nil, postfix)},
 			bMap: {arg self, pGroupName, ctrlName, defaultValue = 0, minMap = 0, maxMap = 1, postfix = '/x'; allMap.value(pGroupName, ctrlName, defaultValue, minMap, maxMap, \bus,nil, postfix)},
 			proxyMap: {arg self, pGroupName, ctrlName, defaultValue = 0, minMap = 0, maxMap = 1; allMap.value(pGroupName, ctrlName, defaultValue, minMap, maxMap, \nodeproxy)},
-
 			newPGroup: {arg self, pGroupName, pattern, quant = 4; newPGroup.value(pGroupName, pattern, quant)},
 			newID: {arg self, group, count=1, instrument; newID.value(group, count, instrument)},
 			newIDOverlap: {arg self, group, poly = 2, overlaps = 2, instrument; newIDOverlap.value(group, poly, overlaps, instrument)},
@@ -998,11 +1012,8 @@ s.waitForBoot({
 			chainProxyFX: {arg self, group, graph; chainProxyFX.value(group, graph)},
 			pbus: {arg self, group; pbus.value(group)},
 			setTempo: {arg self, tempo; setTempo.value(tempo)},
-
-			//
 		);
 	};
 	s.sync;
-
 });
 )
