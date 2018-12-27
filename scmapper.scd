@@ -54,8 +54,8 @@ s.waitForBoot({
 
 		//setup ctrlrs (lemur/open-stage-control) osc outputs
 		ctrlrs = [];
-		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 7000));//ipad 1
-		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 8000));//ipad 2
+		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 8000));//ipad 1
+		ctrlrs = ctrlrs.add(NetAddr("127.0.0.1", 7000));//ipad 2
 
 		//touchdesigner/visuals OSC outputs (for pbind events, synthdef replies, proxy signals, and group play/stop)
 		touchdesignerDAT = NetAddr(~touchIP, 10000);//DAT for note events
@@ -529,84 +529,77 @@ s.waitForBoot({
 												arg ctrlr;
 												ctrlr.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], pgroups[pGroupName][\ctrls][ctrlName][\value]);
 											};
+
+											//send to touch chop
 											touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\touchAddr], pgroups[pGroupName][\ctrls][ctrlName][\value]);
 
 										};
 									}{//unmap
+										//remove callback
 										~twister[knobIndex].buttonCallback = nil;
-										m.control(chan:2,ctlNum:knobIndex,val:18);//off
-										// ~twister[knobIndex]
-										// m.control(chan:1,ctlNum:knobIndex,val:hue); //ringvalue //10 24 70 84
 
+										//disable the lights on this knob
+										m.control(chan:2,ctlNum:knobIndex,val:18);
+
+										//remove this mapping in the group datastructure, for unmapping, osc in, preset, etc... (used as condition to update twister on changing parameter)
 										pgroups[pGroupName][\ctrls][ctrlName][\twisterButton] = nil;
-
 									};
-									//check if mapped when incoming OSC from lemur
 								};
 							};
 						};
-				} , mapAddr);
-
-			};
-
+				} , mapAddr);//OSCdef addr of load button
+			};//end of loop for 4 map buttons
 
 
-			//listerners/mecanisms for play, pause (Rests), reset, ctrlr... etc
-
-			//////////// ----- JUMP
-
+			//listener for jump button
+			//sets all controls to their prepared jump states
 			OSCdef(('/' ++ pGroupName ++ '/jump').asSymbol,
 				{
 					arg msg, time, addr;
-					(msg[1] > 0.5).if{
-						//for pMaps:
+					(msg[1] > 0.5).if{//on button down
+						//make sure some ctrls exist (ie: are mapped)
 						(pgroups[pGroupName][\ctrls] != nil).if
 						{
+							//loop through controls
 							pgroups[pGroupName][\ctrls].keysValuesDo{
 								arg ctrlname , ctrldict;
-								//set value
+
+								//set value  (for pbind)
 								ctrldict['value'] = ctrldict['shiftValue'];
+
+								//set bus value
 								(ctrldict[\type] == \bus).if
 								{
 									ctrldict[\bus].set(*(ctrldict['value'].linlin(0,1,ctrldict[\minMap],ctrldict[\maxMap])));
 								};
 
-								//send values
+								//set proxy value
+								(ctrldict[\type] == \nodeproxy).if{
+									proxySpace[pGroupName].set(ctrlname, *(ctrldict[\value]));
+								};
+
+								//send values to lemurs
 								ctrlrs.do{
 									arg ctrlr;
 									ctrlr.sendMsg(ctrldict['addr'], *ctrldict['value']);
 								};
 
+								//if mapped to twister knob send value
 								(ctrldict[\twisterKnob] != nil).if{
 									~twister[ctrldict[\twisterKnob]][\set].value(ctrldict[\value]);
 								};
+								//if mapped to twister button send value
 								(ctrldict[\twisterButton] != nil).if{
 									~twister[ctrldict[\twisterButton]][\setButton].value(ctrldict[\value]);
 								};
+
+								//send to touch chop
+								touchdesignerCHOP.sendMsg(ctrldict[\touchAddr], ctrldict[\value]);
 							};
 						};
-						/*(pgroups[pGroupName] != nil).if
-						{
-						pgroups[pGroupName].keysValuesDo{
-						arg ctrlname , ctrldict;
-						//set value
-						ctrldict['value'] = ctrldict['shiftValue'];
-						ctrldict[\bus].set(*(ctrldict['value'].linlin(0,1,ctrldict[\minMap],ctrldict[\maxMap])));
-
-						//send values
-						ctrlrs.do{
-						arg ctrlr;
-						ctrlr.sendMsg(ctrldict['addr'], *ctrldict['value']);
-
-						};
-						};
-						};*/
-
 					};
-
 				}
-				, '/jump/x'.asSymbol);
-
+				, '/jump/x'.asSymbol);// OSCdef addr of jump button
 
 			/////////// --------------------     shiftMode
 			OSCdef(('/' ++ pGroupName ++ '/jumpShift').asSymbol,
