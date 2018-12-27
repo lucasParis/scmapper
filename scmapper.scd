@@ -36,7 +36,7 @@ s.waitForBoot({
 	... etc
 	*/
 	~mapperMaker = {
-		var pMap, bMap, pgroups, newPGroup, makeCtrlUI, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo, newIDOverlap;
+		var pMap, bMap, pgroups, newPGroup, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo, newIDOverlap;
 
 		//setup twister
 		~makeTwister.value;
@@ -655,92 +655,95 @@ s.waitForBoot({
 			} , '/jumpShift/x'.asSymbol);//oscdef addr for jumpshift
 		};
 
-
+		//link an encoder to a group and parameter
 		linkEncoder = {
 			arg pGroupName, ctrlName, encoder;
 
-			//setup if doesn't exist
+			//setup mapping array if doesn't exist
 			(pgroups[pGroupName][\encoderMappings] == nil).if{pgroups[pGroupName][\encoderMappings] = nil!4;};
+			//replace nil with ctrlName in array
 			pgroups[pGroupName][\encoderMappings][encoder] = ctrlName;
-			// pgroups[pGroupName][\encoderMappings].postln;
-
 		};
 
+		//link a button to a group and parameter
 		linkButton = {
 			arg pGroupName, ctrlName, button, toggle;
 
-			//setup if doesn't exist
+			//setup mapping array if doesn't exist
 			(pgroups[pGroupName][\buttonMappings] == nil).if{pgroups[pGroupName][\buttonMappings] = nil!4;};
+			//replace nil with ctrlName in array
 			pgroups[pGroupName][\buttonMappings][button] = ctrlName;
 
-
+			//setup toggle values array if doesn't exist
 			(pgroups[pGroupName][\buttonMappingsToggle] == nil).if{pgroups[pGroupName][\buttonMappingsToggle] = nil!4;};
+			//replace nil with toggle value in array
 			pgroups[pGroupName][\buttonMappingsToggle][button] = toggle;
-
 		};
+
+		//generic mapping things, called by all of the 3 mapping types (pfunc, proxy and bus)
+		//defines OSC listener for value
+		//send default values
 		allMap = {
-			arg pGroupName, ctrlName, defaultValue,minMap, maxMap, type = \bus, function = nil, postfix; //\pfunc \function ... \nodeproxy
+			arg pGroupName, ctrlName, defaultValue,minMap, maxMap, type = \bus, function = nil, postfix;
 			var return;
-			if(pgroups[pGroupName] == nil, {pgroups[pGroupName] = ()});// create dict if doesn't exist'
-			if(pgroups[pGroupName][\ctrls] == nil, {pgroups[pGroupName][\ctrls] = ()});// create dict if doesn't exist'
 
-			// ctrlName = ctrlName + postfix;
-			// (encMap != -1).if{ encMap.postln;};
+			//prepare group's database if inexistant
+			(pgroups[pGroupName] == nil).if{pgroups[pGroupName] = ()};
+			(pgroups[pGroupName][\ctrls] == nil).if{pgroups[pGroupName][\ctrls] = ()};// create ctrlrs dict if doesn't exist
 
-			//init ctrl
-			pgroups[pGroupName][\ctrls][ctrlName] = ();
+			// ctrlName = (ctrlName + postfix).asSymbol;
+
+			//init the control's datastructure and store settings
+			pgroups[pGroupName][\ctrls][ctrlName] = ();//empty dict
 			pgroups[pGroupName][\ctrls][ctrlName][\type] = type;
-
 			pgroups[pGroupName][\ctrls][ctrlName][\value] = defaultValue;
-			pgroups[pGroupName][\ctrls][ctrlName][\presets] = defaultValue!4;
+			pgroups[pGroupName][\ctrls][ctrlName][\presets] = defaultValue!4;//values of each internal preset
 			pgroups[pGroupName][\ctrls][ctrlName][\shiftValue] = defaultValue;
 			pgroups[pGroupName][\ctrls][ctrlName][\addr] = ('/'++ pGroupName ++ '/'++ ctrlName ++ postfix).asSymbol;
-			pgroups[pGroupName][\ctrls][ctrlName][\touchAddr] = ('/' ++ 'controls' ++ '/'++ pGroupName ++ '/'++ ctrlName ++ postfix).asSymbol;
-			// pgroups[pGroupName][\ctrls][ctrlName][\addr].postln;
+			pgroups[pGroupName][\ctrls][ctrlName][\touchAddr] = ('/controls/'++ pGroupName ++ '/'++ ctrlName ++ postfix).asSymbol;
+
+			//specific settings and setup to type 'bus'
 			(type == \bus).if{
 				pgroups[pGroupName][\ctrls][ctrlName][\minMap] = minMap;
 				pgroups[pGroupName][\ctrls][ctrlName][\maxMap] = maxMap;
-				pgroups[pGroupName][\ctrls][ctrlName][\bus] = Bus.control(s,defaultValue.size.max(1));
-				pgroups[pGroupName][\ctrls][ctrlName][\bus].set(defaultValue.linlin(0,1,minMap,maxMap));
+				pgroups[pGroupName][\ctrls][ctrlName][\bus] = Bus.control(s,defaultValue.size.max(1));//create bus of minimum 1 channel
+				pgroups[pGroupName][\ctrls][ctrlName][\bus].set(defaultValue.linlin(0,1,minMap,maxMap));//set default value, can it be array?
 			};
 
+			//specific settings and setup to type 'nodeproxy'
 			(type == \nodeproxy).if{
 				pgroups[pGroupName][\ctrls][ctrlName][\minMap] = minMap;
 				pgroups[pGroupName][\ctrls][ctrlName][\maxMap] = maxMap;
-				// pgroups[pGroupName][\ctrls][ctrlName][\bus] = Bus.control(s,defaultValue.size.max(1));
-				// pgroups[pGroupName][\ctrls][ctrlName][\bus].set(defaultValue.linlin(0,1,minMap,maxMap));
 			};
 
-
-
-
-			// pgroups[pGroupName][\ctrls][ctrlName][\setFunction] = {
-			//
-			// };
-
-			// pgroups[pGroupName][\ctrls][ctrlName][\encMap] = encMap;
-			// pgroups[pGroupName][\ctrls][ctrlName][\addr].postln;
+			// OSC listener for osc value
+			// - check if in shift mode
+			// - sets value
 			OSCdef(pgroups[pGroupName][\ctrls][ctrlName][\addr],
 				{
 					arg msg, time, addr;
 					var value;
-					// value.postln;
-					value = msg[1..];
-					(value.size == 1).if{value = value[0]};
-					// [1].size
-					(pgroups[pGroupName][\jumpShift]>0.5).if{
-						pgroups[pGroupName][\ctrls][ctrlName][\shiftValue] = value;
-						//send all the shift values
 
+					//get value(s)
+					value = msg[1..];
+					(value.size == 1).if{value = value[0]};//if it's an array of 1 element convert from array to single value
+
+					(pgroups[pGroupName][\jumpShift]>0.5).if{
+						//if in shift mode
+						//set shift value
+						pgroups[pGroupName][\ctrls][ctrlName][\shiftValue] = value;
 					}{
-						// msg.postln;
-						// pgroups[pGroupName][\ctrls][ctrlName].postln;
+						// standard setting mode
+
+						//set value  (for pbind)
 						pgroups[pGroupName][\ctrls][ctrlName][\value] = value;
+
+						//set bus value
 						(type == \bus).if{
 							pgroups[pGroupName][\ctrls][ctrlName][\bus].set(*(value.linlin(0,1,minMap,maxMap)));
 						};
-						// ctrlName.postln;
-						// value.postln;
+
+						//set proxy value
 						(type == \nodeproxy).if{
 							// value.postln;
 							// proxySpace[pGroupName].set(ctrlName, value.linlin(0,1,minMap,maxMap));
@@ -750,60 +753,67 @@ s.waitForBoot({
 							// pgroups[pGroupName][\ctrls][ctrlName][\bus].set(defaultValue.linlin(0,1,minMap,maxMap));
 						};
 
-						//OSC feedback
+						//send values to lemurs
 						ctrlrs.do{
 							arg ctrlr;
+							//make sure you're not sending to the ctrlr who sent the message (optional?)
 							(ctrlr != addr).if{
+								//send value
 								ctrlr.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
 							};
+
 						};
+						//send to touch chop controls
 						touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\touchAddr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
 
-
+						//if mapped to twister knob send value
 						(pgroups[pGroupName][\ctrls][ctrlName][\twisterKnob] != nil).if{
 							~twister[pgroups[pGroupName][\ctrls][ctrlName][\twisterKnob]][\set].value(pgroups[pGroupName][\ctrls][ctrlName][\value]);
 						};
+
+						//if mapped to twister button send value
 						(pgroups[pGroupName][\ctrls][ctrlName][\twisterButton] != nil).if{
 							~twister[pgroups[pGroupName][\ctrls][ctrlName][\twisterButton]][\setButton].value(pgroups[pGroupName][\ctrls][ctrlName][\value]);
 						};
-
-
 					}
-			} , pgroups[pGroupName][\ctrls][ctrlName][\addr]);
+			} , pgroups[pGroupName][\ctrls][ctrlName][\addr]);//osc address for controller value
 
 			//send initial value
 			ctrlrs.do{
 				arg ctrlr;
 				ctrlr.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], *defaultValue);
 			};
+
+			//send to touch chop controls
 			touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\touchAddr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
 
 
+			//return according to types:
+
+			//- pfunc   with ref to value in datastructure
 			(type == \pfunc).if{
 				return = Pfunc({pgroups[pGroupName][\ctrls][ctrlName][\value]}); // return Pfunc
 			};
+
+			//- bus   or array of busses
 			(type == \bus).if{
-				// "returningbus".postln;
+				//if single channel
 				(pgroups[pGroupName][\ctrls][ctrlName][\bus].numChannels == 1).if{
-					return = pgroups[pGroupName][\ctrls][ctrlName][\bus].asMap; //return bus
+					return = pgroups[pGroupName][\ctrls][ctrlName][\bus].asMap; //return bus map
 				}
 				{
-					return = pgroups[pGroupName][\ctrls][ctrlName][\bus].numChannels.collect{arg i; ("c" ++ (pgroups[pGroupName][\ctrls][ctrlName][\bus].index + i).asString).asSymbol}; //return bus
+					//if multichannel bus mapping, return an array of sc bus map strings ["c1", "c2", ...]
+					return = pgroups[pGroupName][\ctrls][ctrlName][\bus].numChannels.collect{arg i; ("c" ++ (pgroups[pGroupName][\ctrls][ctrlName][\bus].index + i).asString).asSymbol};
 				};
 			};
+
+			//- proxy  map doesn't have to return anything...
 
 			return;
 		};
 
 
-		makeCtrlUI = {
-			arg pGroupName;
 
-			// pgroups[pGroupName];
-			// pgroups[pGroupName];
-			// makeFader...
-			// copy to paste buffer
-		};
 
 		sendSignal = {
 			arg group, name, signal;
@@ -977,7 +987,6 @@ s.waitForBoot({
 			proxyMap: {arg self, pGroupName, ctrlName, defaultValue = 0, minMap = 0, maxMap = 1; allMap.value(pGroupName, ctrlName, defaultValue, minMap, maxMap, \nodeproxy)},
 
 			newPGroup: {arg self, pGroupName, pattern, quant = 4; newPGroup.value(pGroupName, pattern, quant)},
-			makeCtrlUI: {arg self, pGroupName; makeCtrlUI.value(pGroupName)},
 			newID: {arg self, group, count=1, instrument; newID.value(group, count, instrument)},
 			newIDOverlap: {arg self, group, poly = 2, overlaps = 2, instrument; newIDOverlap.value(group, poly, overlaps, instrument)},
 			linkEncoder: {arg self, pGroupName, ctrlName, encoder; linkEncoder.value(pGroupName, ctrlName, encoder)},
