@@ -200,16 +200,20 @@ s.waitForBoot({
 
 		};
 
-		//setup preset mapping to button
+		//link and preset name to load preset button
 		setupPreset = {
 			arg pGroupName, presetName, index;
 			var addrPreset;
-			if(pgroups[pGroupName] == nil, {pgroups[pGroupName] = ()});// create dict if doesn't exist'
-			if(pgroups[pGroupName][\presets] == nil, {pgroups[pGroupName][\presets] = (\name:\empty, values:())!4});// create dict if doesn't exist'
-			pgroups[pGroupName][\presets][index] = (\name:presetName, values:());
-			//get and setValues from file: /presets/groupName/presetName
-			//send to button
+
+			//prepare osc address of this button
 			addrPreset =  ('/' ++ pGroupName ++ '/pctrl/preset'++(index+1).asString).asSymbol;
+
+			//check if group/preset/index not empty and setup
+			(pgroups[pGroupName] == nil).if{pgroups[pGroupName] = ()};// create dict if doesn't exist'
+			(pgroups[pGroupName][\presets] == nil).if{pgroups[pGroupName][\presets] = (\name:\empty, values:())! 4 };// create dict of preset name + ctrlr values
+			pgroups[pGroupName][\presets][index] = (\name:presetName, values:());//setup this index
+
+			//send name of the preset to ctrlr buttons
 			ctrlrs.do{
 				arg ctrlr;
 				ctrlr.sendMsg(addrPreset,'@label_off', *presetName);
@@ -217,7 +221,7 @@ s.waitForBoot({
 			};
 		};
 
-
+		//link a NodeProxy to a group's pattern
 		chainProxyFX = {
 			arg group, graph;
 			//set flag to not listen to pbind bus (on play/stop)
