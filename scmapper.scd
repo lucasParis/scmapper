@@ -134,70 +134,65 @@ s.waitForBoot({
 			arg pGroupName, pattern, quant;
 			newGroup.value(pGroupName);// parent method newGroup
 
-			// pgroups[pGroupName][\bus] = Bus.audio(s,2);
-			// pgroups[pGroupName][\pbindGroup] = Group(s);
-			// pgroups[pGroupName][\fxGroup] =  Group(pgroups[pGroupName][\synthGroup] , \addToTail);
+			//pattern specific stuff
+
+			//setup pattern with common bus, and groups
 			pattern = Pbindf(pattern,
-				\out, pgroups[pGroupName][\bus],
-				\group, pgroups[pGroupName][\pbindGroup],
-				\fx_group, pgroups[pGroupName][\pbindGroup],
+				\out, pgroups[pGroupName][\bus],//the bus for all pbind stuff
+				\group, pgroups[pGroupName][\pbindGroup],//group for pbinds
+				\fx_group, pgroups[pGroupName][\pbindGroup],//group for proxy after pbinds
 			);
 
+			//store the pattern for future use
 			pgroups[pGroupName][\pattern] = pattern;
+
 			// pgroups[pGroupName][\pattern] = Pbindf(pattern, \rest: Pfunc{});//insert pause and mute use mapping for it
+
+			//pattern player to store pattern once it's been started
 			pgroups[pGroupName][\patternPlayer] = nil;
 
-			//RESET
+			//reset button callback
 			OSCdef(('/' ++ pGroupName ++ '/pctrl/reset/x').asSymbol,
 				{
 					arg msg, time, addr;
-					if(msg[1] > 0.5, {
-						// TempoClock.schedAbs(TempoClock.default.elapsedBeats.roundUp(4)-0.25, {pgroups[pGroupName][\patternPlayer].reset})});
-						// TempoClock.default.playNextBar({pgroups[pGroupName][\patternPlayer].reset})});
-						proxySpace.clock.playNextBar({pgroups[pGroupName][\patternPlayer].reset})});
-					// use fork?
+					if(msg[1] > 0.5, {//on button down
+						proxySpace.clock.playNextBar({pgroups[pGroupName][\patternPlayer].reset})//call reset on next bar
+					});
+			} , ('/' ++ pGroupName ++ '/pctrl/reset/x').asSymbol);//reset button OSCaddr
 
-
-			} , ('/' ++ pGroupName ++ '/pctrl/reset/x').asSymbol);
-
-			//playstop // add external access (second control place)
+			//play/stop button callback
 			OSCdef(('/' ++ pGroupName ++ '/pctrl/play/x').asSymbol,
 				{
 					arg msg, time, addr;
-					// msg[1].postln;
-					// (msg[1] > 0.5).postln;
-					// pGroupName.postln;
-					(msg[1] > 0.5).if{
-
+					(msg[1] > 0.5).if{//on button down
+						//call play on pattern, with OSC event collect for touch, and store into group database
 						pgroups[pGroupName][\patternPlayer] = pgroups[pGroupName][\pattern].collect({arg evt; collectToOsc.value(evt, pGroupName )}).play(clock: proxySpace.clock, quant:quant, doReset:true);
+						//if this group should be output to soundcard
 						pgroups[pGroupName][\pbindListen].if{
+							//play the bus then and store busPlayer into a variable
 							pgroups[pGroupName][\busPlayer] = pgroups[pGroupName][\bus].play;
-
-						};//proxyFX
-
-						touchdesignerCHOP.sendMsg('/' ++ pGroupName ++ '/pctrl/play/x', 1);
-
-
-					}{
-						pgroups[pGroupName][\patternPlayer].stop;
-						(pgroups[pGroupName][\busPlayer] != nil).if{
-							pgroups[pGroupName][\busPlayer].free;
 						};
 
-
-						// TempoClock.default.playNextBar({touchdesignerCHOP.sendMsg('/' ++ pGroupName ++ '/pctrl/play/x', 0); });
+						// forward to touchdesigner
+						touchdesignerCHOP.sendMsg('/' ++ pGroupName ++ '/pctrl/play/x', 1);
+					}{
+						//else if stopping
+						pgroups[pGroupName][\patternPlayer].stop;//stop pattern
+						(pgroups[pGroupName][\busPlayer] != nil).if{//stop bus (wait for the end of the sound, add a delay?)
+							pgroups[pGroupName][\busPlayer].free;
+						};
+						//forward to touchdesigner, quantized to next bar (next beat?)
 						proxySpace.clock.playNextBar({touchdesignerCHOP.sendMsg('/' ++ pGroupName ++ '/pctrl/play/x', 0); });
-						// TempoClock
-
 					};
 
+					//update other ctrlrs
 					ctrlrs.do{
 						arg ctrlr;
 						ctrlr.sendMsg('/' ++ pGroupName ++ '/pctrl/play/x', msg[1] );
 					};
+			} , ('/' ++ pGroupName ++ '/pctrl/play/x').asSymbol);//OSC addr of play button
 
-					// );
-			} , ('/' ++ pGroupName ++ '/pctrl/play/x').asSymbol);
+			//send initial value for play button
 			ctrlrs.do{
 				arg ctrlr;
 				ctrlr.sendMsg('/' ++ pGroupName ++ '/pctrl/play/x', 0);
@@ -205,6 +200,7 @@ s.waitForBoot({
 
 		};
 
+		//setup preset mapping to button
 		setupPreset = {
 			arg pGroupName, presetName, index;
 			var addrPreset;
@@ -378,6 +374,7 @@ s.waitForBoot({
 			};
 
 			//osc listener for mapping button to twister row
+			//group has a key \encoderMappings which holds a array of names that are mapped the ctrlrs assigned to the knobs
 			4.do{//4 buttons
 				arg mapNumber;
 				var mapAddr;
@@ -390,53 +387,62 @@ s.waitForBoot({
 				};
 
 				//osc listener for twister row map
-				// OSCdef((mapAddr ++ pGroupName.asString).asSymbol,//groupname already in mapAddr
-				OSCdef(mapAddr.asSymbol,//groupname already in mapAddr
+				OSCdef(mapAddr.asSymbol,
 					{
 						arg msg, time, addr;
 
 						//make sure group name is symbol
 						pGroupName = pGroupName.asSymbol;
+
 						//check if encoder mapping exists
 						(pgroups[pGroupName][\encoderMappings] != nil).if{
-							pgroups[pGroupName][\encoderMappings].do{//loop through and look for mapped value
+							pgroups[pGroupName][\encoderMappings].do{//loop through each 4 knobs and look for mapped value
 								arg ctrlName, i;
 								var knobIndex, hues, hue, ctrlType;
+
+								//calculate knobindex according to map button and current iteration
 								knobIndex = (mapNumber*4) + i;
 
-								(ctrlName != nil).if{//it it was linked
+								//it it was linked
+								(ctrlName != nil).if{
 									(msg[1] > 0.5).if{// on button down
-										// map
+
+										//make sure everything is a symbol
 										ctrlName = ctrlName.asSymbol;
 										pGroupName = pGroupName.asSymbol;
 
+										//get color for this row
 										hues = ~twisterHues;
-										hue = hues[(knobIndex/4).floor];
-										m.control(chan:1,ctlNum:knobIndex,val:hue); //ringvalue //10 24 70 84
-										m.control(chan:2,ctlNum:knobIndex,val:~twister[knobIndex][\button].linlin(0,1,27,47));
-										// ctrlType =
+										hue = hues[mapNumber];//each map button has it's own color
 
-										//set current value to twister:
+										// send color (already sent on ctrlr initialisation)
+										m.control(chan:1,ctlNum:knobIndex,val:hue);
+										//send button state
+										m.control(chan:2,ctlNum:knobIndex,val:~twister[knobIndex][\button].linlin(0,1,27,47));
+
+										//set twister feedback and data structure to the mapped ctrlr
 										~twister[knobIndex][\set].value(pgroups[pGroupName][\ctrls][ctrlName][\value]);
+										//save this mapping in the group datastructure, for unmapping, osc in, preset, etc... (used as condition to update twister on changing parameter)
 										pgroups[pGroupName.asSymbol][\ctrls][ctrlName.asSymbol][\twisterKnob] = knobIndex;
 
-
+										//set in twister's datastructure the function that will be called when midi comes in
 										~twister[knobIndex].knobCallback = {
 											arg twisterValue;
 
+											//set value (for pbind)
 											pgroups[pGroupName][\ctrls][ctrlName][\value] = twisterValue;
+
+											//set bus value
 											(pgroups[pGroupName][\ctrls][ctrlName][\type] == \bus).if{
-												pgroups[pGroupName][\ctrls][ctrlName][\bus].set(*(pgroups[pGroupName][\ctrls][ctrlName]['value'].linlin(0,1,pgroups[pGroupName][\ctrls][ctrlName][\minMap],pgroups[pGroupName][\ctrls][ctrlName][\maxMap])));
+												pgroups[pGroupName][\ctrls][ctrlName][\bus].set(*(twisterValue.linlin(0,1,pgroups[pGroupName][\ctrls][ctrlName][\minMap],pgroups[pGroupName][\ctrls][ctrlName][\maxMap])));
 											};
+
+											//set proxy value
 											(pgroups[pGroupName][\ctrls][ctrlName][\type] == \nodeproxy).if{
-												// proxySpace[pGroupName].set(ctrlName, *(pgroups[pGroupName][\ctrls][ctrlName][\value].linlin(0,1,pgroups[pGroupName][\ctrls][ctrlName][\minMap],pgroups[pGroupName][\ctrls][ctrlName][\maxMap])));
 												proxySpace[pGroupName].set(ctrlName, *(pgroups[pGroupName][\ctrls][ctrlName][\value]));
-
-												// pgroups[pGroupName][\ctrls][ctrlName][\bus] = Bus.control(s,defaultValue.size.max(1));
-												// pgroups[pGroupName][\ctrls][ctrlName][\bus].set(defaultValue.linlin(0,1,minMap,maxMap));
 											};
 
-
+											//if other controllers are not in jump shift mode, send values to them
 											(pgroups[pGroupName][\jumpShift] <0.5).if
 											{
 												//send to lemurs
@@ -444,7 +450,8 @@ s.waitForBoot({
 													arg ctrlr;
 													ctrlr.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], pgroups[pGroupName][\ctrls][ctrlName][\value]);
 												};
-												touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
+												//send to touch chop
+												touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\touchAddr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
 
 											};
 										};
@@ -508,7 +515,7 @@ s.waitForBoot({
 												arg ctrlr;
 												ctrlr.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], pgroups[pGroupName][\ctrls][ctrlName][\value]);
 											};
-											touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], pgroups[pGroupName][\ctrls][ctrlName][\value]);
+											touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\touchAddr], pgroups[pGroupName][\ctrls][ctrlName][\value]);
 
 										};
 									}{//unmap
@@ -774,7 +781,7 @@ s.waitForBoot({
 				arg ctrlr;
 				ctrlr.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], *defaultValue);
 			};
-			touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\addr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
+			touchdesignerCHOP.sendMsg(pgroups[pGroupName][\ctrls][ctrlName][\touchAddr], *pgroups[pGroupName][\ctrls][ctrlName][\value]);
 
 
 			(type == \pfunc).if{

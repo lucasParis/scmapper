@@ -63,7 +63,7 @@
 					};
 			},i, 0);
 
-			// callback to set this encoder from outside (for example from preset recall or OSC input)
+			// callback to set this encoder from outside (for example from preset recall or OSC input or map)
 			item[\set] = {
 				arg value;
 				item[\count] = value.linlin(0,1,0,127);//set count from normalised value/denormalise
