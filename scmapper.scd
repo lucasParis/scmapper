@@ -23,7 +23,6 @@ s.waitForBoot({
 	"resourcesSC/makeTwister.scd".loadRelative; // load midi twister stuff
 	"resourcesSC/evtToPyDict.scd".loadRelative; // load note event to python dict converter
 
-	~makeTwister.value;//setup twister
 
 	/*
 	mapperMaker
@@ -38,6 +37,9 @@ s.waitForBoot({
 	*/
 	~mapperMaker = {
 		var pMap, bMap, fMap, pgroups, newPGroup, makeCtrlUI, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo, newIDOverlap;
+
+		//setup twister
+		~makeTwister.value;
 
 		//init a common proxyspace
 		proxySpace.clear;
@@ -375,29 +377,35 @@ s.waitForBoot({
 					},addrPreset);//OSCdef address
 			};
 
-			//osc listener for map to twister
-			4.do{
+			//osc listener for mapping button to twister row
+			4.do{//4 buttons
 				arg mapNumber;
 				var mapAddr;
+				//prepare OSC address of map button, /group/pctrl/map#/x
 				mapAddr = ('/' ++ pGroupName ++ '/pctrl/map'++(mapNumber+1).asString++'/x').asSymbol;
+				//initialise button ctrlr value to 0
 				ctrlrs.do{
 					arg ctrlr;
 					ctrlr.sendMsg(mapAddr, 0);
 				};
-				// mapAddr.postln;
-				OSCdef((mapAddr ++ pGroupName.asString).asSymbol,
+
+				//osc listener for twister row map
+				// OSCdef((mapAddr ++ pGroupName.asString).asSymbol,//groupname already in mapAddr
+				OSCdef(mapAddr.asSymbol,//groupname already in mapAddr
 					{
 						arg msg, time, addr;
 
+						//make sure group name is symbol
 						pGroupName = pGroupName.asSymbol;
-						(pgroups[pGroupName][\encoderMappings] != nil).if{//check if encoder mapping exists
+						//check if encoder mapping exists
+						(pgroups[pGroupName][\encoderMappings] != nil).if{
 							pgroups[pGroupName][\encoderMappings].do{//loop through and look for mapped value
 								arg ctrlName, i;
 								var knobIndex, hues, hue, ctrlType;
 								knobIndex = (mapNumber*4) + i;
 
 								(ctrlName != nil).if{//it it was linked
-									(msg[1] > 0.5).if{
+									(msg[1] > 0.5).if{// on button down
 										// map
 										ctrlName = ctrlName.asSymbol;
 										pGroupName = pGroupName.asSymbol;
