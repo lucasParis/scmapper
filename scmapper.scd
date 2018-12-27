@@ -36,7 +36,7 @@ s.waitForBoot({
 	... etc
 	*/
 	~mapperMaker = {
-		var pMap, bMap, fMap, pgroups, newPGroup, makeCtrlUI, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo, newIDOverlap;
+		var pMap, bMap, pgroups, newPGroup, makeCtrlUI, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo, newIDOverlap;
 
 		//setup twister
 		~makeTwister.value;
@@ -601,11 +601,12 @@ s.waitForBoot({
 				}
 				, '/jump/x'.asSymbol);// OSCdef addr of jump button
 
-			/////////// --------------------     shiftMode
+			//listener for jump shift button
 			OSCdef(('/' ++ pGroupName ++ '/jumpShift').asSymbol,
 				{
 					arg msg, time, addr;
 
+					//update shift to other controllers
 					ctrlrs.do{
 						arg ctrlr;
 						(ctrlr != addr).if{
@@ -613,21 +614,17 @@ s.waitForBoot({
 						};
 					};
 
-					(msg[1] > 0.5).if{
+					(msg[1] > 0.5).if{//on button down - Set controls to their shift state and to orange
+
+						//set the shift variable in data structure
 						pgroups[pGroupName][\jumpShift]  = 1;
 
-						/*pgroups[pGroupName][\ctrls].keysValuesDo{
-						arg ctrlname , ctrldict;
-						ctrlrs.do{
-						arg ctrlr;
-						ctrlr.sendMsg(ctrldict['addr'], *ctrldict['shiftValue']);
-						ctrlr.sendMsg(ctrldict['addr'].asString.replace("/x", ""),'@color', shiftJumpColor);//send color orange
-						};
-						};*/
-						(pgroups[pGroupName][\ctrls] != nil).if
-						{
+						//make sure there are exiting controls
+						(pgroups[pGroupName][\ctrls] != nil).if{
+							//loop through controls
 							pgroups[pGroupName][\ctrls].keysValuesDo{
 								arg ctrlname , ctrldict;
+								//send the shift values to lemurs
 								ctrlrs.do{
 									arg ctrlr;
 									ctrlr.sendMsg(ctrldict['addr'], *ctrldict['shiftValue']);
@@ -635,21 +632,18 @@ s.waitForBoot({
 								};
 							};
 						};
+					}{ //on button up - Set controls to their standard state and back to white
 
-					}{
+						//set the shift variable in data structure
 						pgroups[pGroupName][\jumpShift]  = 0;
-						/*pgroups[pGroupName][\ctrls].keysValuesDo{
-						arg ctrlname , ctrldict;
-						ctrlrs.do{
-						arg ctrlr;
-						ctrlr.sendMsg(ctrldict['addr'], *ctrldict['value']);
-						ctrlr.sendMsg(ctrldict['addr'].asString.replace("/x", ""),'@color', normalColor);//send color white
-						};
-						};*/
+
+						//make sure there are exiting controls
 						(pgroups[pGroupName][\ctrls] != nil).if
 						{
+							//loop through controls
 							pgroups[pGroupName][\ctrls].keysValuesDo{
 								arg ctrlname , ctrldict;
+								//send the standard values to lemurs
 								ctrlrs.do{
 									arg ctrlr;
 									ctrlr.sendMsg(ctrldict['addr'], *ctrldict['value']);
@@ -657,14 +651,10 @@ s.waitForBoot({
 								};
 							};
 						};
-
 					};
-			} , '/jumpShift/x'.asSymbol);
+			} , '/jumpShift/x'.asSymbol);//oscdef addr for jumpshift
 		};
 
-		fMap = {
-
-		};
 
 		linkEncoder = {
 			arg pGroupName, ctrlName, encoder;
