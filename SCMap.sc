@@ -1,0 +1,8 @@
+
+
+SCMap {
+	test{
+		^"hello".postln;
+	}
+}
+
