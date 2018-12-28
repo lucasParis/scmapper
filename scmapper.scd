@@ -36,7 +36,7 @@ s.waitForBoot({
 	... etc
 	*/
 	~mapperMaker = {
-		var pMap, bMap, pgroups, newPGroup, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo, newIDOverlap;
+		var pMap, bMap, pgroups, newPGroup, currentGroup, collectToOsc, touchdesignerDAT, ctrlrs, normalColor, shiftJumpColor, newID, replyIDCount, touchdesignerCHOP, linkEncoder, linkButton, sendBrowserNames, visualSync, allMap, proxySpace, newProxyGroup, newGroup, setupPreset, sendSignal, chainProxyFX, pbus, setTempo, newIDOverlap, printDataBase;
 
 		//setup twister
 		~makeTwister.value;
@@ -994,6 +994,26 @@ s.waitForBoot({
 			};
 		};
 
+		printDataBase = {
+			// save to file
+			var fil, saveDict;
+			// pgroups.postln;
+			//create writable file
+			fil = File.new("~/testPrint.txt".standardizePath,"w");
+
+			//datastructure to fill with save values
+			saveDict = ();
+			//get values for preset from ctrls in group's datastructure
+			/*pgroups.keysValuesDo
+			{
+				arg key, value;
+				saveDict[key] = value[\value];//add key/value from ctrls to dict
+			};*/
+			//write preset dict to file
+			fil.write(pgroups.asCompileString);
+			fil.close;
+
+		};
 
 		//return datastructure of scmapper
 		(
@@ -1012,6 +1032,7 @@ s.waitForBoot({
 			chainProxyFX: {arg self, group, graph; chainProxyFX.value(group, graph)},
 			pbus: {arg self, group; pbus.value(group)},
 			setTempo: {arg self, tempo; setTempo.value(tempo)},
+			printDataBase: {arg self; printDataBase;}
 		);
 	};
 	s.sync;
