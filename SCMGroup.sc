@@ -31,7 +31,7 @@ SCMGroup {
 	linkPattern{
 		arg patternName, pattern;
 		var pat;
-		pat = SCMPattern.new(patternName, pattern);
+		pat = SCMPattern.new(patternName, pattern);// , groupName)
 		pat.parentGroup = this;
 		patterns = patterns.add(pat);
 		^pat;

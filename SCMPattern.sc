@@ -5,12 +5,10 @@ SCMPattern {
 	var patternPlayer;
 	var <group;
 	var <>parentGroup;
-
+	var oscAddrPrefix;
 
 	*new{
 		arg patternName, pattern;
-
-		// "new bus".postln
 		^super.new.init(patternName, pattern);
 	}
 
@@ -19,14 +17,23 @@ SCMPattern {
 		name = patternName;
 		rawPattern = pattern;
 		bus = Bus.audio(Server.local,2);
+
 	}
 
-
+	setupOscListeners{
+		oscAddrPrefix = "/" ++ parentGroup.name;
+		//add osc listeners
+		// OSCdef(
+		// 	(oscAddrPrefix ++ "/pctrl/play").asSymbol,
+		// 	{
+		//
+		// 	}
+		// )
+	}
 
 	patternOut{
 		^In.ar(this.bus);
 	}
-
 
 	chainProxyFX{
 
