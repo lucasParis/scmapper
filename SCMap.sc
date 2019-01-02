@@ -44,93 +44,14 @@ SCM {
 
 }
 
-SCMGroup {
-	var <name;
-
-	*new{
-		arg groupName;
-		^super.new.init(groupName);
-		// ^this;
-		// ^super.new;
-
-	}
-
-	init{
-		arg groupName;
-		name = groupName;
-
-	}
-
-	newCtrl{
-
-	}
-
-	linkPattern{
-
-	}
-
-	newIDOverlap{
-
-	}
-
-	newID{
-
-	}
-
-	newProxy{
-
-	}
 
 
-}
 
-SCMPattern {
-	var <bus;
-	var <group;
-
-	*new{
-		// "new bus".postln
-		^super.new.init;
-	}
-
-	init{
-		bus = Bus.audio(Server.local,2);
-	}
-
-	patternOut{
-		^In.ar(this.bus);
-	}
-
-
-	chainProxyFX{
-
-	}
-
-	play{
-
-	}
-
-	stop{
-
-	}
-
-}
 
 SCMProxy {
 
 }
 
-SCMCtrl {
 
-	busMap{
-
-	}
-
-	pfunc{
-
-	}
-
-
-}
 
 
