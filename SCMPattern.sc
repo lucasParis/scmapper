@@ -1,12 +1,16 @@
 SCMPattern {
+	var <name;
+	var <>parentGroup;
+
 	var <bus;
 	var busPlayer;
-	var <name;
+	var <group;
+
 	var rawPattern;
 	var patternPlayer;
-	var <group;
-	var <>parentGroup;
+
 	var oscAddrPrefix;
+
 	var isPlaying;
 	var quant;
 	var outputPbind;

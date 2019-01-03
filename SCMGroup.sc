@@ -1,7 +1,10 @@
 SCMGroup {
 	var <name;
 	var <controls;
+
 	var <patterns;
+	var <proxies;
+
 	var oscAddrPrefix;
 	var isPlaying;
 
@@ -24,21 +27,30 @@ SCMGroup {
 	}
 
 	newCtrl{
-		arg name;
+		arg name, defaultValue = 0, postFix = "/x";
 		var ctrl;
-		ctrl = SCMCtrl.new(name);
-		ctrl.parentGroup = this;
+		ctrl = SCMCtrl.new(name, defaultValue, postFix, this);
+		// ctrl.parentGroup = this;
 		controls = controls.add(ctrl);
 		^ctrl;
 	}
 
+	//add a pattern to this group
 	linkPattern{
 		arg patternName, pattern;
 		var pat;
-		pat = SCMPattern.new(patternName, pattern, this);// , groupName)
-		// pat.parentGroup = this;
+		pat = SCMPattern.new(patternName, pattern, this);
 		patterns = patterns.add(pat);
 		^pat;
+	}
+
+	//add a proxy to this group
+	linkProxy{
+		arg proxyName, function;
+		var proxy;
+		proxy = SCMProxy.new(proxyName, function, this);
+		proxies = proxies.add(proxy);
+		^proxy;
 	}
 
 	newIDOverlap{
@@ -49,10 +61,6 @@ SCMGroup {
 
 	}
 
-	newProxy{
-
-	}
-
 	printOn { | stream |
 		stream << "SCMGroup (" << name << ")";
 	}
@@ -60,6 +68,8 @@ SCMGroup {
 	setupOscListeners{
 		var playAddr;
 		oscAddrPrefix = "/" ++ name;
+
+		//PLAY / STOP
 		playAddr = (oscAddrPrefix ++ "/menu/play/x").asSymbol;
 		OSCdef(
 			playAddr,
@@ -84,7 +94,14 @@ SCMGroup {
 			patterns.do{
 				arg pattern;
 				pattern.play;
-			}
+			};
+
+			proxies.do{
+				arg proxy;
+				proxy.play;
+			};
+
+
 		}
 	}
 
@@ -95,7 +112,12 @@ SCMGroup {
 			patterns.do{
 				arg pattern;
 				pattern.stop;
-			}
+			};
+
+			proxies.do{
+				arg proxy;
+				proxy.stop;
+			};
 		}
 	}
 
