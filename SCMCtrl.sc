@@ -3,6 +3,9 @@ SCMCtrl {
 	var <name;
 	var <>parentGroup;
 
+	// var
+	// OSCFunc
+
 	*new{
 		arg ctrlName;
 		^super.new.init(ctrlName);

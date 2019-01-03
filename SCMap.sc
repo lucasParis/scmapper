@@ -9,7 +9,7 @@
 // group
 
 SCM {
-	classvar proxySpace;
+	classvar <proxySpace;
 	classvar tempo_;
 	classvar <groups;
 

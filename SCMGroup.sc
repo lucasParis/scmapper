@@ -2,6 +2,8 @@ SCMGroup {
 	var <name;
 	var <controls;
 	var <patterns;
+	var oscAddrPrefix;
+	var isPlaying;
 
 	*new{
 		arg groupName;
@@ -16,6 +18,8 @@ SCMGroup {
 		name = groupName;
 		controls = [];
 		patterns = [];
+		isPlaying = false;
+		this.setupOscListeners();
 
 	}
 
@@ -31,8 +35,8 @@ SCMGroup {
 	linkPattern{
 		arg patternName, pattern;
 		var pat;
-		pat = SCMPattern.new(patternName, pattern);// , groupName)
-		pat.parentGroup = this;
+		pat = SCMPattern.new(patternName, pattern, this);// , groupName)
+		// pat.parentGroup = this;
 		patterns = patterns.add(pat);
 		^pat;
 	}
@@ -51,7 +55,49 @@ SCMGroup {
 
 	printOn { | stream |
 		stream << "SCMGroup (" << name << ")";
-    }
+	}
+
+	setupOscListeners{
+		var playAddr;
+		oscAddrPrefix = "/" ++ name;
+		playAddr = (oscAddrPrefix ++ "/menu/play/x").asSymbol;
+		OSCdef(
+			playAddr,
+			{
+				arg msg;
+				if(msg[1] >0.5)
+				{
+					this.play();
+				}
+				{
+					this.stop();
+				}
+			},
+			playAddr
+		);
+	}
+
+	play{
+		if(isPlaying.not)
+		{
+			isPlaying = true;
+			patterns.do{
+				arg pattern;
+				pattern.play;
+			}
+		}
+	}
+
+	stop{
+		if(isPlaying)
+		{
+			isPlaying = false;
+			patterns.do{
+				arg pattern;
+				pattern.stop;
+			}
+		}
+	}
 
 
 }
