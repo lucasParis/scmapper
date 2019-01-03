@@ -11,46 +11,54 @@ SCMGroup {
 	*new{
 		arg groupName;
 		^super.new.init(groupName);
-		// ^this;
-		// ^super.new;
-
 	}
 
 	init{
 		arg groupName;
 		name = groupName;
+
+		//setup array to hold controls, arrays and proxies
 		controls = [];
 		patterns = [];
-		isPlaying = false;
-		this.setupOscListeners();
+		proxies = [];
 
+		isPlaying = false;
+
+		//setup OSC mappings
+		this.setupOscListeners();
 	}
 
 	newCtrl{
 		arg name, defaultValue = 0, postFix = "/x";
 		var ctrl;
+
+		//new ctrl
 		ctrl = SCMCtrl.new(name, defaultValue, postFix, this);
-		// ctrl.parentGroup = this;
+		// add control to this group
 		controls = controls.add(ctrl);
-		^ctrl;
+		^ctrl;//return
 	}
 
 	//add a pattern to this group
 	linkPattern{
 		arg patternName, pattern;
 		var pat;
+		//new pattern
 		pat = SCMPattern.new(patternName, pattern, this);
+		// add pattern to this group
 		patterns = patterns.add(pat);
-		^pat;
+		^pat;//return
 	}
 
 	//add a proxy to this group
 	linkProxy{
 		arg proxyName, function;
 		var proxy;
+		//new proxy
 		proxy = SCMProxy.new(proxyName, function, this);
+		//add proxy to this group
 		proxies = proxies.add(proxy);
-		^proxy;
+		^proxy;//return
 	}
 
 	newIDOverlap{

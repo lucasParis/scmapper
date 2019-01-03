@@ -1,13 +1,3 @@
-
-//sketching out
-
-
-//ctrl
-
-//type 1 2 3, polymorphic?
-
-// group
-
 SCM {
 	classvar <proxySpace;
 	classvar tempo_;
@@ -40,8 +30,6 @@ SCM {
 		proxySpace.clock.tempo = tempo_/60;
 
 	}
-
-
 }
 
 
