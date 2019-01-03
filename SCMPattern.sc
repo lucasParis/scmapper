@@ -37,22 +37,7 @@ SCMPattern {
 		isPlaying = false;
 		quant = 4;
 		outputPbind = true;
-		// this.setupOscListeners();
-
 	}
-
-	/*setupOscListeners{
-	oscAddrPrefix = "/" ++ parentGroup.name ++ "/" ++ name;
-	oscAddrPrefix.postln;
-	//add osc listeners
-	OSCdef(
-	(oscAddrPrefix ++ "/menu/play").asSymbol,
-	{
-
-	},
-
-	);
-	}*/
 
 	patternOut{
 		^In.ar(this.bus);

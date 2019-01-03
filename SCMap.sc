@@ -30,9 +30,39 @@ SCM {
 		proxySpace.clock.tempo = tempo_/60;
 
 	}
+
+	newOSCCtrlr{
+		arg name, ip, port;
+
+	}
 }
 
 
+SCMCtrlr{
+	var type;
+
+	*new{
+		^super.new.init();
+	}
+
+	init{
+		type = \osc; //or midi
+	}
+
+
+}
+
+
+SCMOscCtrlr{
+	setValue{
+		arg path, value;
+
+	}
+}
+
+SCMMidiCtrlr{
+
+}
 
 
 

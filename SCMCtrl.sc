@@ -3,18 +3,14 @@ SCMCtrl {
 	var <name;
 	var <>parentGroup;
 	var postFix;
+
+	//for proxy
 	var <>proxyNodeName;
 	var <>proxyCtrlName;
-
-	// var
-	// OSCFunc
 
 	*new{
 		arg ctrlName, defaultValue, postFix, parent;
 		^super.new.init(ctrlName, defaultValue, postFix, parent);
-		// ^this;
-		// ^super.new;
-
 	}
 
 	init{
@@ -32,6 +28,8 @@ SCMCtrl {
 
 		//add osc listerners
 		this.setupOscListeners();
+
+		updateFeedback();
 	}
 
 	busMap{
@@ -56,6 +54,12 @@ SCMCtrl {
 			SCM.proxySpace[proxyNodeName].set(proxyCtrlName, value);
 		}
 
+		//update osc outputs
+		this.updateFeedback();
+
+	}
+
+	updateFeedback{
 		//update osc outputs
 
 	}
