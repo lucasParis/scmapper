@@ -30,10 +30,8 @@ SCMCtrl {
 		proxyCtrlName = ctrlName ++ postFix.asString.replace("/", "_");
 		proxyCtrlName = proxyCtrlName.asSymbol;
 
-		this.setupOscListeners();
-
 		//add osc listerners
-
+		this.setupOscListeners();
 	}
 
 	busMap{
@@ -58,6 +56,8 @@ SCMCtrl {
 			SCM.proxySpace[proxyNodeName].set(proxyCtrlName, value);
 		}
 
+		//update osc outputs
+
 	}
 
 	printOn { | stream |
@@ -74,10 +74,12 @@ SCMCtrl {
 				var value;
 
 				value = msg[1..];
-				(value.size == 1).if{value = value[0]};//if it's an array of 1 element convert from array to single value
-				value.postln;
+				//if it's an array of 1 element convert from array to single value
+				(value.size == 1).if{value = value[0]};
 
+				//set (when not in metactrl mode)
 				this.set(value);
+
 		}, oscAddr);
 	}
 

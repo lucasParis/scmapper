@@ -21,15 +21,11 @@ SCMProxy {
 		SCM.proxySpace[proxySpaceName].pause;
 		SCM.proxySpace[proxySpaceName].stop;
 
-		this.mapCtrlPairs();
-
-
-		//loop through argument names and add to parent ctrls
-		//if is a nodeproxy, gather key values to map
+		this.mapNodeProxyControls();
 	}
 
 
-	mapCtrlPairs{
+	mapNodeProxyControls{
 		(SCM.proxySpace[proxySpaceName].isKindOf(NodeProxy)).if{
 			var pairs;
 
@@ -58,7 +54,7 @@ SCMProxy {
 						postFix = "/" ++ name[1];
 					};
 
-					//create a control and store reference to nodeproxy and proxt control
+					//create a control and store reference to nodeproxy and proxy control
 					ctrl = parentGroup.newCtrl(name[0].asSymbol, value, postFix.asSymbol);
 					ctrl.proxyNodeName = proxySpaceName;
 					ctrl.proxyCtrlName = proxyCtrlName;
