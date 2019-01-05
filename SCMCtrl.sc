@@ -1,9 +1,9 @@
 
 BusMapper {
-    *kr {
+	*kr {
 		arg busIn, busOut, channels, min, max, curve;
-        ^Out.kr(busOut, In.kr(busIn, channels).lincurve(0,1,min,max,curve));
-    }
+		^Out.kr(busOut, In.kr(busIn, channels).lincurve(0,1,min,max,curve));
+	}
 }
 
 SCMCtrl {
@@ -44,7 +44,7 @@ SCMCtrl {
 		//add osc listerners
 		this.setupOscListeners();
 
-		this.updateFeedback();
+		this.updateFeedback(value);
 	}
 
 	busMap{
@@ -58,12 +58,12 @@ SCMCtrl {
 
 		//calculate busmap array if needed
 		(outBus.numChannels == 1).if{
-					return = outBus.asMap; //return bus map
-				}
-				{
-					//if multichannel bus mapping, return an array of sc bus map strings ["c1", "c2", ...]
-					return = outBus.numChannels.collect{arg i; ("c" ++ (outBus.index + i).asString).asSymbol};
-				};
+			return = outBus.asMap; //return bus map
+		}
+		{
+			//if multichannel bus mapping, return an array of sc bus map strings ["c1", "c2", ...]
+			return = outBus.numChannels.collect{arg i; ("c" ++ (outBus.index + i).asString).asSymbol};
+		};
 		//return
 		^return;
 	}
@@ -95,16 +95,17 @@ SCMCtrl {
 		};
 
 		//update osc outputs
-		this.updateFeedback();
+		this.updateFeedback(val);
 
 	}
 
 	updateFeedback{
+		arg value;
 		//update osc outputs
-		// SCM.controllers.do{
-		// 	arg ctrlr;
-		// 	ctrlr.set(path, value)//for midi if a param is mapped, store relation path->encoder/button
-		// }
+		SCM.ctrlrs.do{
+			arg ctrlr;
+			ctrlr.set(oscAddr, value)//for midi if a param is mapped, store relation path->encoder/button
+		};
 
 	}
 

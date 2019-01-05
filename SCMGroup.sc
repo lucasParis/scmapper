@@ -6,6 +6,7 @@ SCMGroup {
 	var <proxies;
 
 	var oscAddrPrefix;
+	var oscAddrMenu;
 	var isPlaying;
 
 	*new{
@@ -24,8 +25,15 @@ SCMGroup {
 
 		isPlaying = false;
 
+		//setupOscAddresses
+		oscAddrPrefix = ("/" ++ name).asSymbol;
+		oscAddrMenu = (oscAddrPrefix ++ "/menu").asSymbol;
+
 		//setup OSC mappings
 		this.setupOscListeners();
+
+		//send default values
+		this.updateMenuFeedback('/play/x', 0);
 	}
 
 	newCtrl{
@@ -84,10 +92,8 @@ SCMGroup {
 
 	setupOscListeners{
 		var playAddr;
-		oscAddrPrefix = "/" ++ name;
-
 		//PLAY / STOP
-		playAddr = (oscAddrPrefix ++ "/menu/play/x").asSymbol;
+		playAddr = (oscAddrMenu ++ "/play/x").asSymbol;
 		OSCdef(
 			playAddr,
 			{
@@ -128,6 +134,17 @@ SCMGroup {
 			//stop controls (busMappers)
 			controls.do{arg control; control.stop; };
 		}
+	}
+
+	updateMenuFeedback{
+		arg menuPath, value;
+		var path;
+		path = (oscAddrMenu ++ menuPath).asSymbol;
+		//update osc outputs
+		SCM.ctrlrs.do{
+			arg ctrlr;
+			ctrlr.set(path, value);//for midi if a param is mapped, store relation path->encoder/button
+		};
 	}
 
 

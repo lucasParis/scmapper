@@ -3,6 +3,7 @@ SCM {
 	classvar <proxySpace;
 	classvar tempo_;
 	classvar <groups;
+	classvar <ctrlrs;
 
 	*init{
 		//initialise proxy space
@@ -34,32 +35,34 @@ SCM {
 
 	}
 
-	newOSCCtrlr{
-		arg name, ip, port;
-
+	*newLemurCtrlr{
+		arg ip, port, name = \notNamed;
+		var return;
+		return = SCMLemurCtrlr.new(ip, port, name);
+		ctrlrs = ctrlrs.add(return);
+		^return;
 	}
 }
 
 
-SCMCtrlr{
-	var type;
+
+SCMLemurCtrlr{
+	var < netAddr;
+	var name;
 
 	*new{
-		^super.new.init();
+		arg ip, port, name;
+		^super.new.init(ip, port, name);
 	}
 
 	init{
-		type = \osc; //or midi
+		arg ip, port, name_;
+		name = name_;
+		netAddr = NetAddr(ip, port);
 	}
-
-
-}
-
-
-SCMOscCtrlr{
-	setValue{
+	set{
 		arg path, value;
-
+		netAddr.sendMsg(path, *value);
 	}
 }
 
