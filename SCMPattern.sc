@@ -1,4 +1,8 @@
 SCMPattern {
+	//different playoptions for bus player:
+	// - quantize play, quantize stop
+	// - fadein, fadeout
+
 	var <name;
 	var <>parentGroup;
 
@@ -52,7 +56,8 @@ SCMPattern {
 		patternPlayer = rawPattern.play(clock: SCM.proxySpace.clock, quant:quant, doReset:true);
 		if(outputPbind)
 		{
-			busPlayer = bus.play;
+			SCM.proxySpace.clock.play({busPlayer = bus.play; nil; },4);
+			// SCM.proxySpace.clock.playNextBar({{ busPlayer = bus.play;}.defer(Server.local.latency); nil; });
 		}
 
 	}
@@ -63,6 +68,7 @@ SCMPattern {
 		{
 			// busPlayer.set(\gate, 0)
 			busPlayer.free;
+
 			// bus.play;
 		}
 	}

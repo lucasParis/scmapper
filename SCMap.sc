@@ -6,15 +6,20 @@ SCM {
 	classvar <ctrlrs;
 
 	*init{
+		if(NetAddr.langPort != 57120)
+		{
+			var errorMessage = "_____ WARNING _____ langPort not 57120, reboot interpreter please ________";
+			20.do{errorMessage.postln};
+		};
+
 		//initialise proxy space
 		proxySpace.clear;//clear if allready exists
 		proxySpace = ProxySpace.new(Server.local);//make new proxy
 		proxySpace.makeTempoClock(2);//setup tempoclock
+		proxySpace.quant = 4;//setup tempoclock
 
 		//reset database
 		groups = [];
-		// "resourcesSC/synthlib.scd".loadRelative; // load synth library
-		// "resourcesSC/noteFX.scd".loadRelative;  // load custom fx events
 
 	}
 
@@ -22,7 +27,6 @@ SCM {
 		arg name;
 		var group;
 		group = SCMGroup.new(name);
-		groups.postln;
 		groups = groups.add(group);
 		^group;
 	}
@@ -30,7 +34,6 @@ SCM {
 	*setTempo{
 		arg tempo;
 		tempo_ = tempo;
-		tempo_.postln;
 		proxySpace.clock.tempo = tempo_/60;
 
 	}
