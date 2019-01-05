@@ -26,14 +26,27 @@ SCMCtrl {
 		proxyCtrlName = ctrlName ++ postFix.asString.replace("/", "_");
 		proxyCtrlName = proxyCtrlName.asSymbol;
 
+		//setup control bus
+		bus = Bus.control(Server.local, defaultValue.size.max(1));
+		min = 0;
+		max = 1;
+
 		//add osc listerners
 		this.setupOscListeners();
 
-		updateFeedback();
+		this.updateFeedback();
 	}
 
 	busMap{
-
+		var return;
+		(bus.numChannels == 1).if{
+					return = bus.asMap; //return bus map
+				}
+				{
+					//if multichannel bus mapping, return an array of sc bus map strings ["c1", "c2", ...]
+					return = bus.numChannels.collect{arg i; ("c" ++ (bus.index + i).asString).asSymbol};
+				};
+		^return;
 	}
 
 	pfunc{
@@ -46,13 +59,13 @@ SCMCtrl {
 		value = val;
 
 		//set bus value
-
+		bus.set(*(value.linlin(0,1,min,max)));
 
 		//set proxy value
 		if(proxyNodeName != nil)
 		{
 			SCM.proxySpace[proxyNodeName].set(proxyCtrlName, value);
-		}
+		};
 
 		//update osc outputs
 		this.updateFeedback();
@@ -61,6 +74,10 @@ SCMCtrl {
 
 	updateFeedback{
 		//update osc outputs
+		// SCM.controllers.do{
+		// 	arg ctrlr;
+		// 	ctrlr.set(path, value)//for midi if a param is mapped, store relation path->encoder/button
+		// }
 
 	}
 

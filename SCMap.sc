@@ -1,3 +1,4 @@
+
 SCM {
 	classvar <proxySpace;
 	classvar tempo_;
@@ -11,6 +12,8 @@ SCM {
 
 		//reset database
 		groups = [];
+		// "resourcesSC/synthlib.scd".loadRelative; // load synth library
+		// "resourcesSC/noteFX.scd".loadRelative;  // load custom fx events
 
 	}
 
