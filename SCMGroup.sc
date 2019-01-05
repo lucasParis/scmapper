@@ -39,6 +39,15 @@ SCMGroup {
 		^ctrl;//return
 	}
 
+	getCtrl{
+		arg name;
+		var result;
+		//loop through controls and find the one with this name
+		result = controls.select{ arg control; control.name == name; };
+		if(result.size > 0){result = result[0]} {result = nil};
+		^result;
+	}
+
 	//add a pattern to this group
 	linkPattern{
 		arg patternName, pattern;
@@ -99,17 +108,12 @@ SCMGroup {
 		if(isPlaying.not)
 		{
 			isPlaying = true;
-			patterns.do{
-				arg pattern;
-				pattern.play;
-			};
-
-			proxies.do{
-				arg proxy;
-				proxy.play;
-			};
-
-
+			//play patterns
+			patterns.do{arg pattern; pattern.play; };
+			//play proxies
+			proxies.do{arg proxy; proxy.play; };
+			//play controls (busMappers)
+			controls.do{arg control; control.play; };
 		}
 	}
 
@@ -117,15 +121,12 @@ SCMGroup {
 		if(isPlaying)
 		{
 			isPlaying = false;
-			patterns.do{
-				arg pattern;
-				pattern.stop;
-			};
-
-			proxies.do{
-				arg proxy;
-				proxy.stop;
-			};
+			//stop patterns
+			patterns.do{arg pattern; pattern.stop; };
+			//stop proxies
+			proxies.do{arg proxy; proxy.stop; };
+			//stop controls (busMappers)
+			controls.do{arg control; control.stop; };
 		}
 	}
 

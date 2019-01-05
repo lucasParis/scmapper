@@ -1,8 +1,20 @@
+
+BusMapper {
+    *kr {
+		arg busIn, busOut, channels, min, max, curve;
+        ^Out.kr(busOut, In.kr(busIn, channels).lincurve(0,1,min,max,curve));
+    }
+}
+
 SCMCtrl {
-	var type, value, oscAddr, min, max, curve, bus;
+	var type, value, oscAddr;
 	var <name;
 	var <>parentGroup;
 	var postFix;
+
+	//bus and bus mapper players
+	var bus;
+	var busMapSynths;
 
 	//for proxy
 	var <>proxyNodeName;
@@ -28,8 +40,6 @@ SCMCtrl {
 
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue.size.max(1));
-		min = 0;
-		max = 1;
 
 		//add osc listerners
 		this.setupOscListeners();
@@ -38,15 +48,32 @@ SCMCtrl {
 	}
 
 	busMap{
-		var return;
-		(bus.numChannels == 1).if{
-					return = bus.asMap; //return bus map
+		arg min = 0, max = 1, curve = 0, lagUp = 0, lagDown = 0;
+		var return, outBus, busMap;
+
+		//create a control mapper synth
+		outBus = Bus.control(Server.local, bus.numChannels);
+		busMap = {Out.kr(outBus, In.kr(bus, bus.numChannels).lincurve(0,1,min,max,curve).lag(lagUp, lagDown) ); }.play;//bus mapper synthdef
+		busMapSynths = busMapSynths.add(busMap);
+
+		//calculate busmap array if needed
+		(outBus.numChannels == 1).if{
+					return = outBus.asMap; //return bus map
 				}
 				{
 					//if multichannel bus mapping, return an array of sc bus map strings ["c1", "c2", ...]
-					return = bus.numChannels.collect{arg i; ("c" ++ (bus.index + i).asString).asSymbol};
+					return = outBus.numChannels.collect{arg i; ("c" ++ (outBus.index + i).asString).asSymbol};
 				};
+		//return
 		^return;
+	}
+
+	play{
+		busMapSynths.do{ arg synth; synth.run(true);};
+	}
+
+	stop{
+		busMapSynths.do{ arg synth; synth.run(false);};
 	}
 
 	pfunc{
@@ -59,7 +86,7 @@ SCMCtrl {
 		value = val;
 
 		//set bus value
-		bus.set(*(value.linlin(0,1,min,max)));
+		bus.set(*value);
 
 		//set proxy value
 		if(proxyNodeName != nil)
