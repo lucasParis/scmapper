@@ -3,7 +3,7 @@ SCMGroup {
 	var <controls;
 
 	var <patterns;
-	var <proxies;
+	var <>proxies;
 
 	var oscAddrPrefix;
 	var oscAddrMenu;

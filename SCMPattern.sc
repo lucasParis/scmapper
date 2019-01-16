@@ -8,7 +8,7 @@ SCMPattern {
 
 	var <bus;
 	var busPlayer;
-	var <group;
+	var <serverGroup;
 
 	var rawPattern;
 	var patternPlayer;
@@ -27,14 +27,13 @@ SCMPattern {
 	init{
 		arg patternName, pattern, parent;
 		name = patternName;
-		// rawPattern = pattern;
 
 		bus = Bus.audio(Server.local,2);
-		group = Group(Server.local);
+		serverGroup = Group(Server.local);
 		rawPattern = Pbindf(pattern,
 			\out, bus,//the bus for all pbind stuff
-			\group, group,//group for pbinds
-			\fx_group, group
+			\group, serverGroup,//group for pbinds
+			\fx_group, serverGroup
 		);
 
 		parentGroup = parent;
@@ -44,11 +43,26 @@ SCMPattern {
 	}
 
 	patternOut{
-		^In.ar(this.bus);
+		^In.ar(this.bus,2);
 	}
 
-	chainProxyFX{
+	chainProxy{
+		arg function;
+		var proxy, proxyName;
+		proxyName = (name ++ "FX").asSymbol;
 
+		//new proxy with audio input
+		proxy = SCMProxy.new(proxyName, function, parentGroup, {this.patternOut()});
+
+		//add SCMProxy after this pattern in server hierachy
+		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
+
+		//disable output for this SCMpattern
+		outputPbind = false;
+
+		//add proxy to parent group
+		parentGroup.proxies = parentGroup.proxies.add(proxy);
+		^proxy;//return
 	}
 
 	play{

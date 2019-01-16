@@ -1,0 +1,188 @@
+<JZML>
+<WINDOW class="Container" text="menu" x="0" y="0" width="512" height="418" id="33" state="0" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" label="1" tabbar="1" meta="0">
+<WINDOW class="CustomButton" text="play" x="0" y="0" width="150" height="100" id="1" state="241" group="0" font="tahoma,20,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="6,1" capture="1" color="3552822,8158332" label_off="" label_on="" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/play/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/play/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="mute" x="0" y="302" width="150" height="100" id="2" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="3552822,8158332" label_off="MUTE" label_on="MUTE" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/mute/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/mute/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="pause" x="0" y="202" width="150" height="100" id="3" state="241" group="0" font="tahoma,12,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="4,4" capture="1" color="3552822,8158332" label_off="pause" label_on="pause" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/pause/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/pause/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="reset" x="0" y="100" width="150" height="100" id="4" state="241" group="0" font="tahoma,12,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="12,12" capture="1" color="3552822,8158332" label_off="pause" label_on="pause" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/reset/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/reset/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="map1" x="162" y="0" width="150" height="80" id="5" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="3552822,8158332" label_off="LINK 1" label_on="LINK 1" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/map1/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/map1/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/map1/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="map2" x="162" y="80" width="150" height="80" id="6" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="3552822,8158332" label_off="LINK 2" label_on="LINK 2" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/map2/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/map2/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/map2/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="map3" x="162" y="160" width="150" height="80" id="7" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="3552822,8158332" label_off="LINK 3" label_on="LINK 3" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/map3/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/map3/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/map3/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="map4" x="162" y="240" width="150" height="80" id="8" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="3552822,8158332" label_off="LINK 4" label_on="LINK 4" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/map4/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/map4/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/map4/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="focus" x="162" y="320" width="150" height="80" id="9" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="3552822,8158332" label_off="FOCUS" label_on="FOCUS" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/focus/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/focus/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="preset1" x="312" y="0" width="134" height="80" id="10" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="0,0" capture="1" color="3552822,8158332" label_off="PRESET 1" label_on="PRESET 1" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/preset1/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/preset1/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/preset1/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="preset2" x="312" y="80" width="134" height="80" id="11" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="0,0" capture="1" color="3552822,8158332" label_off="PRESET 2" label_on="PRESET 2" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/preset2/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/preset2/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/preset2/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="preset3" x="312" y="160" width="134" height="80" id="12" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="0,0" capture="1" color="3552822,8158332" label_off="PRESET 3" label_on="PRESET 3" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/preset3/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/preset3/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/preset3/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="preset4" x="312" y="240" width="134" height="80" id="13" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="0,0" capture="1" color="3552822,8158332" label_off="PRESET 4" label_on="PRESET 4" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/preset4/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/preset4/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/preset4/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="save" x="347" y="320" width="86" height="80" id="14" state="241" group="0" font="tahoma,21,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="0,0" capture="1" color="3552822,8158332" label_off="SAVE" label_on="SAVE" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/save/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/save/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="radioMode()" script="decl i, name;
+decl parent = getparent(getobject());
+
+for(i=1; i < 5; i++)
+{
+	name = 'map'+i;
+	if(name != getattribute(getobject(),'name'))
+	{
+		decl child = findchild(parent, name);
+		//child.x = 0;
+		setexpression(child, 'x', 0);
+	}
+}" trigger_script="x" trigger_type="0" trigger="2" clock="0" clock_div="4" osc_message="/test/menu/save/radioMode" midi_message="0x90,0x90,0,0" midi_target="-1" flag="0"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="CustomButton" x="282" y="320" width="65" height="82" id="16" state="241" group="0" font="tahoma,20,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="5,5" capture="1" color="4934475,8355711" label_off="" label_on="" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/CustomButton/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/CustomButton/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="CustomButton2" x="431" y="318" width="65" height="82" id="17" state="241" group="0" font="tahoma,20,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="6,6" capture="1" color="4934475,8355711" label_off="" label_on="" outline="0">
+<PARAM name="x=" value="0.000000" send="17" osc_target="0" osc_trigger="1" osc_message="/test/menu/CustomButton2/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/test/menu/CustomButton2/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+</WINDOW>
+<SCRIPT name="onloadshow()" script="show(getobject(), 0);" trigger_script="" trigger_type="5" trigger="1" clock="0" clock_div="4" osc_message="/test/menu/onloadshow" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<SCRIPT name="globalShow()" script="show(menu, showhide);
+" trigger_script="showhide" trigger_type="0" trigger="1" clock="0" clock_div="4" osc_message="/test/menu/globalShow" midi_message="0x90,0x90,0,0" midi_target="-2" flag="1"/>
+</WINDOW>
+</JZML>
