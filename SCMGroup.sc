@@ -147,5 +147,8 @@ SCMGroup {
 		};
 	}
 
+	sendSignal{
+		arg name, signal;
 
+	}
 }

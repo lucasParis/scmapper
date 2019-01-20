@@ -4,6 +4,7 @@ SCM {
 	classvar tempo_;
 	classvar <groups;
 	classvar <ctrlrs;
+	classvar <dataOutputs;// to touchdesigner, but could be other?
 
 	*init{
 		if(NetAddr.langPort != 57120)
@@ -36,6 +37,13 @@ SCM {
 		tempo_ = tempo;
 		proxySpace.clock.tempo = tempo_/60;
 
+	}
+
+	*newTDDataOut{
+		var dataOut;
+		// dataOutputs.send
+		// dataOut = SCMTDDataOut.new();
+		// dataOutputs = dataOutputs.add(dataOut);
 	}
 
 	*newLemurCtrlr{
@@ -79,3 +87,6 @@ SCMMidiCtrlr{
 
 
 
+SCMTDDataOut{
+
+}
