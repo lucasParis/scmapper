@@ -53,6 +53,13 @@ SCM {
 		ctrlrs = ctrlrs.add(return);
 		^return;
 	}
+
+	*setupServer{
+		Server.local.options.memSize_(2.pow(20));
+		Server.local.options.numWireBufs = 512;
+		Server.local.options.maxSynthDefs  =2048;
+
+	}
 }
 
 
