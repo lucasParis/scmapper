@@ -40,6 +40,10 @@ SCMProxy {
 		this.mapNodeProxyControls();
 	}
 
+	setInput{
+
+	}
+
 
 	mapNodeProxyControls{
 		(SCM.proxySpace[proxySpaceName].isKindOf(NodeProxy)).if{

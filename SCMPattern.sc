@@ -18,14 +18,18 @@ SCMPattern {
 	var isPlaying;
 	var quant;
 	var outputPbind;
+	var channels;
 
 	*new{
-		arg patternName, pattern, parent;
-		^super.new.init(patternName, pattern, parent);
+		arg patternName, pattern, parent, channels = 2;
+		^super.new.init(patternName, pattern, parent, channels);
 	}
 
 	init{
-		arg patternName, pattern, parent;
+		arg patternName, pattern, parent, channels;
+		channels = channels;
+
+		channels.postln;
 		name = patternName;
 
 		bus = Bus.audio(Server.local,2);
@@ -46,7 +50,7 @@ SCMPattern {
 		^In.ar(this.bus,2);
 	}
 
-	chainProxy{
+	patternFX{
 		arg function;
 		var proxy, proxyName;
 		proxyName = (name ++ "FX").asSymbol;
