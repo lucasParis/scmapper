@@ -5,6 +5,8 @@ SCMProxy {
 	var <> serverGroup;
 	var fadeIn;
 
+	var <> sendToOutput;
+
 	*new{
 		arg proxyName, function, parent, audioIn;
 		^super.new.init(proxyName, function, parent, audioIn);
@@ -15,6 +17,9 @@ SCMProxy {
 
 		name = proxyName;
 		parentGroup = parent;
+
+		//initialise output
+		sendToOutput = true;
 
 		proxySpaceName = parentGroup.name ++ "_" ++ name;
 		proxySpaceName = proxySpaceName.asSymbol;
@@ -86,11 +91,18 @@ SCMProxy {
 
 	play{
 		SCM.proxySpace[proxySpaceName].resume;
-		SCM.proxySpace[proxySpaceName].play(group:serverGroup, addAction: 'addToTail', fadeTime: fadeIn);//if output//NodeProxy;
+		if(sendToOutput)
+		{
+			SCM.proxySpace[proxySpaceName].play(group:serverGroup, addAction: 'addToTail', fadeTime: fadeIn);//if output//NodeProxy;
+		}
 	}
 
 	stop{
 		SCM.proxySpace[proxySpaceName].stop;
 		SCM.proxySpace[proxySpaceName].pause;
+	}
+
+	getNodeProxy{
+		^SCM.proxySpace[proxySpaceName];
 	}
 }

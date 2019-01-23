@@ -5,6 +5,8 @@ SCMGroup {
 	var <patterns;
 	var <>proxies;
 
+	var <> serverGroup;
+
 	var oscAddrPrefix;
 	var oscAddrMenu;
 	var isPlaying;
@@ -34,6 +36,9 @@ SCMGroup {
 
 		//send default values
 		this.updateMenuFeedback('/play/x', 0);
+
+		//setup group
+		serverGroup = Group.new(Server.local);
 	}
 
 	newCtrl{
@@ -46,6 +51,8 @@ SCMGroup {
 		controls = controls.add(ctrl);
 		^ctrl;//return
 	}
+
+
 
 	getCtrl{
 		arg name;
@@ -76,6 +83,33 @@ SCMGroup {
 		//add proxy to this group
 		proxies = proxies.add(proxy);
 		^proxy;//return
+	}
+
+	groupFX{
+		arg function;
+		var proxy, proxyName, input;
+		proxyName = (name ++ "groupFX").asSymbol;
+
+		//new proxy with audio input
+
+		input = {
+			patterns.reject(_.hasFX).collect(_.patternOut()).sum + proxies.collect(_.getNodeProxy()).sum
+
+		};
+		proxy = SCMProxy.new(proxyName, function, this, input);
+
+
+		//add SCMProxy after exvery generator of this group in server hierachy
+		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
+
+		//disable output for all generators
+		patterns.do(_.sendToOutput = false);
+		proxies.do(_.sendToOutput = false);
+
+		//add proxy to parent group
+		proxies = proxies.add(proxy);
+		^proxy;//return
+
 	}
 
 	newIDOverlap{

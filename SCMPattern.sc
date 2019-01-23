@@ -17,8 +17,10 @@ SCMPattern {
 
 	var isPlaying;
 	var quant;
-	var outputPbind;
+	var <> sendToOutput;
 	var channels;
+
+	var <> hasFX;
 
 	*new{
 		arg patternName, pattern, parent, channels = 2;
@@ -33,7 +35,7 @@ SCMPattern {
 		name = patternName;
 
 		bus = Bus.audio(Server.local,2);
-		serverGroup = Group(Server.local);
+		serverGroup = Group(parent.serverGroup, 'addToHead');//add to head in group, so it comes before groupFX
 		rawPattern = Pbindf(pattern,
 			\out, bus,//the bus for all pbind stuff
 			\group, serverGroup,//group for pbinds
@@ -43,7 +45,8 @@ SCMPattern {
 		parentGroup = parent;
 		isPlaying = false;
 		quant = 4;
-		outputPbind = true;
+		sendToOutput = true;
+		hasFX = false;
 	}
 
 	patternOut{
@@ -62,17 +65,21 @@ SCMPattern {
 		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
 
 		//disable output for this SCMpattern
-		outputPbind = false;
+		sendToOutput = false;
 
 		//add proxy to parent group
 		parentGroup.proxies = parentGroup.proxies.add(proxy);
+
+		//confirm this has fx, to return correct output
+		hasFX = true;
+
 		^proxy;//return
 	}
 
 	play{
 		// patternPlayer = rawPattern.collect({arg evt; collectToOsc.value(evt, pGroupName )}).play(clock: proxySpace.clock, quant:quant, doReset:true);
 		patternPlayer = rawPattern.play(clock: SCM.proxySpace.clock, quant:quant, doReset:true);
-		if(outputPbind)
+		if(sendToOutput)
 		{
 			SCM.proxySpace.clock.play({busPlayer = bus.play; nil; },4);
 			// SCM.proxySpace.clock.playNextBar({{ busPlayer = bus.play;}.defer(Server.local.latency); nil; });
@@ -82,7 +89,7 @@ SCMPattern {
 
 	stop{
 		patternPlayer.stop;
-		if(outputPbind)
+		if(sendToOutput)
 		{
 			// busPlayer.set(\gate, 0)
 			busPlayer.free;
