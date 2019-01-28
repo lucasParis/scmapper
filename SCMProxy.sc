@@ -7,6 +7,8 @@ SCMProxy {
 
 	var <> sendToOutput;
 
+	var < outputBus;
+
 	*new{
 		arg proxyName, function, parent, audioIn;
 		^super.new.init(proxyName, function, parent, audioIn);

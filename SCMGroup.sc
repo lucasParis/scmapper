@@ -16,6 +16,8 @@ SCMGroup {
 
 	var bus;
 
+	var < outputBus;
+
 	*new{
 		arg groupName;
 		^super.new.init(groupName);
@@ -110,8 +112,8 @@ SCMGroup {
 		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
 
 		//disable output for all generators
-		patterns.do(_.sendToOutput = false);
-		proxies.do(_.sendToOutput = false);
+		// patterns.do(_.sendToOutput = false);
+		// proxies.do(_.sendToOutput = false);
 
 		hasFX = true;
 

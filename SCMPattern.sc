@@ -17,10 +17,15 @@ SCMPattern {
 
 	var isPlaying;
 	var quant;
-	var <> sendToOutput;
+	// var <> sendToOutput;
 	var channels;
 
 	var <> hasFX;
+
+	var busPlayer;
+	var busPlayerGroup;
+
+	var < outputBus;
 
 	*new{
 		arg patternName, pattern, parent, channels = 2;
@@ -29,24 +34,41 @@ SCMPattern {
 
 	init{
 		arg patternName, pattern, parent, channels;
+
+		//set variables
+		parentGroup = parent;
+		name = patternName;
 		channels = channels;
 
-		channels.postln;
-		name = patternName;
+		//create busses
+		bus = Bus.audio(Server.local, channels);
+		outputBus = Bus.audio(Server.local, channels);
 
-		bus = Bus.audio(Server.local,2);
+		//create groups
 		serverGroup = Group(parent.serverGroup, 'addToHead');//add to head in group, so it comes before groupFX
+		busPlayerGroup = Group(serverGroup, 'addAfter');//add busPlayer after all
+
 		rawPattern = Pbindf(pattern,
 			\out, bus,//the bus for all pbind stuff
 			\group, serverGroup,//group for pbinds
 			\fx_group, serverGroup
 		);
 
-		parentGroup = parent;
+		busPlayer = Pmono(\SCMbusPlayer_stereo,
+			\in, bus,
+			\out, outputBus,
+			\addAction, 3 ,
+			\group, busPlayerGroup,
+			\dur, 1
+		);
+
+		//set default values
 		isPlaying = false;
 		quant = 4;
-		sendToOutput = true;
+		// sendToOutput = true;
 		hasFX = false;
+
+
 	}
 
 	patternOut{
@@ -65,7 +87,7 @@ SCMPattern {
 		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
 
 		//disable output for this SCMpattern
-		sendToOutput = false;
+		// sendToOutput = false;
 
 		//add proxy to parent group
 		parentGroup.proxies = parentGroup.proxies.add(proxy);
@@ -79,23 +101,28 @@ SCMPattern {
 	play{
 		// patternPlayer = rawPattern.collect({arg evt; collectToOsc.value(evt, pGroupName )}).play(clock: proxySpace.clock, quant:quant, doReset:true);
 		patternPlayer = rawPattern.play(clock: SCM.proxySpace.clock, quant:quant, doReset:true);
-		if(sendToOutput)
-		{
-			SCM.proxySpace.clock.play({busPlayer = bus.play; nil; },4);
+
+		//removed send to output, delete these lignes
+
+		// if(sendToOutput)
+		// {
+		// SCM.proxySpace.clock.play({busPlayer = bus.play; nil; },4);
 			// SCM.proxySpace.clock.playNextBar({{ busPlayer = bus.play;}.defer(Server.local.latency); nil; });
-		}
+		// }
 
 	}
 
 	stop{
 		patternPlayer.stop;
-		if(sendToOutput)
-		{
-			// busPlayer.set(\gate, 0)
-			busPlayer.free;
 
-			// bus.play;
-		}
+		//removed send to output, delete these lignes
+
+		// if(sendToOutput)
+		// {
+		// busPlayer.set(\gate, 0)
+		// busPlayer.free;
+		// bus.play;
+		// }
 	}
 
 	printOn { | stream |
