@@ -6,6 +6,12 @@ SCM {
 	classvar <ctrlrs;
 	classvar <dataOutputs;// to touchdesigner, but could be other?
 
+	classvar masterBus;
+	classvar masterServerGroup;
+
+	classvar <> groups;
+
+
 	*init{
 		if(NetAddr.langPort != 57120)
 		{
@@ -22,6 +28,32 @@ SCM {
 		//reset database
 		groups = [];
 
+	}
+
+	masterFX{
+		arg function;
+		var proxy, proxyName, input;
+		proxyName = \masterFX;
+
+		//new proxy with audio input
+		// groups.do
+		// input = {
+		// patterns.reject(_.hasFX).collect(_.patternOut()).sum + proxies.collect(_.getNodeProxy()).sum
+
+		// };
+		// proxy = SCMProxy.new(proxyName, function, this, input);
+
+
+		// //add SCMProxy after exvery generator of this group in server hierachy
+		// proxy.serverGroup = Group.new(serverGroup, 'addToTail');
+		//
+		// //disable output for all generators
+		// patterns.do(_.sendToOutput = false);
+		// proxies.do(_.sendToOutput = false);
+		//
+		// //add proxy to parent group
+		// proxies = proxies.add(proxy);
+		// ^proxy;//return
 	}
 
 	*newGroup{

@@ -11,6 +11,8 @@ SCMGroup {
 	var oscAddrMenu;
 	var isPlaying;
 
+	var <> hasFX;
+
 	*new{
 		arg groupName;
 		^super.new.init(groupName);
@@ -39,6 +41,8 @@ SCMGroup {
 
 		//setup group
 		serverGroup = Group.new(Server.local);
+
+		hasFX = false;
 	}
 
 	newCtrl{
@@ -105,6 +109,8 @@ SCMGroup {
 		//disable output for all generators
 		patterns.do(_.sendToOutput = false);
 		proxies.do(_.sendToOutput = false);
+
+		hasFX = true;
 
 		//add proxy to parent group
 		proxies = proxies.add(proxy);
