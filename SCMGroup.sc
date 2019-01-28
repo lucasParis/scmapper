@@ -12,6 +12,9 @@ SCMGroup {
 	var isPlaying;
 
 	var <> hasFX;
+	var <> fxSCMProxy;
+
+	var bus;
 
 	*new{
 		arg groupName;
@@ -112,10 +115,19 @@ SCMGroup {
 
 		hasFX = true;
 
+
 		//add proxy to parent group
 		proxies = proxies.add(proxy);
+		fxSCMProxy = proxies.last();
 		^proxy;//return
+	}
 
+	// get
+
+	getGroupFX{
+		var proxyName;
+		// proxyName = (name ++ "groupFX").asSymbol;
+		// ^SCM.proxySpace[proxyName];
 	}
 
 	newIDOverlap{

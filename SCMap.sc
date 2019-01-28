@@ -13,6 +13,7 @@ SCM {
 
 
 	*init{
+		"initialising SCM".postln;
 		if(NetAddr.langPort != 57120)
 		{
 			var errorMessage = "_____ WARNING _____ langPort not 57120, reboot interpreter please ________";
@@ -37,10 +38,21 @@ SCM {
 
 		//new proxy with audio input
 		// groups.do
-		// input = {
-		// patterns.reject(_.hasFX).collect(_.patternOut()).sum + proxies.collect(_.getNodeProxy()).sum
+		input = {
+			groups.collect{
+				arg group;
+				var return;
+				if(group.hasFX)
+				{
+					return = group.fxSCMProxy.getNodeProxy();
+				}
+				{
 
-		// };
+				};
+			}
+			// patterns.reject(_.hasFX).collect(_.patternOut()).sum + proxies.collect(_.getNodeProxy()).sum
+
+			};
 		// proxy = SCMProxy.new(proxyName, function, this, input);
 
 
@@ -91,6 +103,29 @@ SCM {
 		Server.local.options.numWireBufs = 512;
 		Server.local.options.maxSynthDefs  =2048;
 
+		ServerBoot.add({"hello".postln;}, Server.local);
+
+		Server.local.waitForBoot(
+			{
+				var pathSCM;
+				//try to find path of SCM to load resources
+				 Quarks.installed.do({arg quark; (quark.name == "scmapper").if{pathSCM = quark.localPath};});
+				(pathSCM == nil).if{
+					//post warning if not found
+					20.do{"warning problem with SCM path on serberboot".postln};
+				}
+				{
+					//otherwise load resources
+					(pathSCM ++ "/resourcesSC/noteFX.scd").load;
+					(pathSCM ++ "/resourcesSC/synthlib.scd").load;
+					(pathSCM ++ "/resourcesSC/busPlayer.scd").load;
+				};
+				//initialise SCM
+				SCM.init();
+
+			}
+		)
+
 	}
 }
 
@@ -129,3 +164,9 @@ SCMMidiCtrlr{
 SCMTDDataOut{
 
 }
+
+
+
+
+
+
