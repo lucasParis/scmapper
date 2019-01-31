@@ -18,6 +18,10 @@ SCM {
 	classvar <> visualLatency;
 
 
+	classvar <> replyIDCount;
+
+
+
 
 
 	*init{
@@ -34,6 +38,7 @@ SCM {
 		proxySpace.makeTempoClock(2);//setup tempoclock
 		proxySpace.quant = 4;//setup tempoclock
 
+		Server.local.newBusAllocators;
 
 		serverGroup = Group.new(Server.local);
 
@@ -43,6 +48,8 @@ SCM {
 		visualLatency = 0;
 
 		dataOutRate = 60;
+
+		replyIDCount = 0;
 
 	}
 
@@ -58,16 +65,16 @@ SCM {
 	}
 
 	*masterFX{
-		arg function;
+		arg function, channels = 2;
 		var proxy, proxyName, input, groupAudios;
 		proxyName = \masterFX;
 
 		//proxy inputs
 		input = {
-			groups.collect{arg group; group.getOutput};
+			(groups.collect{arg group; group.getOutput}.sum);
 		};
 
-		masterProxy = SCMProxy.new(proxyName, function, this, input);
+		masterProxy = SCMProxy.new(proxyName, function, this, input, channels);
 		masterProxy.serverGroup = Group.new(serverGroup, 'addToTail');
 
 		this.masterProxy.play;
@@ -75,9 +82,9 @@ SCM {
 	}
 
 	*newGroup{
-		arg name;
+		arg name, channels = 2;
 		var group;
-		group = SCMGroup.new(name);
+		group = SCMGroup.new(name, channels);
 		groups = groups.add(group);
 		^group;
 	}
@@ -151,9 +158,12 @@ SCM {
 	}
 
 	*setupServer{
+		arg channels = 2;
 		Server.local.options.memSize_(2.pow(20));
 		Server.local.options.numWireBufs = 512;
 		Server.local.options.maxSynthDefs  =2048;
+		Server.local.options.numOutputBusChannels = channels;
+
 
 		ServerBoot.add({"hello".postln;}, Server.local);
 

@@ -13,19 +13,17 @@ SCMGroup {
 
 	var <> fxSCMProxy;
 
-	var bus;
-
-	var < outputBus;
-
 	var < channels;
 
+	var < assignedIDs;
+
 	*new{
-		arg groupName;
-		^super.new.init(groupName);
+		arg groupName, channels = 2;
+		^super.new.init(groupName, channels);
 	}
 
 	init{
-		arg groupName;
+		arg groupName, channels_;
 		name = groupName;
 
 		//setup array to hold controls, arrays and proxies
@@ -48,7 +46,7 @@ SCMGroup {
 		//setup group
 		serverGroup = Group.new(SCM.serverGroup, 'addBefore');
 
-		channels = 2;
+		channels = channels_;
 	}
 
 	newCtrl{
@@ -61,8 +59,6 @@ SCMGroup {
 		controls = controls.add(ctrl);
 		^ctrl;//return
 	}
-
-
 
 	getCtrl{
 		arg name;
@@ -78,7 +74,7 @@ SCMGroup {
 		arg patternName, pattern;
 		var pat;
 		//new pattern
-		pat = SCMPattern.new(patternName, pattern, this);
+		pat = SCMPattern.new(patternName, pattern, this, channels);
 		// add pattern to this group
 		patterns = patterns.add(pat);
 		^pat;//return
@@ -89,7 +85,7 @@ SCMGroup {
 		arg proxyName, function;
 		var proxy;
 		//new proxy
-		proxy = SCMProxy.new(proxyName, function, this);
+		proxy = SCMProxy.new(proxyName, function, this, channels: channels);
 		//add proxy to this group
 		proxies = proxies.add(proxy);
 		^proxy;//return
@@ -102,11 +98,10 @@ SCMGroup {
 
 		//new proxy with audio input
 		input = {
-			patterns.reject(_.hasFX).collect(_.getOutput()).sum + proxies.collect(_.getOutput()).sum
+			(patterns.reject(_.hasFX).collect(_.getOutput()).sum) + (proxies.collect(_.getOutput()).sum)
 
 		};
-		proxy = SCMProxy.new(proxyName, function, this, input);
-
+		proxy = SCMProxy.new(proxyName, function, this, input, channels);
 
 		//add SCMProxy after every generator of this group in server hierachy
 		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
@@ -123,11 +118,71 @@ SCMGroup {
 	}
 
 	newIDOverlap{
+		arg  poly, overlaps, instrument;
+		var count, ids;
+		//calculate needed ids for voices * overlap
+		count  = poly * overlaps;
 
+		//get ids from scmapper's newID method
+		ids = this.newID(count, instrument);
+
+		//return a Pseq with values clumped for overlap (iteration technique in TD) - iterativeOverlap
+		^Pseq(ids.clump(poly), inf);
 	}
 
 	newID{
+		arg count, instrument;
+		var assignedID;
 
+		assignedID = [];
+
+		//count is the number of IDs asked for and set in data structure
+		count.do{
+			SCM.replyIDCount = SCM.replyIDCount+1;//increment ID counter/allocator
+			assignedIDs = assignedIDs.add(SCM.replyIDCount);// append to array of group's ids
+
+			assignedID = assignedID.add(SCM.replyIDCount);// add to local array
+		};
+
+		//if synthdef is setup to reroute OSC replies
+		SynthDescLib.global[instrument].metadata.includesKey(\oscReplies).if
+		{
+			// loop through the synthdef's osc reply addresses
+			SynthDescLib.global[instrument].metadata[\oscReplies].do
+			{
+				arg addr;
+
+				//OSC callback for the replies (rerouting to touch), based on replyids stored in database
+				OSCdef(
+					(name ++ addr).asSymbol, //osccallback name with group
+					{
+						arg msg;
+						var values, replyID, idIndex, addrOut;
+						replyID = msg[2];//get the replyID in the osc message
+						idIndex = assignedIDs.find([replyID]);//search for the replyID in the database
+						(idIndex != nil).if // if replyID is indexed in database
+						{
+							//get signal value(s) from reply
+							values = msg[3..];
+							//rename & prepare addr to touch
+							addrOut = addr.replace("/" ++ instrument.asString, "");//remove instrument from address
+							addrOut= "/" ++ name.asString ++ "/" ++ instrument.asString ++ "/" ++ idIndex.asString ++ addrOut;// format address with group/instrmnt/indx/par
+
+							//send values
+							// touchdesignerCHOP.sendMsg(addrOut, *values);
+
+							SCM.dataOutputs.do{
+								arg tdOut;
+								tdOut.chop.sendMsg(addrOut, *values);
+							};
+						}
+					},
+					addr;
+				);
+			};
+		};
+
+		^assignedID;//return assigned id
 	}
 
 	printOn { | stream |

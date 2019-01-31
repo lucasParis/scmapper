@@ -965,7 +965,10 @@ SynthDef.new(\l1_deepbass,{
 	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
 	quitAfter = FreeSelf.kr(quitAfter);
 
-	pulseEnv = LFSaw.ar(2, 1);
+	pulseEnv = LFSaw.ar(2 * clockTempo, 1);
+
+	SendReply.kr(Impulse.kr(60), "/l1_deepbass/pulseEnv", pulseEnv, replyID);
+
 	lfo = LFSaw.ar(0.125*0.5 * clockTempo, 1);
 	src = SyncSaw.ar(freq, pulseEnv.range(freq*0.5,freq*1.5).lag(0,0), mul:lfo.range(0.2,1));
 
@@ -1005,7 +1008,7 @@ SynthDef.new(\l1_deepbass,{
 
 	OffsetOut.ar(out, mix1);
 },
-metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1_deepbass/pulseEnv"])
 ).add;
 
 SynthDef.new(\l1fx_bpsEnved,{

@@ -1,7 +1,7 @@
 SCMProxy {
 	var name;
 	var parentGroup;
-	var proxySpaceName;
+	var < proxySpaceName;
 	var <> serverGroup;
 	var fadeIn;
 	var fadeOut;
@@ -35,8 +35,10 @@ SCMProxy {
 		confirmFadeout = false;
 
 		//if audio input is present, add it to the proxy and filter it, function's first input then becomes input
+
 		(audioIn != nil).if
 		({
+			SCM.proxySpace[proxySpaceName] = NodeProxy.audio(Server.local, channels);
 			SCM.proxySpace[proxySpaceName][0] = audioIn;//add audio input
 			SCM.proxySpace[proxySpaceName][1] = \filter -> function;//add filter function
 		},
