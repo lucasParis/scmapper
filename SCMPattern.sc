@@ -107,8 +107,8 @@ SCMPattern {
 	}
 
 	play{
-		// patternPlayer = rawPattern.collect({arg evt; collectToOsc.value(evt, pGroupName )}).play(clock: proxySpace.clock, quant:quant, doReset:true);
-		patternPlayer = rawPattern.play(clock: SCM.proxySpace.clock, quant:quant, doReset:true);
+		patternPlayer = rawPattern.collect({arg evt; SCM.eventToTD(evt, parentGroup.name, name); }).play(clock: SCM.proxySpace.clock, quant:quant, doReset:true);
+		// patternPlayer = rawPattern.play(clock: SCM.proxySpace.clock, quant:quant, doReset:true);
 		busPlayer = rawBusPlayer.play(clock: SCM.proxySpace.clock, quant:quant, doReset:true);
 	}
 

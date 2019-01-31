@@ -14,6 +14,8 @@ SCM {
 	classvar < masterProxy;
 	classvar <> controls;
 
+	classvar <> visualLatency;
+
 
 	*init{
 		"initialising SCM".postln;
@@ -34,6 +36,8 @@ SCM {
 
 		//reset database
 		groups = [];
+
+		visualLatency = 0;
 
 	}
 
@@ -81,10 +85,11 @@ SCM {
 	}
 
 	*newTDDataOut{
+		arg ip = "127.0.0.1";
 		var dataOut;
 		// dataOutputs.send
-		// dataOut = SCMTDDataOut.new();
-		// dataOutputs = dataOutputs.add(dataOut);
+		dataOut = SCMTDDataOut.new(ip);
+		dataOutputs = dataOutputs.add(dataOut);
 	}
 
 	*newLemurCtrlr{
@@ -97,6 +102,43 @@ SCM {
 
 	*clock{
 		^SCM.proxySpace[\tempo];
+	}
+
+	*eventToTD{
+		arg event, groupName, patternName;
+		var evt = event.copy, stringEvent, sendAddr;//copy event, leave the original event unmodified
+
+		//add patternEvent tag and instrument name to OSC address
+		// sendAddr = ('/patternEvent/'++ groupName ++ '/' ++ evt[\instrument].asString);
+		sendAddr = ('/patternEvent/'++ groupName ++ '/' ++ patternName ++ '/' ++ evt[\instrument].asString);
+
+		//optional osc address append, to diferentiate the same instrument in multiple patterns of the same group
+		(evt[\osc_append] != nil).if{
+			sendAddr = sendAddr ++ '/' ++ (evt[\osc_append].asString);//add string to ending
+		};
+
+		//store rest in key for TD
+		evt[\isRest] = evt.isRest;
+		//convert dur from Rest to Int if Rest
+		evt[\isRest].if{
+			evt[\dur] = evt[\dur].value;
+		};
+		//convert dur from beat to seconds
+		evt[\dur] = evt[\dur] / proxySpace.clock.tempo;
+
+		//format event into a python dictionnary
+		stringEvent = ~evtToPythonDictString.value(evt);
+
+		//send to TD with a delay for visual sync
+		dataOutputs.do{
+			arg tdOut;
+			{
+				tdOut.dat.sendMsg(sendAddr , *["stringEvent", stringEvent.asSymbol]);
+			}.defer(max(Server.local.latency-(visualLatency), 0));
+		};
+
+		//return original event for playing pattern
+		^event;
 	}
 
 	*postSynthLib{
@@ -114,7 +156,7 @@ SCM {
 			{
 				var pathSCM;
 				//try to find path of SCM to load resources
-				 Quarks.installed.do({arg quark; (quark.name == "scmapper").if{pathSCM = quark.localPath};});
+				Quarks.installed.do({arg quark; (quark.name == "scmapper").if{pathSCM = quark.localPath};});
 				(pathSCM == nil).if{
 					//post warning if not found
 					20.do{"warning problem with SCM path on serberboot".postln};
@@ -124,6 +166,7 @@ SCM {
 					(pathSCM ++ "/resourcesSC/noteFX.scd").load;
 					(pathSCM ++ "/resourcesSC/synthlib.scd").load;
 					(pathSCM ++ "/resourcesSC/busPlayer.scd").load;
+					(pathSCM ++ "/resourcesSC/evtToPyDict.scd").load;
 				};
 				//initialise SCM
 				SCM.init();
@@ -167,6 +210,23 @@ SCMMidiCtrlr{
 
 
 SCMTDDataOut{
+	var < dat;
+	var < chop;
+	var ip;
+
+	*new{
+		arg ip;
+		^super.new.init(ip);
+	}
+
+	init{
+		arg tdIP;
+		ip = tdIP;
+		dat = NetAddr(ip, 10000);
+		chop = NetAddr(ip, 10001);
+
+	}
+
 
 }
 
