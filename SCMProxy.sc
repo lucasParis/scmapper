@@ -4,6 +4,8 @@ SCMProxy {
 	var proxySpaceName;
 	var <> serverGroup;
 	var fadeIn;
+	var fadeOut;
+	var confirmFadeout;
 
 	var < outputBus;
 	var < channels;
@@ -29,6 +31,8 @@ SCMProxy {
 		outputBus = Bus.audio(Server.local, channels);
 
 		fadeIn = 0;
+		fadeOut = 2;
+		confirmFadeout = false;
 
 		//if audio input is present, add it to the proxy and filter it, function's first input then becomes input
 		(audioIn != nil).if
@@ -92,15 +96,17 @@ SCMProxy {
 	}
 
 	play{
+		confirmFadeout = false;
 		SCM.proxySpace[proxySpaceName].resume;
-
 		SCM.proxySpace[proxySpaceName].play(out: outputBus, group:serverGroup, addAction: 'addToTail', fadeTime: fadeIn);//if output//NodeProxy;
 
 	}
 
 	stop{
-		SCM.proxySpace[proxySpaceName].stop;
-		SCM.proxySpace[proxySpaceName].pause;
+		SCM.proxySpace[proxySpaceName].stop(fadeOut);
+		confirmFadeout = true;
+		{ if(confirmFadeout){SCM.proxySpace[proxySpaceName].pause; }; }.defer(fadeOut);
+
 	}
 
 	getNodeProxy{

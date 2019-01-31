@@ -95,6 +95,14 @@ SCM {
 		^return;
 	}
 
+	*clock{
+		^SCM.proxySpace[\tempo];
+	}
+
+	*postSynthLib{
+		~synthsLib1.do{arg item; ("\\" ++ item).postln;};
+	}
+
 	*setupServer{
 		Server.local.options.memSize_(2.pow(20));
 		Server.local.options.numWireBufs = 512;

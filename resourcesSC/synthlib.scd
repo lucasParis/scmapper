@@ -957,7 +957,7 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 ).add;
 
 SynthDef.new(\l1_deepbass,{
-	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, tempo = 1, sub = 1;
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, clockTempo = 1, sub = 1;
 	var src, filt, warmLow, subSig, pulseEnv, lfo,mix1, chorus, env, quitAfter;
 	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
 
@@ -966,7 +966,7 @@ SynthDef.new(\l1_deepbass,{
 	quitAfter = FreeSelf.kr(quitAfter);
 
 	pulseEnv = LFSaw.ar(2, 1);
-	lfo = LFSaw.ar(0.125*0.5, 1);
+	lfo = LFSaw.ar(0.125*0.5 * clockTempo, 1);
 	src = SyncSaw.ar(freq, pulseEnv.range(freq*0.5,freq*1.5).lag(0,0), mul:lfo.range(0.2,1));
 
 	// src = (src.clip(-1,1).pow(4) * 10).tanh;

@@ -111,7 +111,7 @@ SCMGroup {
 		//add SCMProxy after exvery generator of this group in server hierachy
 		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
 
-		//add proxy to parent group
+		//add proxy to this group
 		proxies = proxies.add(proxy);
 		fxSCMProxy = proxies.last();
 		^proxy;//return
