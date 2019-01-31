@@ -101,12 +101,18 @@ SCMCtrl {
 
 	updateFeedback{
 		arg value;
+
 		//update osc outputs
 		SCM.ctrlrs.do{
 			arg ctrlr;
 			ctrlr.set(oscAddr, value)//for midi if a param is mapped, store relation path->encoder/button
 		};
 
+		//update touchdesigner outputs
+		SCM.dataOutputs.do{
+			arg tdOut;
+			tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *value);//append /controls
+		};
 	}
 
 	printOn { | stream |
