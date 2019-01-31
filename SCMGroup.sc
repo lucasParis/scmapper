@@ -11,12 +11,13 @@ SCMGroup {
 	var oscAddrMenu;
 	var isPlaying;
 
-	var <> hasFX;
 	var <> fxSCMProxy;
 
 	var bus;
 
 	var < outputBus;
+
+	var < channels;
 
 	*new{
 		arg groupName;
@@ -45,9 +46,9 @@ SCMGroup {
 		this.updateMenuFeedback('/play/x', 0);
 
 		//setup group
-		serverGroup = Group.new(Server.local);
+		serverGroup = Group.new(SCM.serverGroup, 'addBefore');
 
-		hasFX = false;
+		channels = 2;
 	}
 
 	newCtrl{
@@ -100,9 +101,8 @@ SCMGroup {
 		proxyName = (name ++ "groupFX").asSymbol;
 
 		//new proxy with audio input
-
 		input = {
-			patterns.reject(_.hasFX).collect(_.patternOut()).sum + proxies.collect(_.getNodeProxy()).sum
+			patterns.reject(_.hasFX).collect(_.getOutput()).sum + proxies.collect(_.getOutput()).sum
 
 		};
 		proxy = SCMProxy.new(proxyName, function, this, input);
@@ -111,25 +111,15 @@ SCMGroup {
 		//add SCMProxy after exvery generator of this group in server hierachy
 		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
 
-		//disable output for all generators
-		// patterns.do(_.sendToOutput = false);
-		// proxies.do(_.sendToOutput = false);
-
-		hasFX = true;
-
-
 		//add proxy to parent group
 		proxies = proxies.add(proxy);
 		fxSCMProxy = proxies.last();
 		^proxy;//return
 	}
 
-	// get
-
-	getGroupFX{
-		var proxyName;
-		// proxyName = (name ++ "groupFX").asSymbol;
-		// ^SCM.proxySpace[proxyName];
+	getOutput{
+		// channels.postln;
+		^fxSCMProxy.getOutput;
 	}
 
 	newIDOverlap{

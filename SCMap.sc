@@ -7,9 +7,12 @@ SCM {
 	classvar <dataOutputs;// to touchdesigner, but could be other?
 
 	classvar masterBus;
-	classvar masterServerGroup;
+	classvar < serverGroup;
 
 	classvar <> groups;
+
+	classvar < masterProxy;
+	classvar <> controls;
 
 
 	*init{
@@ -26,46 +29,40 @@ SCM {
 		proxySpace.makeTempoClock(2);//setup tempoclock
 		proxySpace.quant = 4;//setup tempoclock
 
+
+		serverGroup = Group.new(Server.local);
+
 		//reset database
 		groups = [];
 
 	}
 
-	masterFX{
+	*newCtrl{
+		arg name, defaultValue = 0, postFix = "/x";
+		var ctrl;
+
+		//new ctrl
+		ctrl = SCMCtrl.new(name, defaultValue, postFix, this);
+		// add control to this group
+		this.controls = this.controls.add(ctrl);
+		^ctrl;//return
+	}
+
+	*masterFX{
 		arg function;
-		var proxy, proxyName, input;
+		var proxy, proxyName, input, groupAudios;
 		proxyName = \masterFX;
 
-		//new proxy with audio input
-		// groups.do
+		//proxy inputs
 		input = {
-			groups.collect{
-				arg group;
-				var return;
-				if(group.hasFX)
-				{
-					return = group.fxSCMProxy.getNodeProxy();
-				}
-				{
+			groups.collect{arg group; group.getOutput};
+		};
 
-				};
-			}
-			// patterns.reject(_.hasFX).collect(_.patternOut()).sum + proxies.collect(_.getNodeProxy()).sum
+		masterProxy = SCMProxy.new(proxyName, function, this, input);
+		masterProxy.serverGroup = Group.new(serverGroup, 'addToTail');
 
-			};
-		// proxy = SCMProxy.new(proxyName, function, this, input);
-
-
-		// //add SCMProxy after exvery generator of this group in server hierachy
-		// proxy.serverGroup = Group.new(serverGroup, 'addToTail');
-		//
-		// //disable output for all generators
-		// patterns.do(_.sendToOutput = false);
-		// proxies.do(_.sendToOutput = false);
-		//
-		// //add proxy to parent group
-		// proxies = proxies.add(proxy);
-		// ^proxy;//return
+		this.masterProxy.play;
+		this.masterProxy.outputBus.play;
 	}
 
 	*newGroup{
