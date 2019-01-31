@@ -5,6 +5,7 @@ SCM {
 	classvar <groups;
 	classvar <ctrlrs;
 	classvar <dataOutputs;// to touchdesigner, but could be other?
+	classvar <dataOutRate;
 
 	classvar masterBus;
 	classvar < serverGroup;
@@ -15,6 +16,8 @@ SCM {
 	classvar <> controls;
 
 	classvar <> visualLatency;
+
+
 
 
 	*init{
@@ -38,6 +41,8 @@ SCM {
 		groups = [];
 
 		visualLatency = 0;
+
+		dataOutRate = 60;
 
 	}
 

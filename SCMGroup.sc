@@ -192,7 +192,31 @@ SCMGroup {
 	}
 
 	sendSignal{
-		arg name, signal;
+		arg nameSig, signal;
+
+		var address;
+
+		//prepare osc output address
+		address = "/" + name.asString++ '/' ++ "proxy" ++ '/' ++ nameSig;
+		address = address.replace(" ", "");//remove empty spaces
+
+		// osc listener for sendReply
+		OSCdef(
+			address,
+			{
+				arg msg;
+				var values;
+				values = msg[3..];//get the signal values
+				//send to touch, with sync delay
+				SCM.dataOutputs.do{
+					arg tdOut;
+					{tdOut.chop.sendMsg(address, *values)}.defer(SCM.visualLatency);
+				}
+
+		}, address);//oscdef addr for signal reply
+
+		//create sendreply
+		SendReply.kr(Impulse.kr(SCM.dataOutRate), address, signal, -1);
 
 	}
 }
