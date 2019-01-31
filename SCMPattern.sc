@@ -27,6 +27,8 @@ SCMPattern {
 
 	var < outputBus;
 
+	var < fxProxy;
+
 	*new{
 		arg patternName, pattern, parent, channels = 2;
 		^super.new.init(patternName, pattern, parent, channels);
@@ -72,8 +74,15 @@ SCMPattern {
 	}
 
 	getOutput{
-		channels.postln;
-		^In.ar(this.outputBus, channels);
+		var return;
+		(hasFX).if{
+			return = fxProxy.getOutput();
+		}
+		{
+			"nofx".postln;
+			return = In.ar(this.outputBus, channels);
+		}
+		^return;
 	}
 
 	patternFX{
@@ -89,6 +98,7 @@ SCMPattern {
 
 		//add proxy to parent group
 		parentGroup.proxies = parentGroup.proxies.add(proxy);
+		fxProxy = parentGroup.proxies.last();
 
 		//confirm this has fx, to return correct output
 		hasFX = true;
