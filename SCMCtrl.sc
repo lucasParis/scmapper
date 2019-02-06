@@ -20,6 +20,8 @@ SCMCtrl {
 	var <>proxyNodeName;
 	var <>proxyCtrlName;
 
+	var isRadio;
+
 	*new{
 		arg ctrlName, defaultValue, postFix, parent;
 		^super.new.init(ctrlName, defaultValue, postFix, parent);
@@ -31,6 +33,7 @@ SCMCtrl {
 		parentGroup = parent;
 		value = defaultValue;
 		postFix = postFix_;
+		isRadio = false;
 
 		oscAddr = "/" ++ parentGroup.name ++ "/" ++ name ++ postFix;
 		oscAddr = oscAddr.asSymbol;
@@ -96,11 +99,20 @@ SCMCtrl {
 
 		//update osc outputs
 		this.updateFeedback(val);
-
 	}
 
 	updateFeedback{
 		arg value;
+
+		//radio mode
+		isRadio.if({
+			var radioValue;
+			radioValue = Array.fill(32,0);
+			radioValue[value] = 1;
+			value = radioValue;
+		}
+		);
+
 
 		//update osc outputs
 		SCM.ctrlrs.do{
@@ -120,7 +132,6 @@ SCMCtrl {
 	}
 
 	setupOscListeners{
-
 		//set
 		OSCdef(
 			oscAddr,
@@ -132,10 +143,34 @@ SCMCtrl {
 				//if it's an array of 1 element convert from array to single value
 				(value.size == 1).if{value = value[0]};
 
+				//radio mode
+				isRadio.if({
+					var radioValue;
+					radioValue = value.find([1]);
+					(radioValue != nil).if{
+						value = radioValue;
+					}
+				}
+				);
+
 				//set (when not in metactrl mode)
 				this.set(value);
 
 		}, oscAddr);
 	}
+
+	// set isRadio
+	isRadio_{
+		arg radioValue;
+		isRadio = radioValue;
+		//update feedback with radio mode feedback
+		this.updateFeedback(value);
+	}
+
+	//get isRadio
+	isRadio{
+		^isRadio;
+	}
+
 
 }
