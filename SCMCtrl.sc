@@ -103,6 +103,9 @@ SCMCtrl {
 
 	updateFeedback{
 		arg value;
+		var rawValue;
+
+		rawValue = value;
 
 		//radio mode
 		isRadio.if({
@@ -123,7 +126,7 @@ SCMCtrl {
 		//update touchdesigner outputs
 		SCM.dataOutputs.do{
 			arg tdOut;
-			tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *value);//append /controls
+			tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *rawValue);//append /controls
 		};
 	}
 

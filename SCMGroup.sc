@@ -219,7 +219,10 @@ SCMGroup {
 			proxies.do{arg proxy; proxy.play; };
 			//play controls (busMappers)
 			controls.do{arg control; control.play; };
+			//send OSC feedback
+			this.updateMenuFeedback('/play/x', 1);
 		}
+
 	}
 
 	stop{
@@ -232,6 +235,8 @@ SCMGroup {
 			proxies.do{arg proxy; proxy.stop; };
 			//stop controls (busMappers)
 			controls.do{arg control; control.stop; };
+			//send OSC feedback
+			this.updateMenuFeedback('/play/x', 0);
 		}
 	}
 
@@ -244,6 +249,12 @@ SCMGroup {
 			arg ctrlr;
 			ctrlr.set(path, value);//for midi if a param is mapped, store relation path->encoder/button
 		};
+		//update touchdesigner outputs
+		SCM.dataOutputs.do{
+			arg tdOut;
+			tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value);//append /controls
+		};
+
 	}
 
 	sendSignal{
