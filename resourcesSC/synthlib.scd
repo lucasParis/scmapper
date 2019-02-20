@@ -1150,8 +1150,67 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 ).add;
 
 
+SynthDef.new(\l1_reeseDouble,{
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, timeScale = 1, tempoScale = 1, agression = 1, lpfFactor = 1, subOsc = 0, modFreqFactor = 1.5;
+	var  env, quitAfter, osc, modOsc, outBus, lowFilt, env1, lfo1, lfo2, lfo3, env2, highBus, midBus, sub;
+
+	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
+
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
+
+
+
+
+
+	// src = SinOsc.ar(freq, mul:amp*env);
+
+	env1 = Env.perc(0,0.7,1,0).ar(0,1, timeScale: timeScale);
+	env2 = Env.perc(0,2,1,0).ar(0,1, timeScale: timeScale);
+	// lfo1 = Env.perc(0,2,1,0).ar(0,1, timeScale: timeScale);
+	lfo1 = LFPulse.ar(2 * tempoScale);
+	lfo2 = Env.new([0,1,0.4,0.6,0.1,0.4,0,0], [0.1,0.1,0.3,0.2,0.1,0.2,0],[0,6,2,-4,-7,-4,-4,0] , releaseNode:6, loopNode:0).ar(0,1, timeScale:2 * timeScale);
+	lfo3 = Env.new([ 0, 0.6, 0, 0.4, 1, 0, 0.1, 0.4 ], [0.1,0.1,0.3,0.2,0.1,0.2,0],[0,6,2,-4,-7,-4,-4,0] , releaseNode:6, loopNode:0).ar(0,1, timeScale:2 * timeScale);
+
+
+	SendReply.kr(Impulse.kr(60), "/l1_reeseDouble/env1", env1, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1_reeseDouble/env2", env2, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1_reeseDouble/lfo1", lfo1, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1_reeseDouble/lfo2", lfo2, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1_reeseDouble/lfo3", lfo3, replyID);
+
+	sub = SinOsc.ar(freq*0.5);
+	modOsc = SinOscFB.ar(freq*modFreqFactor, env2.linlin(0,1,1,0));
+	osc = SyncSaw.ar(freq ,(freq * env1.linlin(0,1,1,5) )+ (modOsc.linlin(-1,1,lfo1.lag(0.01).range(0,-4)*freq, lfo1.lag(0.1).range(1,5)*freq)*agression), mul:0.5);
+
+	osc = osc + (sub*subOsc);
+	lowFilt = DFM1.ar(osc, (freq* lfo3.linlin(0,1,0.8,3) *lpfFactor)+ osc.linlin(0,1,0*freq, 2*freq),0.9 * agression, 0.9,0).tanh;
+
+	highBus = osc * 0.1;
+
+	highBus = BRF.ar(highBus, lfo3.lag(0.2).linlin(0,1,2000,400),2);
+	highBus = BRF.ar(highBus, lfo3.linexp(0,1,1000,10000),1) * lfo2.lincurve(0,1,0.05,1, 2);
+	highBus = DelayL.ar(highBus, 0.1, lfo3.linlin(0,1,0,0.03));
+	highBus = CombL.ar(highBus, 0.1,freq.reciprocal + highBus.linlin(-0.2,0.2,-0.002,0.002),0.7);
+
+
+
+	outBus = (lowFilt*0.4 * lfo3.linlin(0,1,1,0.5)) + highBus;
+	outBus = LRLowCut.ar(outBus , 100,4,4);
+	outBus = (outBus * amp*env);
+
+	outBus = LeakDC.ar(outBus);
+
+	OffsetOut.ar(out, outBus!2);
+},
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1_reeseDouble/env1","/l1_reeseDouble/env2", "/l1_reeseDouble/lfo1", "/l1_reeseDouble/lfo2", "/l1_reeseDouble/lfo3"])
+).add;
+
+
+
 SynthDescLib.new(\lib1, s);
-~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw];
+~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble];
 ~synthsLib1.do{arg item; ("\\" ++ item).postln; SynthDescLib.getLib(\lib1).add(SynthDescLib.global[item])};
 
 "\nSynthDescLib.getLib(\lib1).browse\n".postln;
