@@ -51,6 +51,18 @@ SCM {
 
 		replyIDCount = 0;
 
+		OSCdef(\fpsReroute,
+			{
+				arg msg;
+				// msg[1].postln;
+
+				SCM.ctrlrs.do{
+					arg ctrlr;
+					ctrlr.set("/fps", msg[1]);
+				};
+			}, "/touch/fps"
+		);
+
 	}
 
 	*newCtrl{
@@ -118,7 +130,7 @@ SCM {
 
 	*eventToTD{
 		arg event, groupName, patternName;
-		var evt = event.copy, stringEvent, sendAddr;//copy event, leave the original event unmodified
+		var evt = event.copy, stringEvent, sendAddr, delay;//copy event, leave the original event unmodified
 
 		//add patternEvent tag and instrument name to OSC address
 		// sendAddr = ('/patternEvent/'++ groupName ++ '/' ++ evt[\instrument].asString);
@@ -141,12 +153,16 @@ SCM {
 		//format event into a python dictionnary
 		stringEvent = ~evtToPythonDictString.value(evt);
 
+		//calculate delay
+		delay = evt[\timingOffset] * SCM.proxySpace.clock.tempo.reciprocal;
+		delay  =delay + evt[\lag];
+
 		//send to TD with a delay for visual sync
 		dataOutputs.do{
 			arg tdOut;
 			{
 				tdOut.dat.sendMsg(sendAddr , *["stringEvent", stringEvent.asSymbol]);
-			}.defer(max(Server.local.latency-(visualLatency), 0));
+			}.defer(max(Server.local.latency-(visualLatency)+delay, 0));
 		};
 
 		//return original event for playing pattern

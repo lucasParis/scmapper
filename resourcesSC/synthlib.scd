@@ -1035,7 +1035,9 @@ SynthDef.new(\l1fx_bpsEnved,{
 	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnved/freqs", freqs, replyID);
 
 	sineF = Env.perc(0,speed,1,-2).ar(0,1).linlin(0,1,speedMin,speedMax);
-	volumes = SinOsc.ar(sineF, [0,2pi].resamp1(6)).lincurve(-1,1,0.01,1,volCurve);
+	volumes = SinOsc.ar(sineF, [0,2pi].resamp1(6));
+	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnved/rawVolumeLFO", volumes, replyID);
+	volumes = volumes.lincurve(-1,1,0.01,1,volCurve);
 	// volumes.scope;
 	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnved/volumes", volumes, replyID);
 
@@ -1044,7 +1046,7 @@ SynthDef.new(\l1fx_bpsEnved,{
 
 	Out.ar(out, ((dry*input) + fx)*env*amp * (1-(ducks*duck.clip(0,1))));
 },
-metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1fx_bpsEnved/freqs", "/l1fx_bpsEnved/volumes", "/l1fx_bpsEnved/env", "/l1fx_bpsEnved/ducks"])
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1fx_bpsEnved/freqs", "/l1fx_bpsEnved/volumes","/l1fx_bpsEnved/rawVolumeLFO", "/l1fx_bpsEnved/env", "/l1fx_bpsEnved/ducks"])
 ).add;
 
 
@@ -1207,10 +1209,141 @@ SynthDef.new(\l1_reeseDouble,{
 metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1_reeseDouble/env1","/l1_reeseDouble/env2", "/l1_reeseDouble/lfo1", "/l1_reeseDouble/lfo2", "/l1_reeseDouble/lfo3"])
 ).add;
 
+SynthDef.new(\l1_reeseLightHighs,{
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, attack= 0.01, ampCurve = -4, timeScale = 1, tempoScale = 1, agression = 0, subOsc = 1, modFreqFactor = 1, modOffset = 0, invertEnv = 0, dilateEnv = 0.1, bpf = 400, bpfVol = 1;
+	var  env, quitAfter, osc, modOsc, outBus, lowFilt, env1, lfo1, lfo2, lfo3, env2, highBus, midBus, sub, comp;
+
+	env = Env.adsr(attack, 0.3,1,0.05,1,ampCurve).ar(0, gate);
+
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
+
+
+
+
+
+	// src = SinOsc.ar(freq, mul:amp*env);
+
+	dilateEnv = ([-0.1,0.124,0.022,-0.275] * dilateEnv);
+	dilateEnv = ([0.1,0.1,0.3,0.2,0.1,0.2,0] + dilateEnv).abs;
+
+	env1 = Env.perc(0,0.7,1,0).ar(0,1, timeScale: timeScale);
+	env2 = Env.perc(0,0.1,1,0).ar(0,1, timeScale: timeScale);
+	// lfo1 = Env.perc(0,2,1,0).ar(0,1, timeScale: timeScale);
+	lfo1 = LFPulse.ar(2 * tempoScale);
+	lfo2 = Env.new([0,1,0.4,0.6,0.1,0.4,0,0].linlin(0,1,invertEnv.lincurve(0,1,0,1,2), invertEnv.lincurve(0,1,1,0,-8)), dilateEnv, [0,6,2,-4,-7,-4,-4,0]+modOffset , releaseNode:6, loopNode:0).ar(0,1, timeScale: timeScale);
+	lfo3 = Env.new([ 0, 0.6, 0, 0.4, 1, 0, 0.1, 0.4 ].linlin(0,1,invertEnv.lincurve(0,1,0,1,4), invertEnv.lincurve(0,1,1,0,-5)), dilateEnv, [0,6,2,-4,-7,-4,-4,0]+modOffset , releaseNode:6, loopNode:0).ar(0,1, timeScale: timeScale);
+
+
+	SendReply.kr(Impulse.kr(60), "/l1_reeseLightHighs/env1", env1, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1_reeseLightHighs/env2", env2, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1_reeseLightHighs/lfo1", lfo1, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1_reeseLightHighs/lfo2", lfo2, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1_reeseLightHighs/lfo3", lfo3, replyID);
+
+	sub = SinOsc.ar(freq*0.5);
+	modOsc = SinOscFB.ar(freq*modFreqFactor, env2.linlin(0,1,1,0));
+	osc = SyncSaw.ar(freq ,(freq * env1.linlin(0,1,1,5) )+ (modOsc.linlin(-1,1,lfo1.lag(0.01).range(0,-4)*freq, lfo1.lag(0.1).range(1,5)*freq)*agression), mul:0.5);
+
+	osc = osc + (sub*subOsc);
+
+	highBus = osc * 0.1;
+
+	highBus = BRF.ar(highBus, lfo3.lag(0.2).linlin(0,1,2000,100),2);
+	highBus = BRF.ar(highBus, lfo3.lincurve(0,1,1000,5000, 30),3) * lfo2.lincurve(0,1,-10.dbamp,1, 1);
+	highBus = DelayL.ar(highBus, 0.1, lfo3.linlin(0,1,0,0.03));
+	highBus = CombL.ar(highBus, 0.1,freq.reciprocal + highBus.linlin(-0.2,0.2,-0.002,0.002),0.2);
+
+
+
+
+	outBus = highBus;
+	outBus = highBus + BPF.ar(osc, (bpf * lfo2.lag(0.2,0).linlin(0,1,1.2,1)).clip(50,10000), 0.4,0.1*bpfVol).distort;
+
+	outBus = LRLowCut.ar(outBus , 140,5,5);
+	// comp = Peak.ar(outBus).poll.reciprocal.sanitize;
+	comp = outBus.abs.lag(0.008,0.005).reciprocal.sanitize;
+	comp = (outBus * comp * 0.1).tanh.clip(-1,1);
+
+	outBus = outBus + (comp * 0.05);
+
+	outBus = LeakDC.ar(outBus);
+	outBus = (outBus * amp*env);
+
+
+
+	OffsetOut.ar(out, outBus!2);
+},
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1_reeseLightHighs/env1","/l1_reeseLightHighs/env2", "/l1_reeseLightHighs/lfo1", "/l1_reeseLightHighs/lfo2", "/l1_reeseLightHighs/lfo3"])
+).add;
+
+
+SynthDef.new(\l1_clusterKick,{
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, release = 0.05, clusterPunch = 0, clusterOffset = 0.1, lpf = 400, sub = 1, ring=1, transient = 1, transientPDur = 0.01, transientADur = 0.07;
+	var src, env, quitAfter, aEnv, pEnv, cluster, clusterHighs, clusEnv;
+	env = Env.adsr(0, 0.3,1,release,1,-4).ar(0, gate);
+
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
+
+	// SendReply.kr(Impulse.kr(60), "/instrument/param", env, replyID);
+
+
+	aEnv = Env.new([0,1,0.5*sub,0], [0.0001,transientADur,0.5], -2).ar(0,1);
+	pEnv = Env.new([1,20*transient,2,1], [0.00001,transientPDur,0.3], -5).ar(0,1);
+	clusEnv = Env.new([0,1,0.1,0], [0.0001,0.1,0.5], -2).ar(0,1);
+
+
+	cluster = SinOsc.ar(freq*pEnv.linlin(1,20,1,clusterPunch.linlin(0,1,2,4))*([1,1.2,1.8,2.2,3.4]+clusterOffset)*2,mul:0.1*clusEnv).sum;
+	cluster = CombL.ar(cluster, 0.1, ((freq.reciprocal*0.50)+ SinOsc.ar(freq*1).range(-0.001,0.0001)).clip(0.0001,0.1),ring.linlin(0,1,0.5,1.4));
+	cluster = CombL.ar(cluster, 0.1, ((freq.reciprocal*0.50)+ SinOsc.ar(freq*1).range(-0.001,0.006)).clip(0.0001,0.1),ring.linlin(0,1,0.01,0.2));
+
+	clusterHighs = LRLowCut.ar((cluster.excess(-70.dbamp)*20.dbamp).tanh + cluster,500, 5,5);
+	clusterHighs = LPF.ar(clusterHighs, lpf);
+	cluster = LRHiCut.ar((cluster.excess(-50.dbamp)*20.dbamp).tanh + cluster,200, 3,3);
+
+	cluster = LRLowCut.ar(cluster+clusterHighs, freq * 3,5) * 0.4;
+	cluster = (cluster*2).softclip() * 2.reciprocal;
+
+	src = SinOsc.ar(freq*pEnv, mul:aEnv);
+
+
+	src = ( src + cluster) * amp*env;
+
+	OffsetOut.ar(out, src!2);
+},
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
+).add;
+
+
+SynthDef.new(\l1_decayKick,{
+		arg freq, amp = 1, out = 0, gate = 1, replyID = -1, release = 0.05, sub = 1, transient = 1, transientPDur = 0.01, transientADur = 0.1;
+		var src, env, quitAfter, aEnv, pEnv;
+		env = Env.adsr(0, 0.3,1,release,1,-4).ar(0, gate);
+
+		quitAfter = Done.kr(env);
+		quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+		quitAfter = FreeSelf.kr(quitAfter);
+
+
+
+		aEnv = Env.new([0,1,0.8*sub ,0], [0.0001,transientADur,0.5], -2).ar(0,1);
+		pEnv = Env.new([1,50*transient,2,1], [0.00001,transientPDur,0.3], -5).ar(0,1);
+
+		SendReply.kr(Impulse.kr(60), "/l1_decayKick/aEnv", env, replyID);
+
+		src = SinOsc.ar(freq*pEnv, mul:aEnv*amp*env);
+
+		OffsetOut.ar(out, src!2);
+	},
+	metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1_decayKick/aEnv"])
+	).add;
 
 
 SynthDescLib.new(\lib1, s);
-~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble];
+~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble, \l1_reeseLightHighs, \l1_clusterKick, \l1_decayKick];
 ~synthsLib1.do{arg item; ("\\" ++ item).postln; SynthDescLib.getLib(\lib1).add(SynthDescLib.global[item])};
 
 "\nSynthDescLib.getLib(\lib1).browse\n".postln;

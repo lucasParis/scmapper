@@ -87,7 +87,7 @@ s.waitForBoot({
 		//collect formating of event data for touchdesigner as python dicts
 		collectToOsc = {
 			arg event, adr = "instrumentName";
-			var evt = event.copy, stringEvent, sendAddr;//copy event, leave the original event unmodified
+			var evt = event.copy, stringEvent, sendAddr, delay;//copy event, leave the original event unmodified
 
 			//add patternEvent tag and instrument name to OSC address
 			sendAddr = ('/patternEvent/'++ adr ++ '/' ++ evt[\instrument].asString);
@@ -96,6 +96,14 @@ s.waitForBoot({
 			(evt[\osc_append] != nil).if{
 				sendAddr = sendAddr ++ '/' ++ (evt[\osc_append].asString);//add string to ending
 			};
+
+			(evt[\timingOffset] != nil).if{
+				evt[\timingOffset].postln;
+			};
+			evt[\timingOffset].postln;
+			"hello.postln";
+
+
 
 			//store rest in key for TD
 			evt[\isRest] = evt.isRest;
