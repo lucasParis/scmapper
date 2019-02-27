@@ -155,8 +155,19 @@ SCM {
 
 		//calculate delay
 		delay = evt[\timingOffset] * SCM.proxySpace.clock.tempo.reciprocal;
-		delay  =delay + evt[\lag];
 
+		if(evt[\timingOffset].size > 0)
+		{
+			delay = 0;
+		};
+
+		if(evt[\lag].size < 1)
+		{
+			delay  =delay + evt[\lag];
+		};
+
+
+		// sendAddr.postln;
 		//send to TD with a delay for visual sync
 		dataOutputs.do{
 			arg tdOut;

@@ -86,6 +86,7 @@ SCMGroup {
 		var proxy;
 		//new proxy
 		proxy = SCMProxy.new(proxyName, function, this, channels: channels);
+		proxy.stop;
 		//add proxy to this group
 		proxies = proxies.add(proxy);
 		^proxy;//return
@@ -102,6 +103,7 @@ SCMGroup {
 
 		};
 		proxy = SCMProxy.new(proxyName, function, this, input, channels);
+		proxy.stop;
 
 		//add SCMProxy after every generator of this group in server hierachy
 		proxy.serverGroup = Group.new(serverGroup, 'addToTail');
@@ -254,6 +256,34 @@ SCMGroup {
 			arg tdOut;
 			tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value);//append /controls
 		};
+
+	}
+
+	sendTrigger{
+		arg nameSig, signal;
+		var address;
+
+		//prepare osc output address
+		address = "/trigger/" + name.asString++ '/' ++ nameSig;
+		address = address.replace(" ", "");//remove empty spaces
+
+		// osc listener for sendReply
+		OSCdef(
+			address,
+			{
+				arg msg;
+				var values;
+				values = msg[3..];//get the signal values
+				//send to touch, with sync delay
+				SCM.dataOutputs.do{
+					arg tdOut;
+					{tdOut.dat.sendMsg(address, *values)}.defer(SCM.visualLatency);
+				}
+
+		}, address);//oscdef addr for signal reply
+
+		//create sendreply
+		SendReply.ar(signal, address, 1);
 
 	}
 
