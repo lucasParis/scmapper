@@ -60,13 +60,18 @@ SCM {
 		OSCdef(\fpsReroute,
 			{
 				arg msg;
-				// msg[1].postln;
-
 				SCM.ctrlrs.do{
 					arg ctrlr;
 					ctrlr.set("/fps", msg[1]);
 				};
 			}, "/touch/fps"
+		);
+
+		OSCdef(\tempo,
+			{
+				arg msg;
+				SCM.setTempo(msg[1]);
+			}, "/scTempo"
 		);
 
 	}
@@ -111,6 +116,11 @@ SCM {
 		arg tempo;
 		tempo_ = tempo;
 		proxySpace.clock.tempo = tempo_/60;
+
+		SCM.ctrlrs.do{
+					arg ctrlr;
+			ctrlr.set("/scTempo", tempo_);
+		};
 
 	}
 

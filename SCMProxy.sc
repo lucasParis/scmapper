@@ -35,6 +35,7 @@ SCMProxy {
 		confirmFadeout = false;
 
 		//if audio input is present, add it to the proxy and filter it, function's first input then becomes input
+		// {
 
 		(audioIn != nil).if
 		({
@@ -47,10 +48,17 @@ SCMProxy {
 			SCM.proxySpace[proxySpaceName] = function;
 		});
 
+		// if(thisThread.parent != nil)
+		// {
+		// 	"syncing".postln;
+		// 	Server.local.sync;
+		// };
+
 		SCM.proxySpace[proxySpaceName].pause;
 		SCM.proxySpace[proxySpaceName].stop;
 
 		this.mapNodeProxyControls();
+
 	}
 
 	setInput{
@@ -108,6 +116,13 @@ SCMProxy {
 		SCM.proxySpace[proxySpaceName].stop(fadeOut);
 		confirmFadeout = true;
 		{ if(confirmFadeout){SCM.proxySpace[proxySpaceName].pause; }; }.defer(fadeOut);
+
+	}
+
+	suddenStop{
+		SCM.proxySpace[proxySpaceName].stop(0);
+		confirmFadeout = true;
+		{ if(confirmFadeout){SCM.proxySpace[proxySpaceName].pause; }; }.defer(0);
 
 	}
 
