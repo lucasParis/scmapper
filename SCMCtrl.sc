@@ -12,6 +12,11 @@ SCMCtrl {
 	var <>parentGroup;
 	var postFix;
 
+	//for midi encoder
+	var lastTime;
+	var midiCount;
+	var midimapped;
+
 	//bus and bus mapper players
 	var bus;
 	var busMapSynths;
@@ -41,11 +46,17 @@ SCMCtrl {
 		proxyCtrlName = ctrlName ++ postFix.asString.replace("/", "_");
 		proxyCtrlName = proxyCtrlName.asSymbol;
 
+		//for midi
+		lastTime = 0;
+		midimapped = -1;
+
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue.size.max(1));
 
 		//add osc listerners
 		this.setupOscListeners();
+
+
 
 		this.updateFeedback(value);
 	}
@@ -95,6 +106,14 @@ SCMCtrl {
 		if(proxyNodeName != nil)
 		{
 			SCM.proxySpace[proxyNodeName].set(proxyCtrlName, value);
+		};
+
+		if(midimapped > -1)
+		{
+			SCM.midiCtrlrs.do{
+				arg midiCtrlr;
+				midiCtrlr.midiout.control(chan:0,ctlNum:midimapped,val:(value*127).clip(0,128).round);
+			};
 		};
 
 		//update osc outputs
@@ -160,6 +179,47 @@ SCMCtrl {
 				this.set(value);
 
 		}, oscAddr);
+	}
+
+	setupMidiListener{
+		arg index;
+
+		MIDIFunc.cc(
+			{
+				arg midiValue;
+				var time, speed, newVal;
+
+				// calculate speed
+				time = SystemClock.seconds;//get time
+				speed = (SystemClock.seconds-lastTime);//substract from last time
+				lastTime = SystemClock.seconds;//set last time
+				speed = speed.reciprocal.linexp(0,300,0.001,0.02);//scale speed
+
+				midiValue = (midiValue-64)*speed;//format midi in to -1 > 1
+				newVal = value + midiValue;
+				newVal = newVal.clip(0,1);
+				this.set(newVal);
+		},index, 0);
+
+		MIDIFunc.cc(
+			{
+				arg value;
+				if( value >1)
+				{
+					this.set(0);
+				};
+
+			},index,1
+		);
+
+
+		SCM.midiCtrlrs.do{
+			arg midiCtrlr;
+			midiCtrlr.midiout.control(chan:0,ctlNum:index,val:(value*127).clip(0,128).round);
+			midiCtrlr.midiout.control(chan:2,ctlNum:index,val:47);
+
+		};
+		midimapped = index;
 	}
 
 	// set isRadio

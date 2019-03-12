@@ -222,7 +222,7 @@ SCMGroup {
 			//play controls (busMappers)
 			controls.do{arg control; control.play; };
 			//send OSC feedback
-			this.updateMenuFeedback('/play/x', 1);
+			this.updateMenuFeedback('/play/x', 1, quantize:true);
 		}
 
 	}
@@ -243,7 +243,7 @@ SCMGroup {
 	}
 
 	updateMenuFeedback{
-		arg menuPath, value;
+		arg menuPath, value, quantize = false;
 		var path;
 		path = (oscAddrMenu ++ menuPath).asSymbol;
 		//update osc outputs
@@ -254,7 +254,14 @@ SCMGroup {
 		//update touchdesigner outputs
 		SCM.dataOutputs.do{
 			arg tdOut;
-			tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value);//append /controls
+			if(quantize == true,
+				{
+					SCM.proxySpace.clock.playNextBar({ tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value) })//call reset on next bar
+				},
+				{
+					tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value);//append /controls
+				}
+			);
 		};
 
 	}

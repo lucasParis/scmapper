@@ -2,8 +2,11 @@
 SCM {
 	classvar <proxySpace;
 	classvar tempo_;
+	classvar <> tempoMin;
+	classvar <> tempoMax;
 	classvar <groups;
 	classvar <ctrlrs;
+	classvar <midiCtrlrs;
 	classvar <dataOutputs;// to touchdesigner, but could be other?
 	classvar <dataOutRate;
 
@@ -35,6 +38,10 @@ SCM {
 
 		Server.local.newBusAllocators;
 
+		MIDIClient.init;//initialise SC midi
+		MIDIIn.connectAll;//connect
+
+
 		ProxySynthDef.sampleAccurate = true;
 
 		//initialise proxy space
@@ -57,6 +64,9 @@ SCM {
 
 		replyIDCount = 0;
 
+		tempoMin = 20;
+		tempoMax = 200;
+
 		OSCdef(\fpsReroute,
 			{
 				arg msg;
@@ -70,7 +80,7 @@ SCM {
 		OSCdef(\tempo,
 			{
 				arg msg;
-				SCM.setTempo(msg[1]);
+				SCM.setTempo(msg[1].linlin(0,1,tempoMin,tempoMax));
 			}, "/scTempo"
 		);
 
@@ -119,9 +129,18 @@ SCM {
 
 		SCM.ctrlrs.do{
 					arg ctrlr;
-			ctrlr.set("/scTempo", tempo_);
+			ctrlr.set("/scTempo", tempo_.linlin(tempoMin,tempoMax,0,1));
 		};
 
+	}
+
+	* getCtrl{
+		arg name;
+		var result;
+		//loop through controls and find the one with this name
+		result = controls.select{ arg control; control.name == name; };
+		if(result.size > 0){result = result[0]} {result = nil};
+		^result;
 	}
 
 	*newTDDataOut{
@@ -138,6 +157,14 @@ SCM {
 		return = SCMLemurCtrlr.new(ip, port, name);
 		ctrlrs = ctrlrs.add(return);
 		^return;
+	}
+
+	*newTwisterCtrlr{
+		var return;
+		return = SCMTwister.new();
+		midiCtrlrs = midiCtrlrs.add(return);
+		^return;
+
 	}
 
 	*clock{
@@ -293,3 +320,17 @@ SCMTDDataOut{
 
 
 
+SCMTwister{
+	var < midiout;
+
+	*new{
+		^super.new.init();
+	}
+
+	init{
+		{midiout = MIDIOut.newByName("Midi Fighter Twister", "Midi Fighter Twister");}.try{"failed to connect to midiout".postln;};
+		midiout.latency = 0;
+	}
+
+
+}
