@@ -34,28 +34,21 @@ SCMProxy {
 		fadeOut = 2;
 		confirmFadeout = false;
 
-		//if audio input is present, add it to the proxy and filter it, function's first input then becomes input
-		// {
+		SCM.proxySpace[proxySpaceName] = NodeProxy.audio(Server.local, channels);
+		SCM.proxySpace[proxySpaceName].awake = false;//silently set proxy
 
+		//if audio input is present, add it to the proxy and filter it, function's first input then becomes input
 		(audioIn != nil).if
 		({
-			SCM.proxySpace[proxySpaceName] = NodeProxy.audio(Server.local, channels);
 			SCM.proxySpace[proxySpaceName][0] = audioIn;//add audio input
 			SCM.proxySpace[proxySpaceName][1] = \filter -> function;//add filter function
 		},
 		{
 			//otherwise just simple output
-			SCM.proxySpace[proxySpaceName] = function;
+			SCM.proxySpace[proxySpaceName][0] = function;
 		});
 
-		// if(thisThread.parent != nil)
-		// {
-		// 	"syncing".postln;
-		// 	Server.local.sync;
-		// };
-
-		SCM.proxySpace[proxySpaceName].pause;
-		SCM.proxySpace[proxySpaceName].stop;
+		SCM.proxySpace[proxySpaceName].end;//have to end, otherwise doesn't want to play... weird
 
 		this.mapNodeProxyControls();
 
@@ -107,6 +100,7 @@ SCMProxy {
 
 	play{
 		confirmFadeout = false;
+		SCM.proxySpace[proxySpaceName].awake = true;
 		SCM.proxySpace[proxySpaceName].resume;
 		SCM.proxySpace[proxySpaceName].play(out: outputBus, group:serverGroup, addAction: 'addToTail', fadeTime: fadeIn);//if output//NodeProxy;
 
@@ -116,13 +110,6 @@ SCMProxy {
 		SCM.proxySpace[proxySpaceName].stop(fadeOut);
 		confirmFadeout = true;
 		{ if(confirmFadeout){SCM.proxySpace[proxySpaceName].pause; }; }.defer(fadeOut);
-
-	}
-
-	suddenStop{
-		SCM.proxySpace[proxySpaceName].stop(0);
-		confirmFadeout = true;
-		{ if(confirmFadeout){SCM.proxySpace[proxySpaceName].pause; }; }.defer(0);
 
 	}
 

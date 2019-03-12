@@ -86,7 +86,7 @@ SCMGroup {
 		var proxy;
 		//new proxy
 		proxy = SCMProxy.new(proxyName, function, this, channels: channels);
-		proxy.stop;
+		// proxy.stop;
 		//add proxy to this group
 		proxies = proxies.add(proxy);
 		^proxy;//return
@@ -103,7 +103,7 @@ SCMGroup {
 
 		};
 		proxy = SCMProxy.new(proxyName, function, this, input, channels);
-		proxy.stop;
+		// proxy.stop;
 
 		//add SCMProxy after every generator of this group in server hierachy
 		proxy.serverGroup = Group.new(serverGroup, 'addToTail');

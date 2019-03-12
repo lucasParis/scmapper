@@ -79,7 +79,6 @@ SCMPattern {
 			return = fxProxy.getOutput();
 		}
 		{
-			"nofx".postln;
 			return = In.ar(this.outputBus, channels);
 		}
 		^return;

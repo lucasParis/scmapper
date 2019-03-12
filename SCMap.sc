@@ -110,7 +110,7 @@ SCM {
 		masterProxy = SCMProxy.new(proxyName, function, this, input, channels);
 		masterProxy.serverGroup = Group.new(serverGroup, 'addToTail');
 
-		this.masterProxy.play;
+		{masterProxy.play;}.defer(1);
 		this.masterProxy.outputBus.play;
 	}
 
