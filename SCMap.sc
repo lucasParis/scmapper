@@ -1,31 +1,28 @@
 
 SCM {
 	classvar <proxySpace;
+
 	classvar tempo_;
 	classvar <> tempoMin;
 	classvar <> tempoMax;
-	classvar <groups;
+
+	//list of things
+	classvar <> groups;
 	classvar <ctrlrs;
 	classvar <midiCtrlrs;
 	classvar <dataOutputs;// to touchdesigner, but could be other?
+
+
+	classvar < masterServerGroup;
+
+	//dataoutput
+	classvar <> visualLatency;
+	classvar <> replyIDCount;
 	classvar <dataOutRate;
 
-	classvar masterBus;
-	classvar < serverGroup;
-
-	classvar <> groups;
-
-	classvar < masterProxy;
-	classvar <> controls;
-
-	classvar <> visualLatency;
-
-
-	classvar <> replyIDCount;
-
-
-
-
+	//master fx
+	classvar <> masterFXdeferTime;//for the buggy play not working
+	classvar < masterGroup;//hold SCMGroup for masterFX
 
 	*init{
 		"initialising SCM".postln;
@@ -53,7 +50,7 @@ SCM {
 
 		ProxySynthDef.sampleAccurate = true;
 
-		serverGroup = Group.new(Server.local);
+		masterServerGroup = Group.new(Server.local);
 
 		//reset database
 		groups = [];
@@ -66,6 +63,8 @@ SCM {
 
 		tempoMin = 20;
 		tempoMax = 200;
+
+		masterFXdeferTime = 2;
 
 		OSCdef(\fpsReroute,
 			{
@@ -86,34 +85,21 @@ SCM {
 
 	}
 
-	*newCtrl{
-		arg name, defaultValue = 0, postFix = "/x";
-		var ctrl;
-
-		//new ctrl
-		ctrl = SCMCtrl.new(name, defaultValue, postFix, this);
-		// add control to this group
-		this.controls = this.controls.add(ctrl);
-		^ctrl;//return
-	}
-
 	*masterFX{
 		arg function, channels = 2;
-		var proxy, proxyName, input, groupAudios;
-		proxyName = \masterFX;
+		var input;
 
-		//replace this with scm group?
-
-		//proxy inputs
 		input = {
 			(groups.collect{arg group; group.getOutput}.sum);
 		};
 
-		masterProxy = SCMProxy.new(proxyName, function, this, input, channels);
-		masterProxy.serverGroup = Group.new(serverGroup, 'addToTail');
-
-		{masterProxy.play;}.defer(1);
-		this.masterProxy.outputBus.play;
+		masterGroup = SCMGroup.new(\masterFX, channels);
+		masterGroup.serverGroup = Group.new(masterServerGroup, 'addToTail');
+		masterGroup.linkProxy(\input, input);
+		masterGroup.groupFX(function);
+		{masterGroup.play;}.defer(masterFXdeferTime);
+		masterGroup.listen;
+		^masterGroup;
 	}
 
 	*newGroup{
@@ -136,14 +122,14 @@ SCM {
 
 	}
 
-	* getCtrl{
+	/** getCtrl{
 		arg name;
 		var result;
 		//loop through controls and find the one with this name
 		result = controls.select{ arg control; control.name == name; };
 		if(result.size > 0){result = result[0]} {result = nil};
 		^result;
-	}
+	}*/
 
 	*newTDDataOut{
 		arg ip = "127.0.0.1";

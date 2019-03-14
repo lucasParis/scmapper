@@ -44,7 +44,7 @@ SCMGroup {
 		this.updateMenuFeedback('/play/x', 0);
 
 		//setup group
-		serverGroup = Group.new(SCM.serverGroup, 'addBefore');
+		serverGroup = Group.new(SCM.masterServerGroup, 'addBefore');
 
 		channels = channels_;
 	}
@@ -82,10 +82,10 @@ SCMGroup {
 
 	//add a proxy to this group
 	linkProxy{
-		arg proxyName, function;
+		arg proxyName, function, audioIn = nil;
 		var proxy;
 		//new proxy
-		proxy = SCMProxy.new(proxyName, function, this, channels: channels);
+		proxy = SCMProxy.new(proxyName, function, this, audioIn,  channels: channels);
 		// proxy.stop;
 		//add proxy to this group
 		proxies = proxies.add(proxy);
@@ -321,5 +321,9 @@ SCMGroup {
 		//create sendreply
 		SendReply.kr(Impulse.kr(SCM.dataOutRate), address, signal, -1);
 
+	}
+
+	listen{
+		this.fxSCMProxy.outputBus.play;
 	}
 }
