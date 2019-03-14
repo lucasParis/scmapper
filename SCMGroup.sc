@@ -93,7 +93,7 @@ SCMGroup {
 	}
 
 	groupFX{
-		arg function;
+		arg function = {arg in; in;};
 		var proxy, proxyName, input;
 		proxyName = (name ++ "groupFX").asSymbol;
 

@@ -121,4 +121,9 @@ SCMProxy {
 		^In.ar(this.outputBus, channels);
 	}
 
+	listen{
+		this.outputBus.play;
+	}
+
+
 }

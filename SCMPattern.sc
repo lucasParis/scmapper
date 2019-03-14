@@ -121,6 +121,10 @@ SCMPattern {
 		stream << "SCMPattern (" << name << ")";
 	}
 
+	listen{
+		this.outputBus.play;
+	}
+
 
 
 }
