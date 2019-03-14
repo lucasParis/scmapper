@@ -61,10 +61,10 @@ SCMGroup {
 	}
 
 	getCtrl{
-		arg name;
+		arg name, postFix = "/x";
 		var result;
 		//loop through controls and find the one with this name
-		result = controls.select{ arg control; control.name == name; };
+		result = controls.select{ arg control; (control.name == name.asSymbol) && (control.postFix == postFix.asSymbol); };
 		if(result.size > 0){result = result[0]} {result = nil};
 		^result;
 	}

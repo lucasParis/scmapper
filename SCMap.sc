@@ -102,6 +102,8 @@ SCM {
 		var proxy, proxyName, input, groupAudios;
 		proxyName = \masterFX;
 
+		//replace this with scm group?
+
 		//proxy inputs
 		input = {
 			(groups.collect{arg group; group.getOutput}.sum);

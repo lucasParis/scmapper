@@ -10,7 +10,9 @@ SCMCtrl {
 	var type, value, oscAddr;
 	var <name;
 	var <>parentGroup;
-	var postFix;
+	var < postFix;
+
+	var <> ignoreFeedback;
 
 	//for midi encoder
 	var lastTime;
@@ -34,10 +36,10 @@ SCMCtrl {
 
 	init{
 		arg ctrlName, defaultValue, postFix_, parent;
-		name = ctrlName;
+		name = ctrlName.asSymbol;
 		parentGroup = parent;
 		value = defaultValue;
-		postFix = postFix_;
+		postFix = postFix_.asSymbol;
 		isRadio = false;
 
 		oscAddr = "/" ++ parentGroup.name ++ "/" ++ name ++ postFix;
@@ -45,6 +47,9 @@ SCMCtrl {
 
 		proxyCtrlName = ctrlName ++ postFix.asString.replace("/", "_");
 		proxyCtrlName = proxyCtrlName.asSymbol;
+
+		//ignoreFeedback, for parameters that don't respond well to feedback
+		ignoreFeedback = false;
 
 		//for midi
 		lastTime = 0;
@@ -135,11 +140,14 @@ SCMCtrl {
 		}
 		);
 
+		if(ignoreFeedback.not)
+		{
 
-		//update osc outputs
-		SCM.ctrlrs.do{
-			arg ctrlr;
-			ctrlr.set(oscAddr, value)//for midi if a param is mapped, store relation path->encoder/button
+			//update osc outputs
+			SCM.ctrlrs.do{
+				arg ctrlr;
+				ctrlr.set(oscAddr, value)//for midi if a param is mapped, store relation path->encoder/button
+			};
 		};
 
 		//update touchdesigner outputs
