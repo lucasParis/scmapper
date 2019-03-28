@@ -110,25 +110,34 @@ SCM {
 		^group;
 	}
 
+	*getGroup{
+		arg name;
+		var result;
+		//loop through controls and find the one with this name
+		result = groups.select{ arg group; (group.name == name.asSymbol)};
+		if(result.size > 0){result = result[0]} {result = nil};
+		^result;
+	}
+
 	*setTempo{
 		arg tempo;
 		tempo_ = tempo;
 		proxySpace.clock.tempo = tempo_/60;
 
 		SCM.ctrlrs.do{
-					arg ctrlr;
+			arg ctrlr;
 			ctrlr.set("/scTempo", tempo_.linlin(tempoMin,tempoMax,0,1));
 		};
 
 	}
 
 	/** getCtrl{
-		arg name;
-		var result;
-		//loop through controls and find the one with this name
-		result = controls.select{ arg control; control.name == name; };
-		if(result.size > 0){result = result[0]} {result = nil};
-		^result;
+	arg name;
+	var result;
+	//loop through controls and find the one with this name
+	result = controls.select{ arg control; control.name == name; };
+	if(result.size > 0){result = result[0]} {result = nil};
+	^result;
 	}*/
 
 	*newTDDataOut{
@@ -145,6 +154,18 @@ SCM {
 		return = SCMLemurCtrlr.new(ip, port, name);
 		ctrlrs = ctrlrs.add(return);
 		^return;
+	}
+
+	*initLemurData{
+		//after all group declarations...
+		var names;
+		names = groups.collect{arg group; group.name}.postln;
+		//send group names to lemur
+		ctrlrs.do{
+			arg ctrlr;
+			ctrlr.set('/masterMenu/changeModule/names', names);
+		}
+
 	}
 
 	*newTwisterCtrlr{
@@ -215,6 +236,8 @@ SCM {
 		~synthsLib1.do{arg item; ("\\" ++ item).postln;};
 	}
 
+
+
 	*setupServer{
 		arg channels = 2;
 		Server.local.options.memSize_(2.pow(20));
@@ -255,6 +278,8 @@ SCM {
 SCMLemurCtrlr{
 	var < netAddr;
 	var name;
+	var selectedGroupName;
+	var groupReference;
 
 	*new{
 		arg ip, port, name;
@@ -265,7 +290,69 @@ SCMLemurCtrlr{
 		arg ip, port, name_;
 		name = name_;
 		netAddr = NetAddr(ip, port);
+		selectedGroupName = nil;
+
+
+		this.setupMasterGroupMenu;
+
+
+
 	}
+
+	setupMasterGroupMenu{
+		//listener for menu group CHANGE
+		OSCFunc(
+			{
+				|msg, time, addr, recvPort|
+				if(addr.port == netAddr.port)
+				{
+					var groupName = msg[1];
+					if(groupName.isKindOf(Symbol)){
+						// var
+
+						var scmGroup = SCM.getGroup(groupName);
+						if(scmGroup != nil,
+							{
+								selectedGroupName = groupName;
+								groupReference = scmGroup;
+								this.updateMenuElementsFromGroup;
+							},
+							{
+								selectedGroupName = nil;
+								groupReference = nil;
+							}
+						);
+					}
+				};
+		}, '/masterMenu/changeModule/name');
+
+		//listener for menu group PLAY
+		OSCFunc(
+			{
+				|msg, time, addr, recvPort|
+				if(addr.port == netAddr.port)
+				{
+					if(groupReference != nil){
+
+						if(msg[1] >0.5)
+						{
+							"play".postln;
+							groupReference.play();
+						}
+						{
+							groupReference.stop();
+						};
+					};
+				};
+		}, '/masterMenu/play/x');
+
+	}
+
+	updateMenuElementsFromGroup{
+		selectedGroupName.postln;
+		this.set('/masterMenu/play/x', SCM.getGroup(selectedGroupName).isPlaying.asInt.postln);
+	}
+
 	set{
 		arg path, value;
 		netAddr.sendMsg(path, *value);

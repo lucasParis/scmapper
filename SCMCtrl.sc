@@ -113,14 +113,6 @@ SCMCtrl {
 			SCM.proxySpace[proxyNodeName].set(proxyCtrlName, value);
 		};
 
-		if(midimapped > -1)
-		{
-			SCM.midiCtrlrs.do{
-				arg midiCtrlr;
-				midiCtrlr.midiout.control(chan:0,ctlNum:midimapped,val:(value*127).clip(0,128).round);
-			};
-		};
-
 		//update osc outputs
 		this.updateFeedback(val);
 	}
@@ -140,9 +132,17 @@ SCMCtrl {
 		}
 		);
 
+		//midi feedback
+		if(midimapped > -1)
+		{
+			SCM.midiCtrlrs.do{
+				arg midiCtrlr;
+				midiCtrlr.midiout.control(chan:0,ctlNum:midimapped,val:(value*127).clip(0,128).round);
+			};
+		};
+
 		if(ignoreFeedback.not)
 		{
-
 			//update osc outputs
 			SCM.ctrlrs.do{
 				arg ctrlr;
@@ -209,6 +209,7 @@ SCMCtrl {
 				this.set(newVal);
 		},index, 0);
 
+		//in midifighter twister: button on channel 2 turns parameter down
 		MIDIFunc.cc(
 			{
 				arg value;
@@ -220,7 +221,7 @@ SCMCtrl {
 			},index,1
 		);
 
-
+		//send feedback (should be only to a single controller)
 		SCM.midiCtrlrs.do{
 			arg midiCtrlr;
 			midiCtrlr.midiout.control(chan:0,ctlNum:index,val:(value*127).clip(0,128).round);

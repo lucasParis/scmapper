@@ -9,7 +9,7 @@ SCMGroup {
 
 	var oscAddrPrefix;
 	var oscAddrMenu;
-	var isPlaying;
+	var < isPlaying;
 
 	var <> fxSCMProxy;
 
@@ -50,7 +50,7 @@ SCMGroup {
 	}
 
 	newCtrl{
-		arg name, defaultValue = 0, postFix = "/x";
+		arg name, defaultValue = 0, postFix = "/x"; // subGroup = \pattern1 / nil
 		var ctrl;
 
 		//new ctrl
