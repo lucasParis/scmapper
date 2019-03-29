@@ -159,7 +159,7 @@ SCM {
 	*initLemurData{
 		//after all group declarations...
 		var names;
-		names = groups.collect{arg group; group.name}.postln;
+		names = groups.collect{arg group; group.name};
 		//send group names to lemur
 		ctrlrs.do{
 			arg ctrlr;
