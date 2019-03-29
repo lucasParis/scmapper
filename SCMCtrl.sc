@@ -7,7 +7,8 @@ BusMapper {
 }
 
 SCMCtrl {
-	var type, value, oscAddr;
+	var < value;
+	var type, oscAddr, colorAddr;
 	var <name;
 	var <>parentGroup;
 	var < postFix;
@@ -27,6 +28,16 @@ SCMCtrl {
 	var <>proxyNodeName;
 	var <>proxyCtrlName;
 
+	//for prep jump
+
+	var inPrepMode;
+	var prePrepValue;
+	var preparedValue;
+
+	var normalColor;
+	var prepareColor;
+
+
 	var isRadio;
 
 	*new{
@@ -45,6 +56,10 @@ SCMCtrl {
 		oscAddr = "/" ++ parentGroup.name ++ "/" ++ name ++ postFix;
 		oscAddr = oscAddr.asSymbol;
 
+		colorAddr = "/" ++ parentGroup.name ++ "/" ++ name;
+		colorAddr = colorAddr.asSymbol;
+
+
 		proxyCtrlName = ctrlName ++ postFix.asString.replace("/", "_");
 		proxyCtrlName = proxyCtrlName.asSymbol;
 
@@ -55,11 +70,21 @@ SCMCtrl {
 		lastTime = 0;
 		midimapped = -1;
 
+		//lemur colors
+		prepareColor = 8336384;
+		normalColor = 4868682;
+
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue.size.max(1));
 
+		//prep variables
+		inPrepMode = false;
+		preparedValue = value;
+
 		//add osc listerners
 		this.setupOscListeners();
+
+
 
 
 
@@ -99,6 +124,45 @@ SCMCtrl {
 		^Pfunc{value};
 	}
 
+	enterPrepMode{
+		//store current value for exit prep mode
+		prePrepValue = value;
+
+		//send last prepared value
+		this.updateFeedback(preparedValue,toTD: false, toMidi:false);
+
+
+		//set prep mode condition to reroute incoming values
+		inPrepMode = true;
+
+		//set to prep mode color
+		SCM.ctrlrs.do{
+			arg ctrlr;
+			ctrlr.setColor(colorAddr, prepareColor);
+			// ctrlr.setPhysics(colorAddr, 0);
+		};
+
+	}
+
+	exitPrepMode{
+		//return UI to value pre prep
+		this.updateFeedback(prePrepValue, toTD: false, toMidi:false);
+
+		//set prep condition
+		inPrepMode = false;
+
+		//return to original color
+		SCM.ctrlrs.do{
+			arg ctrlr;
+			ctrlr.setColor(colorAddr, normalColor);
+			// ctrlr.setPhysics(colorAddr, 1);
+		};
+	}
+
+	jump{
+		this.set(preparedValue);
+	}
+
 	set{
 		arg val;
 		//set value
@@ -118,7 +182,7 @@ SCMCtrl {
 	}
 
 	updateFeedback{
-		arg value;
+		arg value, toCtrlrs = true, toTD = true, toMidi=true;
 		var rawValue;
 
 		rawValue = value;
@@ -133,27 +197,36 @@ SCMCtrl {
 		);
 
 		//midi feedback
-		if(midimapped > -1)
+		if(toMidi)
 		{
-			SCM.midiCtrlrs.do{
-				arg midiCtrlr;
-				midiCtrlr.midiout.control(chan:0,ctlNum:midimapped,val:(value*127).clip(0,128).round);
+			if(midimapped > -1)
+			{
+				SCM.midiCtrlrs.do{
+					arg midiCtrlr;
+					midiCtrlr.midiout.control(chan:0,ctlNum:midimapped,val:(value*127).clip(0,128).round);
+				};
 			};
 		};
 
-		if(ignoreFeedback.not)
+		if(toCtrlrs)
 		{
-			//update osc outputs
-			SCM.ctrlrs.do{
-				arg ctrlr;
-				ctrlr.set(oscAddr, value)//for midi if a param is mapped, store relation path->encoder/button
+			if(ignoreFeedback.not)
+			{
+				//update osc outputs
+				SCM.ctrlrs.do{
+					arg ctrlr;
+					ctrlr.set(oscAddr, value)//for midi if a param is mapped, store relation path->encoder/button
+				};
 			};
 		};
 
-		//update touchdesigner outputs
-		SCM.dataOutputs.do{
-			arg tdOut;
-			tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *rawValue);//append /controls
+		if(toTD)
+		{
+			//update touchdesigner outputs
+			SCM.dataOutputs.do{
+				arg tdOut;
+				tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *rawValue);//append /controls
+			};
 		};
 	}
 
@@ -184,7 +257,14 @@ SCMCtrl {
 				);
 
 				//set (when not in metactrl mode)
-				this.set(value);
+				if(inPrepMode)
+				{
+					preparedValue = value;
+				}
+				{
+					this.set(value);
+				};
+
 
 		}, oscAddr);
 	}

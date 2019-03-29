@@ -299,63 +299,116 @@ SCMLemurCtrlr{
 
 	}
 
+	setupInstanceListener{
+		arg adr, function;
+		OSCFunc(
+			{
+				|msg, time, addr, recvPort|
+				//check if the message is comming from this controller
+				if(addr.port == netAddr.port)
+				{
+					function.value(msg[1..]);
+				}
+			},
+			adr
+		);
+	}
+
 	setupMasterGroupMenu{
 		//listener for menu group CHANGE
-		OSCFunc(
-			{
-				|msg, time, addr, recvPort|
-				if(addr.port == netAddr.port)
-				{
-					var groupName = msg[1];
-					if(groupName.isKindOf(Symbol)){
-						// var
+		this.setupInstanceListener('/masterMenu/changeModule/name', {
+			arg args;
+			//get the selected group from OSC
+			var groupName = args[0];
+			//check if it's valid
+			if(groupName.isKindOf(Symbol)){
+				//check if it is in active groups
+				var scmGroup = SCM.getGroup(groupName);
 
-						var scmGroup = SCM.getGroup(groupName);
-						if(scmGroup != nil,
-							{
-								selectedGroupName = groupName;
-								groupReference = scmGroup;
-								this.updateMenuElementsFromGroup;
-							},
-							{
-								selectedGroupName = nil;
-								groupReference = nil;
-							}
-						);
-					}
-				};
-		}, '/masterMenu/changeModule/name');
+				if(scmGroup != nil,{
+					//if found, store name and group reference
+					selectedGroupName = groupName;
+					groupReference = scmGroup;
+
+					//and send values from group to UI
+					this.updateMenuElementsFromGroup;
+				},{
+					//otherwise set to nil
+					selectedGroupName = nil;
+					groupReference = nil;
+				});
+			}
+		});
 
 		//listener for menu group PLAY
-		OSCFunc(
-			{
-				|msg, time, addr, recvPort|
-				if(addr.port == netAddr.port)
+		this.setupInstanceListener('/masterMenu/play/x', {
+			arg args;
+			if(groupReference != nil){
+				if(args[0] >0.5)
 				{
-					if(groupReference != nil){
-
-						if(msg[1] >0.5)
-						{
-							"play".postln;
-							groupReference.play();
-						}
-						{
-							groupReference.stop();
-						};
-					};
+					groupReference.play();
+				}
+				{
+					groupReference.stop();
 				};
-		}, '/masterMenu/play/x');
+			};
+		});
 
+		//listener for menu group volume
+		this.setupInstanceListener('/masterMenu/volume/x', {
+			arg args;
+			if(groupReference != nil){
+				groupReference.getCtrl('volume').set(args[0]);
+			};
+		});
+
+
+		//listener for menu group prep
+		this.setupInstanceListener('/masterMenu/prep/x', {
+			arg args;
+			if(groupReference != nil){
+				if(args[0] > 0.5)
+				{"prep start".postln; groupReference.controls.do{arg ctrl; ctrl.enterPrepMode}; }
+				{"prep done".postln; groupReference.controls.do{arg ctrl; ctrl.exitPrepMode}; }
+			};
+		});
+
+		//listener for menu group prep
+		this.setupInstanceListener('/masterMenu/jump/x', {
+			arg args;
+			if(groupReference != nil){
+				if(args[0] > 0.5)
+				{ groupReference.controls.do{arg ctrl; ctrl.jump}; }
+			};
+		});
 	}
 
 	updateMenuElementsFromGroup{
-		selectedGroupName.postln;
-		this.set('/masterMenu/play/x', SCM.getGroup(selectedGroupName).isPlaying.asInt.postln);
+		var volume;
+
+		this.set('/masterMenu/play/x', SCM.getGroup(selectedGroupName).isPlaying.asInt);
+
+		volume = SCM.getGroup(selectedGroupName).getCtrl('volume').value;
+		this.set('/masterMenu/volume/x', volume);
 	}
 
 	set{
 		arg path, value;
 		netAddr.sendMsg(path, *value);
+	}
+
+	setColor{
+		arg path, color;
+		netAddr.sendMsg(path, '@color', color);
+		// ctrlr.sendMsg(ctrldict['addr'].asString.replace("/x", ""),'@color', shiftJumpColor);//send color orange
+
+	}
+
+	setPhysics{
+		arg path, value;
+		netAddr.sendMsg(path, '@physic', value);
+		// ctrlr.sendMsg(ctrldict['addr'].asString.replace("/x", ""),'@color', shiftJumpColor);//send color orange
+
 	}
 }
 
