@@ -71,6 +71,8 @@ SCMPattern {
 			\fx_group, serverGroup
 		);
 
+		//osc rerouting
+		rawPattern =  rawPattern.collect({arg evt; SCM.eventToTD(evt, parentGroup.name, name);});
 
 
 		//if in manual mode
@@ -130,8 +132,6 @@ SCMPattern {
 
 		};
 
-		//osc rerouting
-		rawPattern =  rawPattern.collect({arg evt; SCM.eventToTD(evt, parentGroup.name, name);});
 
 		rawBusPlayer = Pmono(\SCMbusPlayer_stereo,
 			\in, bus,
