@@ -15,7 +15,7 @@ SCMPattern {
 	var oscAddrPrefix;
 
 	var isPlaying;
-	var quant;
+	var <> quant;
 	// var <> sendToOutput;
 	var channels;
 
@@ -29,18 +29,33 @@ SCMPattern {
 
 	var < fxProxy;
 
+	var manualMode;
+	var manualStream;
+	var <> manualGrouping;
+
+	var independentPlay;
+	var independentPlayCtrl;
+
 	*new{
-		arg patternName, pattern, parent, channels = 2;
-		^super.new.init(patternName, pattern, parent, channels);
+		arg patternName, pattern, parent, channels = 2, manualMode = false, independentPlay = false;
+		^super.new.init(patternName, pattern, parent, channels, manualMode, independentPlay);
 	}
 
 	init{
-		arg patternName, pattern, parent, channelCount;
+		arg patternName, pattern, parent, channelCount, manualMode_, independentPlay_;
 
 		//set variables
 		parentGroup = parent;
 		name = patternName;
 		channels = channelCount;
+		manualMode = manualMode_;
+		independentPlay = independentPlay_;
+
+		//set default values
+		isPlaying = false;
+		quant = 4;
+		hasFX = false;
+		manualGrouping = 1;
 
 		//create busses
 		bus = Bus.audio(Server.local, channels);
@@ -56,6 +71,68 @@ SCMPattern {
 			\fx_group, serverGroup
 		);
 
+
+
+		//if in manual mode
+		if(manualMode)
+		{
+			quant = nil;
+
+			manualStream = rawPattern.asStream;
+
+			//add listeners/ctrls for play
+			parent.newCtrl((name.asString ++ 'Play').asSymbol).functionSet = {
+				arg value;
+				if(isPlaying)
+				{
+					if(value > 0.5)
+					{
+						if(quant == nil)
+						{
+							manualGrouping.do{manualStream.next(()).play;};
+						}
+						{
+							SCM.proxySpace.clock.play({ manualGrouping.do{manualStream.next(()).play;}; }, quant);
+						};
+					};
+				};
+			};
+
+			//add listeners/ctrls for reset
+			parent.newCtrl((name.asString ++ 'Reset').asSymbol).functionSet = {
+				arg value;
+				if(value > 0.5)
+				{
+					manualStream.reset;
+				};
+			};
+		};
+
+		//independent play, can react to a stopping pattern
+		if(independentPlay)
+		{
+
+			//osc controller for play
+			independentPlayCtrl = parent.newCtrl((name.asString ++ 'Play').asSymbol).functionSet = {
+				arg value;
+				if(value > 0.5)
+				{
+					this.startPattern();
+
+				}
+				{
+					this.stopPattern();
+				};
+			};
+
+			//callback for pattern's end
+			rawPattern = Pfset(nil, rawPattern, { "hello".postln; independentPlayCtrl.set(0,toFunction:false); "hello".postln;});
+
+		};
+
+		//osc rerouting
+		rawPattern =  rawPattern.collect({arg evt; SCM.eventToTD(evt, parentGroup.name, name);});
+
 		rawBusPlayer = Pmono(\SCMbusPlayer_stereo,
 			\in, bus,
 			\out, outputBus,
@@ -63,13 +140,6 @@ SCMPattern {
 			\group, busPlayerGroup,
 			\dur, 1
 		);
-
-		//set default values
-		isPlaying = false;
-		quant = 4;
-		// sendToOutput = true;
-		hasFX = false;
-
 
 	}
 
@@ -105,15 +175,35 @@ SCMPattern {
 		^proxy;//return
 	}
 
+	startPattern{
+		patternPlayer = rawPattern.play(clock: SCM.proxySpace.clock, quant:quant);//, doReset:true
+	}
+
+	stopPattern{
+
+		patternPlayer.stop;
+
+	}
+
 	play{
-		patternPlayer = rawPattern.collect({arg evt; SCM.eventToTD(evt, parentGroup.name, name); }).play(clock: SCM.proxySpace.clock, quant:quant);//, doReset:true
-		// patternPlayer = rawPattern.play(clock: SCM.proxySpace.clock, quant:quant, doReset:true);
+		isPlaying = true;
+
+		if(manualMode.not)
+		{
+			if(independentPlay.not)
+			{
+				this.startPattern();
+			};
+		};
+
 		busPlayer = rawBusPlayer.play(clock: SCM.proxySpace.clock, quant:quant);//, doReset:true
 	}
 
 	stop{
-		patternPlayer.stop;
-		// busPlayer.set(\gate,0);
+		isPlaying = false;
+
+		this.stopPattern();
+
 		busPlayer.stop;
 	}
 

@@ -71,10 +71,10 @@ SCMGroup {
 
 	//add a pattern to this group
 	linkPattern{
-		arg patternName, pattern;
+		arg patternName, pattern, manualMode = false, independentPlay = false;
 		var pat;
 		//new pattern
-		pat = SCMPattern.new(patternName, pattern, this, channels);
+		pat = SCMPattern.new(patternName, pattern, this, channels, manualMode, independentPlay);
 		// add pattern to this group
 		patterns = patterns.add(pat);
 		^pat;//return
@@ -276,15 +276,16 @@ SCMGroup {
 
 		// osc listener for sendReply
 		OSCdef(
-			address,
+			address.asSymbol,
 			{
 				arg msg;
 				var values;
+
 				values = msg[3..];//get the signal values
 				//send to touch, with sync delay
 				SCM.dataOutputs.do{
 					arg tdOut;
-					{tdOut.dat.sendMsg(address, *values)}.defer(SCM.visualLatency);
+					{"many?".postln;tdOut.dat.sendMsg(address, *values)}.defer(SCM.visualLatency);
 				}
 
 		}, address);//oscdef addr for signal reply
@@ -305,7 +306,7 @@ SCMGroup {
 
 		// osc listener for sendReply
 		OSCdef(
-			address,
+			address.asSymbol,
 			{
 				arg msg;
 				var values;

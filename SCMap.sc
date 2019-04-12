@@ -13,6 +13,10 @@ SCM {
 	classvar <dataOutputs;// to touchdesigner, but could be other?
 
 
+
+	classvar < anvoMotors;
+
+
 	classvar < masterServerGroup;
 
 	//dataoutput
@@ -54,6 +58,9 @@ SCM {
 
 		//reset database
 		groups = [];
+		dataOutputs = [];
+		ctrlrs = [];
+		midiCtrlrs = [];
 
 		visualLatency = 0;
 
@@ -160,6 +167,7 @@ SCM {
 		//after all group declarations...
 		var names;
 		names = groups.collect{arg group; group.name};
+		groups.collect{arg group; ("'" + group.name + "'").replace(" ", "")}.postln;
 		//send group names to lemur
 		ctrlrs.do{
 			arg ctrlr;
@@ -173,6 +181,13 @@ SCM {
 		return = SCMTwister.new();
 		midiCtrlrs = midiCtrlrs.add(return);
 		^return;
+
+	}
+
+
+	*newAnVoMotors{
+		anvoMotors = SCMAnVoMotors.new();
+		^anvoMotors;
 
 	}
 
@@ -206,16 +221,25 @@ SCM {
 		stringEvent = ~evtToPythonDictString.value(evt);
 
 		//calculate delay
-		delay = evt[\timingOffset] * SCM.proxySpace.clock.tempo.reciprocal;
+		if(evt[\timingOffset] != nil)
+		{
+			delay = evt[\timingOffset] * SCM.proxySpace.clock.tempo.reciprocal;
+		}
+		{
+			delay = 0;
+		};
 
 		if(evt[\timingOffset].size > 0)
 		{
 			delay = 0;
 		};
 
-		if(evt[\lag].size < 1)
+		if(evt[\lag] != nil)
 		{
-			delay  =delay + evt[\lag];
+			if(evt[\lag].size < 1)
+			{
+				delay  =delay + evt[\lag];
+			};
 		};
 
 
@@ -265,6 +289,7 @@ SCM {
 					(pathSCM ++ "/resourcesSC/evtToPyDict.scd").load;
 				};
 				//initialise SCM
+				Server.local.latency = 0.05;
 				SCM.init();
 
 			}
@@ -278,8 +303,8 @@ SCM {
 SCMLemurCtrlr{
 	var < netAddr;
 	var name;
-	var selectedGroupName;
-	var groupReference;
+	var <selectedGroupName;
+	var <groupReference;
 
 	*new{
 		arg ip, port, name;
@@ -314,42 +339,63 @@ SCMLemurCtrlr{
 		);
 	}
 
+	selectGroup{
+		arg groupName;
+		//check if it's valid
+		if(groupName.isKindOf(Symbol)){
+			//check if it is in active groups
+			var scmGroup = SCM.getGroup(groupName);
+
+			if(scmGroup != nil,{
+				//if found, store name and group reference
+				selectedGroupName = groupName;
+				// groupReference = scmGroup;
+				this.setGroupRef(scmGroup);
+				"initied".postln;
+				groupReference.postln;
+
+				//and send values from group to UI
+				this.updateMenuElementsFromGroup;
+			},{
+				//otherwise set to nil
+				selectedGroupName = nil;
+				groupReference = nil;
+			});
+		};
+	}
+
+	setGroupRef{
+		arg ref;
+		groupReference = ref;
+	}
+
+	getGroupRef{
+		^groupReference;
+	}
+
 	setupMasterGroupMenu{
 		//listener for menu group CHANGE
 		this.setupInstanceListener('/masterMenu/changeModule/name', {
 			arg args;
 			//get the selected group from OSC
 			var groupName = args[0];
-			//check if it's valid
-			if(groupName.isKindOf(Symbol)){
-				//check if it is in active groups
-				var scmGroup = SCM.getGroup(groupName);
-
-				if(scmGroup != nil,{
-					//if found, store name and group reference
-					selectedGroupName = groupName;
-					groupReference = scmGroup;
-
-					//and send values from group to UI
-					this.updateMenuElementsFromGroup;
-				},{
-					//otherwise set to nil
-					selectedGroupName = nil;
-					groupReference = nil;
-				});
-			}
+			this.selectGroup(groupName);
 		});
 
 		//listener for menu group PLAY
 		this.setupInstanceListener('/masterMenu/play/x', {
 			arg args;
-			if(groupReference != nil){
+			"playing".postln;
+			this.getGroupRef.postln;
+			if(this.getGroupRef != nil){
+				"playoung".postln;
+
 				if(args[0] >0.5)
 				{
-					groupReference.play();
+					this.getGroupRef.play();
 				}
 				{
-					groupReference.stop();
+					this.getGroupRef.stop();
 				};
 			};
 		});
@@ -443,6 +489,106 @@ SCMTDDataOut{
 
 }
 
+SCMAnVoMotors{
+	var < motors;
+	var motorIds;
+	var motorPresets;
+
+	*new{
+		^super.new.init();
+	}
+
+
+	setPosition{
+		arg motorIndex, angle;
+
+		//to touchdesigner
+		SCM.dataOutputs.do{
+			arg tdOut;
+			tdOut.chop.sendMsg(("/motorPosition/" ++ motorIndex).asSymbol, angle * -1);
+		};
+
+
+		angle = (290*4*angle/360).asInt;
+		angle = angle.snap(4);
+		angle = angle * -1;
+
+		motors[motorIndex].bend(0,angle);
+
+
+	}
+
+	setPreset{
+		arg name;
+		var list;
+		list = motorPresets[name.asSymbol];
+		if(list != nil)
+		{
+			list.do{arg angle, i; this.setPosition(i,angle)};
+		};
+	}
+
+	setupPresets{
+		motorPresets = ();
+		motorPresets[\inout] = [-45, 45, 45, -45];
+		motorPresets[\inoutReversed] = [-45+180, 45-180, 45-180, -45+180];
+		motorPresets[\cross] = [45, -45, -45, 45];
+		motorPresets[\front] = [0, 0, 0, 0];
+		motorPresets[\back] = [180, -180, 180, -180];
+		motorPresets[\diag1] = [45, 45, 45, 45];
+		motorPresets[\diag2] = [-45, -45, -45, -45];
+	}
+
+	setupPresetListener{
+		arg addr, presetName;
+		OSCdef(
+			("anvoOsc" ++ presetName).asSymbol,
+			{
+				arg msg;
+				if(msg[1] > 0.5)
+				{
+					this.setPreset(presetName);
+				}
+			}, addr
+		);
+	}
+
+	setupListeners{
+		this.setupPresetListener('/motorsFront/x', \front);
+		this.setupPresetListener('/motorsBack/x', \back);
+		this.setupPresetListener('/motorsCross/x', \cross);
+		this.setupPresetListener('/motorsInout/x', \inout);
+		this.setupPresetListener('/motorsInoutRev/x', \inoutReversed);
+		this.setupPresetListener('/diag1/x', \diag1);
+		this.setupPresetListener('/diag2/x', \diag2);
+	}
+
+	init{
+		motorIds = [920339066,2050449709, -1417981912, -1480817946];
+
+		motorIds.do{
+			arg id;
+			MIDIClient.destinations.do{
+				arg destination, i;
+				if(id == destination.uid)
+				{
+					motors = motors.add({MIDIOut.new(i, id)}.try{"failed to connect to midiout".postln;nil});
+				}
+			}
+		};
+
+		motors.do{arg motor;motor.latency = 0;};
+
+
+		this.setupPresets();
+		motorPresets.postln;
+		this.setupListeners();
+
+	}
+
+
+
+}
 
 
 

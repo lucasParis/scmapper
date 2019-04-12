@@ -38,6 +38,10 @@ SCMCtrl {
 	var prepareColor;
 
 
+	//for function callback
+	var <> functionSet;
+
+
 	var isRadio;
 
 	*new{
@@ -164,7 +168,7 @@ SCMCtrl {
 	}
 
 	set{
-		arg val;
+		arg val, toFunction = true;
 		//set value
 		value = val;
 
@@ -175,6 +179,14 @@ SCMCtrl {
 		if(proxyNodeName != nil)
 		{
 			SCM.proxySpace[proxyNodeName].set(proxyCtrlName, value);
+		};
+
+		if( functionSet != nil)
+		{
+			if(toFunction)
+			{
+				functionSet.value(value);
+			};
 		};
 
 		//update osc outputs
