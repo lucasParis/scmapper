@@ -167,7 +167,7 @@ SCM {
 		//after all group declarations...
 		var names;
 		names = groups.collect{arg group; group.name};
-		groups.collect{arg group; ("'" + group.name + "'").replace(" ", "")}.postln;
+		groups.collect{arg group; ("'" + group.name + "'").replace(" ", "")};
 		//send group names to lemur
 		ctrlrs.do{
 			arg ctrlr;
@@ -179,6 +179,14 @@ SCM {
 	*newTwisterCtrlr{
 		var return;
 		return = SCMTwister.new();
+		midiCtrlrs = midiCtrlrs.add(return);
+		^return;
+
+	}
+
+	*newJoystickCtrlr{
+		var return;
+		return = SCMJoystickCtrlr.new();
 		midiCtrlrs = midiCtrlrs.add(return);
 		^return;
 
@@ -212,7 +220,13 @@ SCM {
 		evt[\isRest] = evt.isRest;
 		//convert dur from Rest to Int if Rest
 		evt[\isRest].if{
-			evt[\dur] = evt[\dur].value;
+			var dur;
+			dur = evt[\dur].value;
+			//empty event on rest, don't want to update values
+			evt = ();
+			evt[\isRest] = true;
+			evt[\dur] = dur;
+
 		};
 		//convert dur from beat to seconds
 		evt[\dur] = evt[\dur] / proxySpace.clock.tempo;
@@ -258,6 +272,9 @@ SCM {
 
 	*postSynthLib{
 		~synthsLib1.do{arg item; ("\\" ++ item).postln;};
+		"\nSynthDescLib.getLib(\\lib1).browse\n".postln;
+		"~postArgsPbind.value(\\l1_12brass)\n".postln;
+
 	}
 
 
@@ -267,10 +284,11 @@ SCM {
 		Server.local.options.memSize_(2.pow(20));
 		Server.local.options.numWireBufs = 512;
 		Server.local.options.maxSynthDefs  =2048;
+		Server.local.options.hardwareBufferSize  =128;
 		Server.local.options.numOutputBusChannels = channels;
 
 
-		ServerBoot.add({"hello".postln;}, Server.local);
+		// ServerBoot.add({"hello".postln;}, Server.local);
 
 		Server.local.waitForBoot(
 			{
@@ -320,7 +338,21 @@ SCMLemurCtrlr{
 
 		this.setupMasterGroupMenu;
 
+		SCM.proxySpace.clock.play({
+			var beatCount;
+			beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
+			// netAddr.sendM
+			this.set("/clockCount", beatCount);
+			0.25;
 
+		},4);
+
+
+
+	}
+
+	midivalueIN{
+		arg cc, value;
 
 	}
 
@@ -351,8 +383,6 @@ SCMLemurCtrlr{
 				selectedGroupName = groupName;
 				// groupReference = scmGroup;
 				this.setGroupRef(scmGroup);
-				"initied".postln;
-				groupReference.postln;
 
 				//and send values from group to UI
 				this.updateMenuElementsFromGroup;
@@ -385,11 +415,7 @@ SCMLemurCtrlr{
 		//listener for menu group PLAY
 		this.setupInstanceListener('/masterMenu/play/x', {
 			arg args;
-			"playing".postln;
-			this.getGroupRef.postln;
 			if(this.getGroupRef != nil){
-				"playoung".postln;
-
 				if(args[0] >0.5)
 				{
 					this.getGroupRef.play();
@@ -414,19 +440,25 @@ SCMLemurCtrlr{
 			arg args;
 			if(groupReference != nil){
 				if(args[0] > 0.5)
-				{"prep start".postln; groupReference.controls.do{arg ctrl; ctrl.enterPrepMode}; }
-				{"prep done".postln; groupReference.controls.do{arg ctrl; ctrl.exitPrepMode}; }
+				{groupReference.controls.do{arg ctrl; ctrl.enterPrepMode}; }
+				{groupReference.controls.do{arg ctrl; ctrl.exitPrepMode}; }
 			};
 		});
 
 		//listener for menu group prep
 		this.setupInstanceListener('/masterMenu/jump/x', {
 			arg args;
-			if(groupReference != nil){
-				if(args[0] > 0.5)
-				{ groupReference.controls.do{arg ctrl; ctrl.jump}; }
-			};
+			if(args[0] > 0.5)
+			{
+				this.jumpGroup;
+			}
 		});
+	}
+
+	jumpGroup{
+		if(groupReference != nil){
+			groupReference.controls.do{arg ctrl; ctrl.jump};
+		};
 	}
 
 	updateMenuElementsFromGroup{
@@ -537,6 +569,8 @@ SCMAnVoMotors{
 		motorPresets[\back] = [180, -180, 180, -180];
 		motorPresets[\diag1] = [45, 45, 45, 45];
 		motorPresets[\diag2] = [-45, -45, -45, -45];
+		motorPresets[\arrow1] = [-45, 45, -45, 45];
+		motorPresets[\arrow2] = [-45, 45, -45, 45] * -1;
 	}
 
 	setupPresetListener{
@@ -561,6 +595,8 @@ SCMAnVoMotors{
 		this.setupPresetListener('/motorsInoutRev/x', \inoutReversed);
 		this.setupPresetListener('/diag1/x', \diag1);
 		this.setupPresetListener('/diag2/x', \diag2);
+		this.setupPresetListener('/arrow1/x', \arrow1);
+		this.setupPresetListener('/arrow2/x', \arrow2);
 	}
 
 	init{
@@ -581,7 +617,6 @@ SCMAnVoMotors{
 
 
 		this.setupPresets();
-		motorPresets.postln;
 		this.setupListeners();
 
 	}
@@ -591,7 +626,85 @@ SCMAnVoMotors{
 }
 
 
+SCMJoystickCtrlr{
+	var < midiout;
+	var uid;
+	*new{
+		^super.new.init();
+	}
 
+	init{
+		uid = -1328798234;
+
+		6.do{
+			arg midiCC;
+
+			MIDIFunc.cc(
+				{
+					arg midiValue;
+					var associatedCtrlrIndex;
+
+					associatedCtrlrIndex = 1;
+
+					if(midiCC < 3)
+					{
+						associatedCtrlrIndex = 0;
+					};
+					SCM.ctrlrs[associatedCtrlrIndex].midivalueIN(midiCC%3, midiValue);
+
+
+
+					midiout.control(chan:0,ctlNum:midiCC,val:midiValue);
+
+
+			},midiCC, 0);
+		};
+
+		MIDIClient.destinations.do{
+			arg destination, i;
+			if(uid == destination.uid)
+			{
+				midiout = {MIDIOut.new(i, uid)}.try{"failed to connect to midiout".postln;nil};
+				if(midiout != nil)
+				{
+					midiout.latency = 0;
+				}
+			}
+		};
+
+		//initialise controller to white
+		8.do{arg i; midiout.control(0,i,0);};
+
+		MIDIFunc.cc(
+			{
+				arg midiValue;
+				"jumper1".postln;
+				if(midiValue > 64)
+				{
+					SCM.ctrlrs[0].jumpGroup;
+				};
+
+				midiout.control(chan:0,ctlNum:6,val:midiValue);
+
+
+		},6, 0);
+
+		MIDIFunc.cc(
+			{
+				arg midiValue;
+				"jumper2".postln;
+				if(midiValue > 64)
+				{
+					SCM.ctrlrs[1].jumpGroup;
+				};
+
+				midiout.control(chan:0,ctlNum:7,val:midiValue);
+
+
+		},7, 0);
+	}
+
+}
 
 
 SCMTwister{
@@ -604,6 +717,7 @@ SCMTwister{
 	init{
 		{midiout = MIDIOut.newByName("Midi Fighter Twister", "Midi Fighter Twister");}.try{"failed to connect to midiout".postln;};
 		midiout.latency = 0;
+
 	}
 
 

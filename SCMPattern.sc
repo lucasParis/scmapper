@@ -25,6 +25,8 @@ SCMPattern {
 	var busPlayer;
 	var busPlayerGroup;
 
+	var triggerBus;
+
 	var < outputBus;
 
 	var < fxProxy;
@@ -36,13 +38,15 @@ SCMPattern {
 	var independentPlay;
 	var independentPlayCtrl;
 
+
+
 	*new{
-		arg patternName, pattern, parent, channels = 2, manualMode = false, independentPlay = false;
-		^super.new.init(patternName, pattern, parent, channels, manualMode, independentPlay);
+		arg patternName, pattern, parent, channels = 2, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1 ;
+		^super.new.init(patternName, pattern, parent, channels, manualMode, independentPlay, trigBus, manualGrouping);
 	}
 
 	init{
-		arg patternName, pattern, parent, channelCount, manualMode_, independentPlay_;
+		arg patternName, pattern, parent, channelCount, manualMode_, independentPlay_, trigBus_, manualGrouping_;
 
 		//set variables
 		parentGroup = parent;
@@ -55,7 +59,11 @@ SCMPattern {
 		isPlaying = false;
 		quant = 4;
 		hasFX = false;
-		manualGrouping = 1;
+		manualGrouping = manualGrouping_;
+		if(trigBus_)
+		{
+			manualGrouping = manualGrouping*2;
+		};
 
 		//create busses
 		bus = Bus.audio(Server.local, channels);
@@ -71,8 +79,25 @@ SCMPattern {
 			\fx_group, serverGroup
 		);
 
+
+
 		//osc rerouting
 		rawPattern =  rawPattern.collect({arg evt; SCM.eventToTD(evt, parentGroup.name, name);});
+
+		//trigger bus
+		if(trigBus_)
+		{
+			var trigPat;
+
+			triggerBus = Bus.audio(Server.local,1);
+
+			trigPat = Pbindf(rawPattern,
+				\instrument, 'l1_trigToBus',
+				\trigOut, triggerBus,
+			);
+
+			rawPattern = Ppar([rawPattern,trigPat]);
+		};
 
 
 		//if in manual mode
@@ -89,12 +114,14 @@ SCMPattern {
 				{
 					if(value > 0.5)
 					{
+						manualGrouping.postln;
 						if(quant == nil)
 						{
 							manualGrouping.do{manualStream.next(()).play;};
 						}
 						{
-							SCM.proxySpace.clock.play({ manualGrouping.do{manualStream.next(()).play;}; }, quant);
+
+							SCM.proxySpace.clock.play({ manualGrouping.do{ manualStream.next(()).play;};  nil;}, quant);
 						};
 					};
 				};
@@ -141,6 +168,17 @@ SCMPattern {
 			\dur, 1
 		);
 
+	}
+
+	getTrigger{
+		var result;
+		result = nil;
+
+		if(triggerBus != nil)
+		{
+			result = In.ar(triggerBus);
+		};
+		^result;
 	}
 
 	getOutput{

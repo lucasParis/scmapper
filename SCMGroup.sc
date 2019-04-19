@@ -17,19 +17,27 @@ SCMGroup {
 
 	var < assignedIDs;
 
+	var midiMappings;// = [nil,nil,nil];
+
+	var quant;
+
+	var sharedSignals;
+
 	*new{
-		arg groupName, channels = 2;
-		^super.new.init(groupName, channels);
+		arg groupName, channels = 2, quant = 4;
+		^super.new.init(groupName, channels, quant);
 	}
 
 	init{
-		arg groupName, channels_;
+		arg groupName, channels_, quant_;
 		name = groupName;
 
 		//setup array to hold controls, arrays and proxies
 		controls = [];
 		patterns = [];
 		proxies = [];
+
+		sharedSignals = ();
 
 		isPlaying = false;
 
@@ -47,6 +55,27 @@ SCMGroup {
 		serverGroup = Group.new(SCM.masterServerGroup, 'addBefore');
 
 		channels = channels_;
+		quant = quant_;
+
+	}
+
+	shareSignal{
+		arg signal, name;
+		var bus;
+		bus = Bus.audio(Server.local, signal.size);
+		sharedSignals[name] = bus;
+		OffsetOut.ar(bus,signal);
+	}
+
+	getSignal{
+		arg name;
+		var result;
+		result = nil;
+		if(sharedSignals[name] != nil)
+		{
+			result = In.ar(sharedSignals[name],sharedSignals[name].numChannels);
+		};
+		^result;
 	}
 
 	newCtrl{
@@ -71,10 +100,10 @@ SCMGroup {
 
 	//add a pattern to this group
 	linkPattern{
-		arg patternName, pattern, manualMode = false, independentPlay = false;
+		arg patternName, pattern, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1;
 		var pat;
 		//new pattern
-		pat = SCMPattern.new(patternName, pattern, this, channels, manualMode, independentPlay);
+		pat = SCMPattern.new(patternName, pattern, this, channels, manualMode, independentPlay, trigBus, manualGrouping);
 		// add pattern to this group
 		patterns = patterns.add(pat);
 		^pat;//return
@@ -285,7 +314,7 @@ SCMGroup {
 				//send to touch, with sync delay
 				SCM.dataOutputs.do{
 					arg tdOut;
-					{"many?".postln;tdOut.dat.sendMsg(address, *values)}.defer(SCM.visualLatency);
+					{tdOut.dat.sendMsg(address, *values)}.defer(SCM.visualLatency);
 				}
 
 		}, address);//oscdef addr for signal reply
