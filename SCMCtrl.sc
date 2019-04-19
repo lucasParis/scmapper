@@ -36,12 +36,26 @@ SCMCtrl {
 	//for prep jump
 
 	var inPrepMode;
+	var jumpedInPrepMode;
 	var prePrepValue;
 	var preparedValue;
 
 	var normalColor;
 	var prepareColor;
+	var automateColor;
 
+
+	// for automate
+	var <> disableAutomation;
+	var inAutomateMode;
+	var automateValue;
+	var automateTime;
+	var automationWasSet;
+
+	var automationIsHappening;
+	var automationEndTime;
+	var automationStartTime;
+	var automationRoutine;
 
 	//for function callback
 	var <> functionSet;
@@ -82,6 +96,7 @@ SCMCtrl {
 		//lemur colors
 		prepareColor = 8336384;
 		normalColor = 4868682;
+		automateColor = 2129688;
 
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue.size.max(1));
@@ -89,6 +104,19 @@ SCMCtrl {
 		//prep variables
 		inPrepMode = false;
 		preparedValue = value;
+		jumpedInPrepMode = false;
+
+
+		//automate variables
+		inAutomateMode = false;
+		automateTime = 8;
+		automationWasSet = false;
+
+		automationIsHappening = false;
+		automationEndTime = 0;
+		automationStartTime = 0;
+		disableAutomation = false;
+
 
 		//add osc listerners
 		this.setupOscListeners();
@@ -143,6 +171,14 @@ SCMCtrl {
 		^return;
 	}
 
+	currentToPrep{
+		preparedValue = value;
+		if(inPrepMode)
+		{
+			this.updateFeedback(preparedValue,toTD: false, toMidi:false);
+		};
+	}
+
 	enterPrepMode{
 		//store current value for exit prep mode
 		prePrepValue = value;
@@ -153,6 +189,8 @@ SCMCtrl {
 
 		//set prep mode condition to reroute incoming values
 		inPrepMode = true;
+
+		// jumpedInPrepMode = false;
 
 		//set to prep mode color
 		SCM.ctrlrs.do{
@@ -165,7 +203,7 @@ SCMCtrl {
 
 	exitPrepMode{
 		//return UI to value pre prep
-		this.updateFeedback(prePrepValue, toTD: false, toMidi:false);
+		this.updateFeedback(value, toTD: false, toMidi:false);
 
 		//set prep condition
 		inPrepMode = false;
@@ -179,11 +217,128 @@ SCMCtrl {
 	}
 
 	jump{
+		// if(inPrepMode)
+		// {
+		// 	jumpedInPrepMode = true;
+		// };
+		if(automationIsHappening)
+		{
+			this.stopAutomation;
+		};
 		this.set(preparedValue);
 	}
 
+	enterAutomateMode{
+		//set to automate color
+		SCM.ctrlrs.do{
+			arg ctrlr;
+			ctrlr.setColor(colorAddr, automateColor);
+			// ctrlr.setPhysics(colorAddr, 1);
+		};
+		inAutomateMode = true;
+
+		automationWasSet = false;
+	}
+
+	exitAutomateMode{
+		var startValue, endValue, timeTo;
+
+		//if automation was set
+		if(disableAutomation.not){
+			if(automationWasSet)
+			{
+				var thisAutomationTime;
+				thisAutomationTime = automateTime;
+
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+
+				//start automation
+				automationIsHappening = true;
+				startValue = value;
+				endValue = automateValue;
+
+				automationStartTime = SCM.proxySpace.clock.beats;
+				automationEndTime = automationStartTime + thisAutomationTime;
+
+				automationRoutine = Routine(
+					{
+						loop{
+							var automationProgress, automationProgressValue, toCtrlrs;
+
+							automationProgress = (SCM.proxySpace.clock.beats - automationStartTime)/thisAutomationTime;
+
+							automationProgressValue = automationProgress.linlin(0,1,startValue, endValue);
+
+							toCtrlrs = true;
+
+							if(inPrepMode)
+							{
+								toCtrlrs = false;
+							};
+
+							if(inAutomateMode)
+							{
+								toCtrlrs = false;
+							};
+
+
+							this.set(automationProgressValue, true, toCtrlrs);
+
+							if(SCM.proxySpace.clock.beats > automationEndTime)
+							{
+								"finishing".postln;
+								automationIsHappening = false;
+								nil.yield;
+							}
+							{
+								(0.125).wait;
+							};
+						};
+					}
+				).play(SCM.proxySpace.clock);
+			};
+		};
+
+		//color
+		SCM.ctrlrs.do{
+			arg ctrlr;
+			if(inPrepMode)
+			{
+				//return to prep color
+				ctrlr.setColor(colorAddr, prepareColor);
+			}
+			{
+				//return to original color
+				ctrlr.setColor(colorAddr, normalColor);
+			}
+		};
+
+		//feedback
+		if(inPrepMode)
+		{
+			this.updateFeedback(preparedValue, toTD: false, toMidi:false);
+		}
+		{
+			this.updateFeedback(value, toTD: false, toMidi:false);
+		};
+
+		inAutomateMode = false;
+
+
+
+
+	}
+
+	setAutomateTime{
+		arg time;
+		automateTime = time;
+	}
+
 	set{
-		arg val, toFunction = true;
+		arg val, toFunction = true, toCtrlrs = true;
 		//set value
 		value = val;
 
@@ -205,7 +360,7 @@ SCMCtrl {
 		};
 
 		//update osc outputs
-		this.updateFeedback(val);
+		this.updateFeedback(val, toCtrlrs);
 	}
 
 	updateFeedback{
@@ -284,17 +439,36 @@ SCMCtrl {
 				);
 
 				//set (when not in metactrl mode)
-				if(inPrepMode)
+				if(inAutomateMode)
 				{
-					preparedValue = value;
+					automateValue = value;
+					automationWasSet = true;
 				}
 				{
-					this.set(value);
-				};
+					if(inPrepMode)
+					{
+						preparedValue = value;
+					}
+					{
+						if(automationIsHappening)
+						{
+							this.stopAutomation;
+						};
+
+						this.set(value);
+					};
+				}
+
 
 
 		}, oscAddr);
 	}
+
+	stopAutomation{
+		automationIsHappening = false;
+		automationRoutine.stop;
+	}
+
 
 	setupMidiListener{
 		arg index, type = \button;
@@ -334,17 +508,17 @@ SCMCtrl {
 
 		/*if(midiType == \encoder)
 		{
-			//in midifighter twister: button on channel 2 turns parameter down
-			MIDIFunc.cc(
-				{
-					arg value;
-					if( value >1)
-					{
-						this.set(0);
-					};
+		//in midifighter twister: button on channel 2 turns parameter down
+		MIDIFunc.cc(
+		{
+		arg value;
+		if( value >1)
+		{
+		this.set(0);
+		};
 
-				},index,1
-			);
+		},index,1
+		);
 		};*/
 
 		//send feedback (should be only to a single controller)

@@ -38,6 +38,8 @@ SCMPattern {
 	var independentPlay;
 	var independentPlayCtrl;
 
+	var independantIsPlaying;
+
 
 
 	*new{
@@ -137,6 +139,7 @@ SCMPattern {
 			};
 		};
 
+		independantIsPlaying = false;
 		//independent play, can react to a stopping pattern
 		if(independentPlay)
 		{
@@ -146,11 +149,19 @@ SCMPattern {
 				arg value;
 				if(value > 0.5)
 				{
-					this.startPattern();
+					if(independantIsPlaying.not)
+					{
+						independantIsPlaying  = true;
+						this.startPattern();
+					}
 
 				}
 				{
-					this.stopPattern();
+					if(independantIsPlaying)
+					{
+						independantIsPlaying  = false;
+						this.stopPattern();
+					}
 				};
 			};
 

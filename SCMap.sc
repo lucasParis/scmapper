@@ -12,7 +12,7 @@ SCM {
 	classvar <midiCtrlrs;
 	classvar <dataOutputs;// to touchdesigner, but could be other?
 
-
+	classvar < imu;
 
 	classvar < anvoMotors;
 
@@ -72,6 +72,9 @@ SCM {
 		tempoMax = 200;
 
 		masterFXdeferTime = 2;
+
+		// imu = SCMimu.new();
+
 
 		OSCdef(\fpsReroute,
 			{
@@ -412,6 +415,24 @@ SCMLemurCtrlr{
 			this.selectGroup(groupName);
 		});
 
+		//listener for menu group currentToPrep
+		this.setupInstanceListener('/masterMenu2/currentToPrep/x', {
+			arg args;
+			"current to prep".postln;
+			if(groupReference != nil){
+				if(args[0] > 0.5)
+				{
+
+					groupReference.controls.do{arg ctrl; ctrl.currentToPrep};
+
+				}
+			};
+
+		});
+
+
+
+
 		//listener for menu group PLAY
 		this.setupInstanceListener('/masterMenu/play/x', {
 			arg args;
@@ -452,6 +473,43 @@ SCMLemurCtrlr{
 			{
 				this.jumpGroup;
 			}
+		});
+		//listener for automateTime
+		this.setupInstanceListener('/masterMenu/automateTime/x', {
+			arg args;
+
+			if(groupReference != nil){
+				var autoTime = pow(2,args[0]*5+2).round;
+				groupReference.controls.do{arg ctrl; ctrl.setAutomateTime(autoTime)};
+			}
+		});
+
+		//listener for stopAutomation
+		this.setupInstanceListener('/masterMenu/stopAutomation/x', {
+			arg args;
+
+			if(groupReference != nil){
+				if(args[0] > 0.5)
+				{
+					groupReference.controls.do{arg ctrl; ctrl.stopAutomation()};
+				};
+			};
+		});
+
+
+
+		//listener for menu group automate
+		this.setupInstanceListener('/masterMenu/automate/x', {
+			arg args;
+			if(groupReference != nil){
+				if(args[0] > 0.5)
+				{
+					groupReference.controls.do{arg ctrl; ctrl.enterAutomateMode};
+				}
+				{
+					groupReference.controls.do{arg ctrl; ctrl.exitAutomateMode};
+				}
+			};
 		});
 	}
 
@@ -678,7 +736,6 @@ SCMJoystickCtrlr{
 		MIDIFunc.cc(
 			{
 				arg midiValue;
-				"jumper1".postln;
 				if(midiValue > 64)
 				{
 					SCM.ctrlrs[0].jumpGroup;
@@ -692,7 +749,6 @@ SCMJoystickCtrlr{
 		MIDIFunc.cc(
 			{
 				arg midiValue;
-				"jumper2".postln;
 				if(midiValue > 64)
 				{
 					SCM.ctrlrs[1].jumpGroup;
@@ -720,5 +776,113 @@ SCMTwister{
 
 	}
 
+
+}
+
+
+
+SCMimu{
+	var < accBus;
+	var < gyroBus;
+	var < magBus;
+	var imuCalculations;
+
+	var < rollBus;
+	var < pitchBus;
+	var < yawBus;
+	var < accelMapBus;
+
+	// accel = In.kr(~imuBusAccel,3);
+	// // accel[0].scope;
+	// mag = In.kr(~imuBusMag,3);
+	// gyro = In.kr(~imuBusGyro,3);
+
+	*new{
+		^super.new.init();
+	}
+
+	getRawMag{
+		^In.kr(magBus, 3);
+	}
+
+	getRawGyro{
+		^In.kr(gyroBus, 3);
+	}
+
+	getRawAcc{
+		^In.kr(accBus, 3);
+	}
+
+	getRoll{
+		^In.kr(rollBus,1);
+	}
+
+	getPitch{
+		^In.kr(pitchBus,1);
+	}
+
+	getYaw{
+		^In.kr(yawBus,1);
+	}
+
+	getAccelMap{
+		^In.kr(accelMapBus,1);
+	}
+
+	init{
+		accBus = Bus.control(Server.local, 3);
+		gyroBus = Bus.control(Server.local, 3);
+		magBus = Bus.control(Server.local, 3);
+
+		rollBus = Bus.control(Server.local, 1);
+		pitchBus = Bus.control(Server.local, 1);
+		yawBus = Bus.control(Server.local, 1);
+		accelMapBus = Bus.control(Server.local, 1);
+
+
+		/*3.do{
+			arg count;
+			this.addBendResponder(count, -60, 60, {arg value; accBus.setAt(count, value)} );
+			this.addBendResponder(count+3, -180, 180, {arg value; magBus.setAt(count, value)} );
+			this.addBendResponder(count+6, -10, 10, {arg value; gyroBus.setAt(count, value)} );
+		};*/
+
+		imuCalculations = {
+			var roll, pitchA, yaw, accelMap, accel, mag, gyro;
+			accel = In.kr(accBus,3);
+			mag = In.kr(magBus,3);
+			gyro = In.kr(gyroBus,3);
+
+			roll = atan2(accel[1] , accel[2]) * 57.3;//entre 15 et 100
+			roll = Sanitize.kr(roll).linlin(15,100,0,1).clip(0,1);
+			pitchA = atan2((-1*accel[0]) , ((accel[1]  * accel[1] ) + (accel[2]*accel[2]) )).sqrt * 57.3; // entre -60 et 60
+			pitchA = Sanitize.kr(pitchA).linlin(-60,60,0,1).clip(0,1);
+			accelMap = Sanitize.kr(accel[0].linlin(-1,1,-1,1)).excess(0.1).pow(2).lag(0.05) ;
+			yaw = Sweep.ar(0,Sanitize.kr(gyro[1])*2);
+
+			Out.kr(rollBus, roll);
+			Out.kr(pitchBus, pitchA);
+			Out.kr(accelMapBus, accelMap);
+			Out.kr(yawBus, yaw);
+			// // pitchA.scope;
+			//
+
+			0;
+			// accelMap.scope;
+
+		};//.play();
+	}
+
+	addBendResponder{
+		arg channel, rangeMin, rangeMax, function;
+		MIDIFunc.bend(
+			{
+				arg val;
+				var thisTime, range = 60;
+				val = val.linlin(0,2**14, rangeMin, rangeMax).round(0.01);
+				function.value(val);
+			},channel
+		);
+	}
 
 }
