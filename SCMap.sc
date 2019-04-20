@@ -20,6 +20,7 @@ SCM {
 	classvar < masterServerGroup;
 
 	//dataoutput
+	classvar <> visualPatternLatency;
 	classvar <> visualLatency;
 	classvar <> replyIDCount;
 	classvar <dataOutRate;
@@ -63,6 +64,7 @@ SCM {
 		midiCtrlrs = [];
 
 		visualLatency = 0;
+		visualPatternLatency = 0.02;
 
 		dataOutRate = 60;
 
@@ -266,7 +268,7 @@ SCM {
 			arg tdOut;
 			{
 				tdOut.dat.sendMsg(sendAddr , *["stringEvent", stringEvent.asSymbol]);
-			}.defer(max(Server.local.latency-(visualLatency)+delay, 0));
+			}.defer(max(Server.local.latency-(visualPatternLatency)+delay, 0));
 		};
 
 		//return original event for playing pattern
@@ -287,7 +289,7 @@ SCM {
 		Server.local.options.memSize_(2.pow(20));
 		Server.local.options.numWireBufs = 512;
 		Server.local.options.maxSynthDefs  =2048;
-		Server.local.options.hardwareBufferSize  =128;
+		Server.local.options.hardwareBufferSize  =256;
 		Server.local.options.numOutputBusChannels = channels;
 
 

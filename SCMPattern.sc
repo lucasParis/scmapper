@@ -166,7 +166,7 @@ SCMPattern {
 			};
 
 			//callback for pattern's end
-			rawPattern = Pfset(nil, rawPattern, { "hello".postln; independentPlayCtrl.set(0,toFunction:false); "hello".postln;});
+			rawPattern = Pfset(nil, rawPattern, {	independantIsPlaying  = false;	independentPlayCtrl.set(0,toFunction:false); "hello".postln;});
 
 		};
 

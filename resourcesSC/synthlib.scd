@@ -1692,12 +1692,15 @@ SynthDef.new(\l1fx_bpsEnvedV2,{
 	quitAfter = FreeSelf.kr(quitAfter);
 
 	ducks = Env.new(1-[1,1,0,1], [duckT,duckLen*0.555,duckLen*0.444], [4,-4]).ar(0,1);
+	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnvedV2/duck", ducks, replyID);
+
 	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnvedV2/env", env, replyID);
 
 
 	input = In.ar(in,2);
 	//
 	moveFs = Env.pairs([[0,1],[dropTime,1], [dropTime+dropDecay,0.2]],0).ar(0,1).lag(0,[0,0.1,0.02,0.5]);
+	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnvedV2/moveFs", moveFs[0], replyID);
 
 	// freqs = LFNoise1.ar(9).range([0,1].resamp1(8).stutter(2).linexp(0,1,100,8000), [0,1].resamp1(8).stutter(2).linexp(0,1,300,12000));
 	freqs = [0,1].resamp1(6).linexp(0,1,minF,maxF) * moveFs;
@@ -1706,10 +1709,10 @@ SynthDef.new(\l1fx_bpsEnvedV2,{
 
 	sineF = Env.perc(0,speed,1,0).ar(0,1).linlin(0,1,speedMin,speedMax);
 	volumes = LFSaw.ar(sineF, [1,1]*[0,2pi].resamp1(6)).lag(0.05);
-	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnvedV2/rawVolumeLFO", volumes, replyID);
+	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnvedV2/rawVolumeLFO", volumes[0], replyID);
 	volumes = volumes.lincurve(-1,1,0.01,1,volCurve);
 	// volumes.scope;
-	SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnvedV2/volumes", volumes, replyID);
+	// SendReply.kr(Impulse.kr(60), "/l1fx_bpsEnvedV2/volumes", volumes, replyID);
 
 	fx = BPF.ar(input,freqs.clip(20,12000).stutter(2), fq.clip(0.1,1), fq.linlin(0.1,1, 3,0.5) * 1*(volumes.stutter(2)));
 	fx = Mix.new(fx);
@@ -1719,7 +1722,7 @@ SynthDef.new(\l1fx_bpsEnvedV2,{
 
 	Out.ar(out, output);
 },
-metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1fx_bpsEnvedV2/freqs", "/l1fx_bpsEnvedV2/volumes","/l1fx_bpsEnvedV2/rawVolumeLFO", "/l1fx_bpsEnvedV2/env", "/l1fx_bpsEnvedV2/ducks"])
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1fx_bpsEnvedV2/rawVolumeLFO", "/l1fx_bpsEnvedV2/env", "/l1fx_bpsEnvedV2/duck", "/l1fx_bpsEnvedV2/moveFs"])
 ).add;
 
 
