@@ -1127,7 +1127,7 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 SynthDef.new(\l1_digitoneV2,{
 	arg freq, amp = 1, lineLen = 0.8, brF = 0.5, transientAmt = 0.14, lfoSpeed= 5, out = 0, gate = 1, replyID = -1, release = 0.1;
 	var src, env, quitAfter, envLin, transient, lfo;
-	env = Env.adsr(0.0, 0.3,1,release,1,-3).ar(0, gate);
+	env = Env.adsr(0.0, 0.3,1,release,1,-1).ar(0, gate);
 
 	quitAfter = Done.kr(env);
 	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
@@ -1145,7 +1145,7 @@ SynthDef.new(\l1_digitoneV2,{
 	src = LeakDC.ar(src) * amp;
 	lfo =  SinOsc.ar(lfoSpeed);
 	src = BRF.ar(src, (brF.linlin(0,1,200,800) + lfo.linlin(-1,1,-900,900) + envLin.lincurve(0,1,0,1000,10) + transient.linlin(0,1,0,2000)).clip(100,12000), 4);
-	src = src.clip(-1,1);
+	src = src.clip(-1,1)*env;
 	OffsetOut.ar(out, src!2);
 },
 metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
@@ -1566,12 +1566,12 @@ SynthDef.new(\l1_laSnare,{
 	filtEnv = Env.pairs([[0,10000],[0.00001,10000], [0.03,180],[0.2,180], [0.4,200]], -7).ar(0,1);
 	// SendReply.kr(Impulse.kr(60), "/instrument/param", env, replyID);
 
-	src = WhiteNoise.ar( mul:amp*env*noiseEnv);
+	src = WhiteNoise.ar( mul:env*noiseEnv);
 	src = BRF.ar(src, 1400,0.5);
 	src = BRF.ar(src, 5000,0.2);
 
 	// src= LRLowCut.ar(src, filtEnv,5,5).sanitize.clip(-1,1);
-	src= DFM1.ar(src, filtEnv,0.98,2,1,mul:2).sanitize.clip(-1,1);
+	src= DFM1.ar(src, filtEnv,0.98,2,1,mul:2).sanitize.clip(-1,1) * amp;
 
 	OffsetOut.ar(out, src!2);
 },
@@ -1833,8 +1833,101 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 ).add;
 
 
+SynthDef.new(\l1_pressureReese2,{
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, timeScale = 1;
+	var src, env, quitAfter;
+	var osc, buf, dist, dist2, env1, env2, env3, fmOsc, hiMod, buf2, times, trig;
+
+	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
+
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
+
+	// SendReply.kr(Impulse.kr(60), "/instrument/param", env, replyID);
+
+
+	buf = LocalBuf.newFrom(Env.pairs([[0,0], [0.2,-1], [0.5,0], [0.8,1], [1,0]],-20 * [-1,1]).asSignal(128).asWavetable);
+	buf2 = LocalBuf.newFrom(Env.pairs([[0,0], [0.2,-1], [0.5,0], [0.8,1], [1,0]],4 * [-1,1]).asSignal(128).asWavetable);
+	times = [ 0.498, 0.609, 0.6, 0.084, 0.312, 0.732, 2.604 ];
+	// env = Env.pairs(8.collect{[rrand(0.0,2), rrand(-2,10)]},8.collect{rrand(-10,10)});
+	trig = 1;
+	env1 = Env.new([ 20, 14, 6, 0, 20, 20, 2, 1 ], times, [ 2, -6, -5, 9, 0, 10, 9, 0 ]);
+	env2 = Env.new([ 0.1, 0.1, 0.1, 1, 0.1, 0.0, 0, 0 ], times, [ 2, -6, -5, 9, 0, 10, 9, 0 ].abs * -1).ar(0,trig, timeScale);
+	env3 = Env.new([ 0, 0, 0, 1, 0, 0, 0, 0 ], times, [ 2, -6, -5, 9, 0, 10, 9, 0 ]).ar(0, trig,timeScale);
+
+
+
+	env1 = env1.ar(0,trig,timeScale);
+	fmOsc = SinOscFB.ar(freq*[64,48],0.4, 1).sum + WhiteNoise.ar(0.1);
+	osc = SinOscFB.ar(freq *fmOsc.linlin(0,1,0,0).midiratio ,env3.lincurve(0,1,0.9,0,-2), mul:env1 , add: 0);
+	dist = Shaper.ar(buf, osc);
+	dist = SelectX.ar(0.9, [dist, Shaper.ar(buf2, osc)]);
+	dist  = dist.ring1(fmOsc*0.12);
+
+
+	hiMod = AllpassL.ar(dist, 0.2,[2,1,0.5,1.5]*2 * freq.reciprocal * dist.linlin(-1,1,-12,12).lag(0.02).midiratio,2 );
+	hiMod =dist + Splay.ar(hiMod,0.4);
+
+	hiMod = HPF.ar(hiMod, 5000) * 1.4;
+	src = (hiMod + dist)*env2;
+
+	src = src * amp * env*0.3;
+	src = src.softclip;
+	// src  = Limiter.ar(src );
+	OffsetOut.ar(out, src!2);
+},
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
+).add;
+
+
+
+SynthDef.new(\l1_pressureReese1,{
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, timeScale = 1;
+	var src, env, quitAfter;
+	var osc, buf, dist, dist2, env1, env2, env3, fmOsc, hiMod, buf2, times, trig;
+
+	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
+
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
+
+	// SendReply.kr(Impulse.kr(60), "/instrument/param", env, replyID);
+
+
+	buf = LocalBuf.newFrom(Env.pairs([[0,0], [0.1,-1], [0.5,0], [0.6,1], [1,0]],10 * [-1,0.1]).asSignal(128).asWavetable);
+	times = [ 0.16, 0.2, 1, 0.001, 0.01, 0.4, 2.604 ];
+	trig = 1;
+	env1 = Env.new([ 20, 14, 6, 0, 20, 20, 2, 1 ], times, [ 2, -6, -1, 9, 0, 10, 9, 0 ]* 1);
+	env2 = Env.new([ 1, 0.2,0.4, 1, 0.2, 0.1, 0.05, 0 ], times, [ -2, -6, -4, 9, 0, 10, 9, 0 ].abs * -2).ar(0,trig,timeScale);
+
+
+
+	env1 = env1.ar(0,trig,timeScale);
+	osc = SinOscFB.ar(freq * [1,12],0.0 , mul:env1 * [1,0.3], add:Line.ar([-1,2],0,0.6)).sum;
+	dist = Shaper.ar(buf, osc);
+
+	// dist  = dist.ring1(fmOsc*0.12);
+
+
+	hiMod = AllpassL.ar(dist, 0.2,[2,1,0.5,1.5]*2 * freq.reciprocal * dist.linlin(-1,1,-12,12).lag(0.02).midiratio,2 );
+	hiMod =dist + Splay.ar(hiMod,0.4);
+
+	hiMod = HPF.ar(hiMod, 5000) * 1;
+
+	dist = LRHiCut.ar(dist, 500, 5,5) + LRLowCut.ar(dist, 800, 5,5);
+	src = (hiMod + dist)*env2*0.2;
+
+	src = src * amp * env;
+	src = src.softclip;
+	OffsetOut.ar(out, src!2);
+},
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
+).add;
+
 SynthDescLib.new(\lib1, s);
-~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble, \l1_reeseLightHighs, \l1_clusterKick, \l1_decayKick, \l1_bendSub,\l1_rollerBass, \l1_trigToBus, \l1_riserBass, \l1_hiHit, \l1_gruntStab, \l1_laSnare, \l1_leKick, \l1_clumpSnare, \l1_supersaw7V2,\l1fx_bpsEnvedV2, \l1fx_filterStab, \l1_pulseFitPerc, \l1fx_cleanupBoost, \l1fx_destroyLast];
+~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble, \l1_reeseLightHighs, \l1_clusterKick, \l1_decayKick, \l1_bendSub,\l1_rollerBass, \l1_trigToBus, \l1_riserBass, \l1_hiHit, \l1_gruntStab, \l1_laSnare, \l1_leKick, \l1_clumpSnare, \l1_supersaw7V2,\l1fx_bpsEnvedV2, \l1fx_filterStab, \l1_pulseFitPerc, \l1fx_cleanupBoost, \l1fx_destroyLast, \l1_pressureReese2, \l1_pressureReese1];
 ~synthsLib1.do{arg item; ("\\" ++ item).postln; SynthDescLib.getLib(\lib1).add(SynthDescLib.global[item])};
 
 "\nSynthDescLib.getLib(\\lib1).browse\n".postln;

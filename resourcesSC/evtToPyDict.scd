@@ -6,12 +6,12 @@
 
 	evt.removeAt(\scale);//remove scale
 
-	result = "{";//open python dict
+	// result = "{";//open python dict
 
 
 	evt.keysValuesDo{//loop through every key/value to format data
 		arg key, value;
-		result = result++"" ++'"' ++ key.asString ++ '"' ++ ": ";//append key name
+		// result = result++"" ++'"' ++ key.asString ++ '"' ++ ": ";//append key name
 
 		// loop through array keys to format data
 		value.isKindOf(Array).if{
@@ -29,6 +29,8 @@
 						};
 					};
 				};
+				/*
+				// rewrite
 				//format string as python string
 				val.isKindOf(String).if
 				{
@@ -38,15 +40,16 @@
 				val.isKindOf(Symbol).if
 				{
 					val =  '"'++ val.asString ++  '"';
-				};
+				};*/
 				//format boolean as integer and string
-				val.isKindOf(Boolean).if
+				/*val.isKindOf(Boolean).if
 				{
 					val =  val.asInteger;
-				};
+				};*/
 				//round floats, for floating point imprecision
 				val.isFloat.if{
-					val.round(0.001);
+
+					val = val.round(0.001);
 				};
 				//return array value
 				val;
@@ -60,10 +63,12 @@
 			value = value.round(0.001);
 		};
 		//format boolean as integer and string
-		value.isKindOf(Boolean).if
+		/*value.isKindOf(Boolean).if
 		{
 			value =  value.asInteger;
-		};
+		};*/
+		/*
+		// rewrite
 		//format string as python string
 		value.isKindOf(String).if
 		{
@@ -73,7 +78,7 @@
 		value.isKindOf(Symbol).if
 		{
 			value =  '"'++ value.asString ++  '"';
-		};
+		};*/
 		//filter out non valid types
 		(value.isKindOf(Symbol).not).if{
 			(value.isKindOf(String).not).if{
@@ -81,7 +86,7 @@
 					(value.isKindOf(Float).not).if{
 						(value.isKindOf(Integer).not).if{
 							(value.isKindOf(Array).not).if{
-								value = '"'++ "empty" ++  '"';
+								value ="empty";
 							};
 						};
 					};
@@ -89,11 +94,14 @@
 			};
 		};
 
+		evt[key] = value;
 		//add value to result string
-		result = result ++ value.asString ++ ", ";
+		// result = result ++ value.asString ++ ", ";
 	};
 
 
 	//return result string
-	result = result ++ "}";
+	// result = result ++ "}";
+	evt;
+
 };

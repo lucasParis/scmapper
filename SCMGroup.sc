@@ -22,15 +22,24 @@ SCMGroup {
 	var quant;
 
 	var sharedSignals;
+	var < activePresets;
+
+	var < scmGroupIndex;
+
+
+	var < filePresetNames;
+
+
 
 	*new{
-		arg groupName, channels = 2, quant = 4;
-		^super.new.init(groupName, channels, quant);
+		arg groupName, channels = 2, quant = 4, scmGroupIndex = nil;
+		^super.new.init(groupName, channels, quant, scmGroupIndex);
 	}
 
 	init{
-		arg groupName, channels_, quant_;
+		arg groupName, channels_, quant_, scmGroupIndex_;
 		name = groupName;
+
 
 		//setup array to hold controls, arrays and proxies
 		controls = [];
@@ -57,6 +66,133 @@ SCMGroup {
 		channels = channels_;
 		quant = quant_;
 
+		midiMappings = ();
+
+		activePresets = 0!4;
+
+		scmGroupIndex = scmGroupIndex_;
+		this.initPresetNames;
+
+	}
+
+	savePresetToFile{
+		arg presetNumber = 0;
+		if(SCM.enablePresetSave)
+		{
+			{//defered to other thread
+				var win;
+				//create popup UI for save dialog
+				win = Window.new("save", Rect(Window.availableBounds.center.x-100,Window.availableBounds.center.y , 200,50)).front;
+				//textfield with callback
+				TextField.new(win,Rect(10,10,180,30)).action_( {
+					arg obj;
+					{
+						var file, dir, saveDict, presetName;
+
+						presetName = obj.value.asString;
+						filePresetNames[presetNumber] = presetName;
+						//preset files on HD
+						dir = SCM.presetFolder ++ "/";//hardcoded
+						dir = dir ++ name.asString++"_"++ presetNumber.asString;//new file name according to group and entered name
+
+						//create writable file
+						file = File.new(dir,"w");
+
+						//datastructure to fill with save values
+						saveDict = ();
+
+						//get values for preset from ctrls in group's datastructure
+						controls.do
+						{
+							arg ctrl;
+
+							saveDict[ctrl.name] = ctrl.value;//add key/value from ctrls to dict
+						};
+						saveDict[\presetName] = presetName;
+						//write preset dict to file
+						file.write(saveDict.asCompileString);
+						file.close;
+
+					}.defer;//defered to other thread
+
+					//close window
+					{win.close}.defer;
+
+				});
+			}.defer;
+
+		};
+		//reload names
+		// this.initPresetNames;
+
+		// SCM.presetFolder
+	}
+
+	loadPresetFromFile{
+		// SCM.presetFolder
+		arg presetNumber;
+		var file, path, dict;
+
+		//make path
+		path = SCM.presetFolder;
+		path = path ++"/"++ name.asString ++"_"++ presetNumber;//append group/preset to get file name
+		path.postln;
+
+		File.exists(path).if{
+			file = File.open(path, "r");
+
+			//read string and execute it to get the savec dict
+			dict = file.readAllString.compile.value;
+
+			//loop through dict and load values
+			dict[\presetName];
+			dict.removeAt(\presetName);
+
+			dict.keysValuesDo{
+				arg key, value;
+				var ctrl;
+				ctrl = this.getCtrl(key.asSymbol);
+
+				if(ctrl != nil)
+				{
+					ctrl.setPrepValue(value);
+				};
+
+			};
+		};
+	}
+
+	initPresetNames{
+		filePresetNames = 4.collect{
+			arg i;
+			var file, path, dict, result;
+			result = '_';
+
+			//make path
+			path = SCM.presetFolder;
+			path = path ++"/"++ name.asString ++"_"++ i.asString;//append group/preset to get file name
+
+			File.exists(path).if{
+				file = File.open(path, "r");
+
+				//read string and execute it to get the savec dict
+				dict = file.readAllString.compile.value;
+
+				//loop through dict and load values
+				result = dict[\presetName];
+			};
+			result;
+		};
+	}
+
+	updatePresetStatus{
+		arg activatedPreset, status = 1;
+		activePresets[activatedPreset] = status;
+
+	}
+
+	getPresetStatus{
+		^activePresets;
 	}
 
 	shareSignal{
@@ -252,6 +388,10 @@ SCMGroup {
 			controls.do{arg control; control.play; };
 			//send OSC feedback
 			this.updateMenuFeedback('/play/x', 1, quantize:true);
+			if(scmGroupIndex != nil)
+			{
+				SCM.setGroupPlayStates(scmGroupIndex, 1);
+			};
 		}
 
 	}
@@ -268,7 +408,26 @@ SCMGroup {
 			controls.do{arg control; control.stop; };
 			//send OSC feedback
 			this.updateMenuFeedback('/play/x', 0);
+			if(scmGroupIndex != nil)
+			{
+				SCM.setGroupPlayStates(scmGroupIndex, 0);
+			};
 		}
+	}
+
+	midiIn{
+		arg midiNumber, value;
+		if(midiMappings[midiNumber] != nil)
+		{
+			this.getCtrl(midiMappings[midiNumber][\ctrlname], midiMappings[midiNumber][\postfix]).set(value);
+		};
+	}
+
+	setupMidiListener{
+		arg ctrlname, midiNumber, postfix = '/x';
+
+		midiMappings[midiNumber] = (\ctrlname:ctrlname, \postfix:postfix);
+
 	}
 
 	updateMenuFeedback{

@@ -47,6 +47,8 @@ SCMCtrl {
 
 	// for automate
 	var <> disableAutomation;
+	var <> disablePrepjump;
+
 	var inAutomateMode;
 	var automateValue;
 	var automateTime;
@@ -60,8 +62,13 @@ SCMCtrl {
 	//for function callback
 	var <> functionSet;
 
-
+	//presets
+	var presets;
+	var defaultValue;
 	var isRadio;
+
+
+	var <> menuFeedbackIndex;
 
 	*new{
 		arg ctrlName, defaultValue, postFix, parent;
@@ -69,12 +76,13 @@ SCMCtrl {
 	}
 
 	init{
-		arg ctrlName, defaultValue, postFix_, parent;
+		arg ctrlName, defaultValue_, postFix_, parent;
 		name = ctrlName.asSymbol;
 		parentGroup = parent;
-		value = defaultValue;
+		value = defaultValue_;
 		postFix = postFix_.asSymbol;
 		isRadio = false;
+		defaultValue = defaultValue_;
 
 		oscAddr = "/" ++ parentGroup.name ++ "/" ++ name ++ postFix;
 		oscAddr = oscAddr.asSymbol;
@@ -99,13 +107,19 @@ SCMCtrl {
 		automateColor = 2129688;
 
 		//setup control bus
-		bus = Bus.control(Server.local, defaultValue.size.max(1));
+		bus = Bus.control(Server.local, defaultValue_.size.max(1));
 
 		//prep variables
 		inPrepMode = false;
 		preparedValue = value;
 		jumpedInPrepMode = false;
+		disablePrepjump = false;
 
+		/*
+		if(name == 'volume')
+		{
+			disablePrepjump = true;
+		};*/
 
 		//automate variables
 		inAutomateMode = false;
@@ -117,6 +131,9 @@ SCMCtrl {
 		automationStartTime = 0;
 		disableAutomation = false;
 
+		menuFeedbackIndex = nil;
+
+		presets = ();
 
 		//add osc listerners
 		this.setupOscListeners();
@@ -171,6 +188,25 @@ SCMCtrl {
 		^return;
 	}
 
+	loadPresetToPrep{
+		arg presetNumber;
+		preparedValue = presets[presetNumber];
+		if(inPrepMode)
+		{
+			this.updateFeedback(preparedValue,toTD: false, toMidi:false);
+		};
+
+	}
+
+	loadDefaultToPrep{
+		preparedValue = defaultValue;
+	}
+
+	savePreset{
+		arg presetNumber;
+		presets[presetNumber] = value;
+	}
+
 	currentToPrep{
 		preparedValue = value;
 		if(inPrepMode)
@@ -221,11 +257,15 @@ SCMCtrl {
 		// {
 		// 	jumpedInPrepMode = true;
 		// };
-		if(automationIsHappening)
+		if(disablePrepjump.not)
 		{
-			this.stopAutomation;
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			this.set(preparedValue);
 		};
-		this.set(preparedValue);
+
 	}
 
 	enterAutomateMode{
@@ -402,6 +442,11 @@ SCMCtrl {
 			};
 		};
 
+		if(menuFeedbackIndex != nil)
+		{
+			SCM.ctrlrs[menuFeedbackIndex].set("/masterMenu/" ++ name ++ postFix, value);
+		};
+
 		if(toTD)
 		{
 			//update touchdesigner outputs
@@ -414,6 +459,30 @@ SCMCtrl {
 
 	printOn { | stream |
 		stream << "SCMCtrl (" << name << ")";
+	}
+
+	augmentedSet{
+		arg value;
+		//set (when not in metactrl mode)
+		if(inAutomateMode)
+		{
+			automateValue = value;
+			automationWasSet = true;
+		}
+		{
+			if(inPrepMode)
+			{
+				preparedValue = value;
+			}
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+
+				this.set(value);
+			};
+		};
 	}
 
 	setupOscListeners{
@@ -438,30 +507,20 @@ SCMCtrl {
 				}
 				);
 
-				//set (when not in metactrl mode)
-				if(inAutomateMode)
-				{
-					automateValue = value;
-					automationWasSet = true;
-				}
-				{
-					if(inPrepMode)
-					{
-						preparedValue = value;
-					}
-					{
-						if(automationIsHappening)
-						{
-							this.stopAutomation;
-						};
-
-						this.set(value);
-					};
-				}
+				this.augmentedSet(value);
 
 
 
 		}, oscAddr);
+	}
+
+	setPrepValue{
+		arg val;
+		preparedValue = val;
+		if(inPrepMode)
+		{
+			this.updateFeedback(preparedValue, toTD: false, toMidi:false);
+		}
 	}
 
 	stopAutomation{
