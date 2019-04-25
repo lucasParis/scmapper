@@ -429,10 +429,7 @@ SCMLemurCtrlr{
 
 	}
 
-	midivalueIN{
-		arg cc, value;
 
-	}
 
 	setupInstanceListener{
 		arg adr, function;
@@ -752,6 +749,7 @@ SCMAnVoMotors{
 	var < motors;
 	var motorIds;
 	var motorPresets;
+	var speed;
 
 	*new{
 		^super.new.init();
@@ -766,6 +764,10 @@ SCMAnVoMotors{
 			arg tdOut;
 			tdOut.chop.sendMsg(("/motorPosition/" ++ motorIndex).asSymbol, angle * -1);
 		};
+		SCM.dataOutputs.do{
+			arg tdOut;
+			tdOut.chop.sendMsg(("/motorSpeed").asSymbol, speed);
+		};
 
 
 		angle = (290*4*angle/360).asInt;
@@ -773,7 +775,11 @@ SCMAnVoMotors{
 		angle = angle * -1;
 
 		motors[motorIndex].bend(0,angle);
-
+		/*
+		SCM.dataOutputs.do{
+				arg tdOut;
+				tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *rawValue);//append /controls
+			};*/
 
 	}
 
@@ -812,6 +818,25 @@ SCMAnVoMotors{
 				}
 			}, addr
 		);
+
+		OSCdef(
+			"/menu3/motorspeed/x",
+			{
+				arg msg;
+				this.setSpeed(msg[1].clip(0,1));
+				SCM.ctrlrs.do{
+					arg ctrlr;
+					ctrlr.set( "/menu3/motorspeed/x", msg[1])//for midi if a param is mapped, store relation path->encoder/button
+				};
+			}, "/menu3/motorspeed/x"
+		);
+	}
+
+	setSpeed{
+		arg speed_;
+		speed = speed_;
+		// speed
+		motors.do{arg motor; motor.control(0,60,speed.linlin(0,1,0,127))}
 	}
 
 	setupListeners{
@@ -827,8 +852,9 @@ SCMAnVoMotors{
 	}
 
 	init{
-		motorIds = [920339066,2050449709, -1417981912, -1480817946];
-
+		// motorIds = [920339066,2050449709, -1417981912, -1480817946];
+		motorIds = [-191674517,1983945126, -1529968077, 1608330683];
+		speed = 1;
 		motorIds.do{
 			arg id;
 			MIDIClient.destinations.do{
@@ -863,29 +889,6 @@ SCMJoystickCtrlr{
 	init{
 		uid = -1328798234;
 
-		6.do{
-			arg midiCC;
-
-			MIDIFunc.cc(
-				{
-					arg midiValue;
-					var associatedCtrlrIndex;
-
-					associatedCtrlrIndex = 1;
-
-					if(midiCC < 3)
-					{
-						associatedCtrlrIndex = 0;
-					};
-					SCM.ctrlrs[associatedCtrlrIndex].midivalueIN(midiCC%3, midiValue);
-
-
-
-					midiout.control(chan:0,ctlNum:midiCC,val:midiValue);
-
-
-			},midiCC, 0);
-		};
 
 		MIDIClient.destinations.do{
 			arg destination, i;
@@ -945,6 +948,24 @@ SCMJoystickCtrlr{
 
 					midiout.control(chan:0,ctlNum:i,val:midiValue );
 			},i, 0);
+		};
+
+		6.do{
+			arg midiCC;
+			//joysticks midi in to master fx
+			MIDIFunc.cc(
+				{
+					arg midiValue;
+					var associatedCtrlrIndex;
+					SCM.masterGroup.midiIn(midiCC,midiValue.linlin(0,125,-1,1).excess(0.024));
+			},midiCC+8, 0);
+
+			MIDIFunc.cc(
+				{
+					arg midiValue;
+					var associatedCtrlrIndex;
+					SCM.masterGroup.midiIn(midiCC+6,midiValue.linlin(0,125,-1,1).excess(0.024));
+			},midiCC+8+6, 0);
 		};
 
 		//right side
