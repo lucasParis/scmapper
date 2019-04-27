@@ -78,7 +78,8 @@ SCMPattern {
 		rawPattern = Pbindf(pattern,
 			\out, bus,//the bus for all pbind stuff
 			\group, serverGroup,//group for pbinds
-			\fx_group, serverGroup
+			\fx_group, serverGroup,
+
 		);
 
 

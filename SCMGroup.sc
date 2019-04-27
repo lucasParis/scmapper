@@ -68,7 +68,7 @@ SCMGroup {
 
 		midiMappings = ();
 
-		activePresets = 0!4;
+		activePresets = 0!5;
 
 		scmGroupIndex = scmGroupIndex_;
 		this.initPresetNames;
@@ -163,7 +163,7 @@ SCMGroup {
 	}
 
 	initPresetNames{
-		filePresetNames = 4.collect{
+		filePresetNames = 5.collect{
 			arg i;
 			var file, path, dict, result;
 			result = '_';

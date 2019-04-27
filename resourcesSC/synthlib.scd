@@ -1409,11 +1409,11 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 
 
 SynthDef.new(\l1_trigToBus,{
-	arg trigOut = 0, gate = 1, replyID = -1;
+	arg trigOut = 0, gate = 1, replyID = -1, trigOn = 1;
 	var src, env, quitAfter, trig;
 	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
 
-	trig = Impulse.ar(0);
+	trig = Impulse.ar(0) * trigOn;
 
 	// quitAfter = Done.kr(env);
 	quitAfter = DelayN.kr(trig, 2/60, 2/60);// twoframe delay
@@ -1550,9 +1550,9 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 
 
 SynthDef.new(\l1_laSnare,{
-	arg freq, amp = 1, out = 0, gate = 1, replyID = -1,seed = 9435;
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1,seed = 5, noiseDecay = 0.09, filterDecay = 0.09, tunedFreq = 129,notchF1 = 1400,notchF2 = 5000, noisePlateau = 0.05;
 	var src, env, quitAfter,noiseEnv, filtEnv;
-	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
+	env = Env.adsr(0, 0.3,1,0.05).ar(0, gate);
 
 	RandID.ir(id: 0);
 	RandSeed.ir(trig: 1, seed: seed);
@@ -1562,22 +1562,21 @@ SynthDef.new(\l1_laSnare,{
 	quitAfter = FreeSelf.kr(quitAfter);
 
 
-	noiseEnv = Env.pairs([[0,0.0],[0.00001,1], [0.06,0.7],[0.15,0.1], [0.2,0]], -3).ar(0,1);
-	filtEnv = Env.pairs([[0,10000],[0.00001,10000], [0.03,180],[0.2,180], [0.4,200]], -7).ar(0,1);
+	noiseEnv = Env.pairs([[0,0.0],[0.00000001,1], [0.04,noisePlateau],[0.06 + noiseDecay,noisePlateau], [0.11 + noiseDecay,0]], -4).ar(0,1);
+	filtEnv = Env.pairs([[0,20000],[0.00001,20000], [filterDecay,tunedFreq],[0.2,tunedFreq], [0.4,tunedFreq]], -15).ar(0,1);
 	// SendReply.kr(Impulse.kr(60), "/instrument/param", env, replyID);
 
 	src = WhiteNoise.ar( mul:env*noiseEnv);
-	src = BRF.ar(src, 1400,0.5);
-	src = BRF.ar(src, 5000,0.2);
+	src = BRF.ar(src, notchF1,1);
+	src = BRF.ar(src, notchF2,0.3);
 
 	// src= LRLowCut.ar(src, filtEnv,5,5).sanitize.clip(-1,1);
-	src= DFM1.ar(src, filtEnv,0.98,2,1,mul:2).sanitize.clip(-1,1) * amp;
+	src= DFM1.ar(src, filtEnv,0.98,1,1,mul:4).sanitize.tanh.clip(-1,1) * amp;
 
 	OffsetOut.ar(out, src!2);
 },
 metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
 ).add;
-
 
 
 SynthDef.new(\l1_leKick,{

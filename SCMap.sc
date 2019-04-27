@@ -2,7 +2,7 @@
 SCM {
 	classvar <proxySpace;
 
-	classvar tempo_;
+	classvar tempo;
 	classvar <> tempoMin;
 	classvar <> tempoMax;
 	classvar <> presetFolder;
@@ -79,6 +79,7 @@ SCM {
 
 		tempoMin = 10;
 		tempoMax = 160;
+		tempo = 120;
 
 		masterFXdeferTime = 2;
 
@@ -99,6 +100,35 @@ SCM {
 			}, "/touch/fps"
 		);
 
+		OSCdef(\tempoDiv,
+			{
+				arg msg;
+				if(msg[1] > 0.5)
+				{
+
+					SCM.proxySpace.clock.play({
+						tempo = tempo/2;
+						tempo = tempo.clip(tempoMin,tempoMax);
+						SCM.setTempo(tempo);
+					}, 1);
+				}
+			}, "/masterMenu2/tempoDiv2/x"
+		);
+
+		OSCdef(\tempoMult,
+			{
+				arg msg;
+				if(msg[1] > 0.5)
+				{
+					SCM.proxySpace.clock.play({
+						tempo = tempo*2;
+						tempo = tempo.clip(tempoMin,tempoMax);
+						SCM.setTempo(tempo);
+					}, 1);
+				};
+			}, "/masterMenu2/tempoMult2/x"
+		);
+
 		OSCdef(\tempo,
 			{
 				arg msg;
@@ -107,6 +137,9 @@ SCM {
 		);
 
 	}
+	/**divideTempo{
+
+	}*/
 
 	*masterFX{
 		arg function, channels = 2;
@@ -155,13 +188,13 @@ SCM {
 	}
 
 	*setTempo{
-		arg tempo;
-		tempo_ = tempo;
-		proxySpace.clock.tempo = tempo_/60;
+		arg tempo_;
+		tempo = tempo_;
+		proxySpace.clock.tempo = tempo/60;
 
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/scTempo", tempo_.linlin(tempoMin,tempoMax,0,1));
+			ctrlr.set("/scTempo", tempo.linlin(tempoMin,tempoMax,0,1));
 		};
 
 	}
@@ -312,11 +345,19 @@ SCM {
 							arg val, i;
 							var numberAddr;
 							numberAddr = i.asString ++ "/" ++ addr;
-							tdOut.dat.sendMsg(sendAddr , numberAddr, val);
+							tdOut.chop.sendMsg(sendAddr ++ "/" ++ numberAddr, val);
+							// tdOut.dat.sendMsg(sendAddr , numberAddr, val);
 						};
 					}
 					{
-						tdOut.dat.sendMsg(sendAddr , addr, value);
+						// tdOut.dat.sendMsg(sendAddr , addr, value);
+						// tdOut.dat.sendMsg(sendAddr , addr, value);
+						tdOut.chop.sendMsg(sendAddr ++ "/" ++ addr, value);
+					};
+					// if(evt[\isRest].not)
+					if(evt.isRest.not)
+					{
+						tdOut.dat.sendMsg(sendAddr ++ "/" ++ addr ++ "/trigger", 1);
 					};
 
 					// a.sendMsg("/test",addr,value);
@@ -410,7 +451,7 @@ SCMLemurCtrlr{
 
 		liveOrDisk = 0;
 
-		this.set("/masterMenu2/diskNames", ([1,2,3,4]).collect{arg i; i.asString});
+		this.set("/masterMenu2/diskNames", ([1,2,3,4,5]).collect{arg i; i.asString});
 		this.set("/masterMenu2/liveOrDisk/x", 0);
 		this.set("/masterMenu2/savePreset/x", 0);
 		this.set("/scTempo", 120.linlin(SCM.tempoMin, SCM.tempoMax,0,1));
@@ -594,7 +635,7 @@ SCMLemurCtrlr{
 					this.set("/masterMenu2/diskNames",groupReference.filePresetNames)
 				}
 				{
-					this.set("/masterMenu2/diskNames", ([1,2,3,4]).collect{arg i; i.asString});
+					this.set("/masterMenu2/diskNames", ([1,2,3,4,5]).collect{arg i; i.asString});
 					this.set('/masterMenu2/preset/light', groupReference.activePresets * 0.4);
 				};
 			};
@@ -777,9 +818,9 @@ SCMAnVoMotors{
 		motors[motorIndex].bend(0,angle);
 		/*
 		SCM.dataOutputs.do{
-				arg tdOut;
-				tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *rawValue);//append /controls
-			};*/
+		arg tdOut;
+		tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *rawValue);//append /controls
+		};*/
 
 	}
 
