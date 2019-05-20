@@ -163,7 +163,7 @@ SCM {
 		playStates[scmGroupIndex] = state;
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/masterMenu/changeModule/light", playStates * 0.6);
+			ctrlr.set("/masterMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
 		};
 
 	}
@@ -236,7 +236,7 @@ SCM {
 		};
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/masterMenu/changeModule/light", playStates * 0.6);
+			ctrlr.set("/masterMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
 		};
 
 	}
@@ -355,13 +355,15 @@ SCM {
 						tdOut.chop.sendMsg(sendAddr ++ "/" ++ addr, value);
 					};
 					// if(evt[\isRest].not)
-					if(evt.isRest.not)
-					{
-						tdOut.dat.sendMsg(sendAddr ++ "/" ++ addr ++ "/trigger", 1);
-					};
+
 
 					// a.sendMsg("/test",addr,value);
 					// name.postln;
+				};
+
+				if(evt.isRest.not)
+				{
+					tdOut.dat.sendMsg(sendAddr ++ "/trigger", 1);
 				};
 
 
@@ -449,7 +451,7 @@ SCMLemurCtrlr{
 
 		this.setupMasterGroupMenu;
 
-		liveOrDisk = 0;
+		liveOrDisk = 1;
 
 		this.set("/masterMenu2/diskNames", ([1,2,3,4,5]).collect{arg i; i.asString});
 		this.set("/masterMenu2/liveOrDisk/x", 0);
@@ -546,7 +548,15 @@ SCMLemurCtrlr{
 
 		});
 
+		// ledsOn
 
+		//listener for menu group ledsOn
+		this.setupInstanceListener('/masterMenu/ledsOn/x', {
+			arg args;
+			if(groupReference != nil){
+				groupReference.getCtrl('ledsOn').augmentedSet(args[0]); //
+			};
+		});
 
 
 		//listener for menu group PLAY
@@ -570,6 +580,8 @@ SCMLemurCtrlr{
 				groupReference.getCtrl('volume').augmentedSet(args[0]); //
 			};
 		});
+
+
 
 
 		//listener for menu group prep
@@ -720,12 +732,16 @@ SCMLemurCtrlr{
 	}
 
 	updateMenuElementsFromGroup{
-		var volume;
+		var volume, ledsOn;
 
 		this.set('/masterMenu/play/x', SCM.getGroup(selectedGroupName).isPlaying.asInt);
 
 		volume = SCM.getGroup(selectedGroupName).getCtrl('volume').value;
 		this.set('/masterMenu/volume/x', volume);
+
+
+		ledsOn = SCM.getGroup(selectedGroupName).getCtrl('ledsOn').value;
+		this.set('/masterMenu/ledsOn/x', ledsOn);
 
 		this.set('/masterMenu2/preset/light', SCM.getGroup(selectedGroupName).activePresets * 0.8);
 		if(liveOrDisk> 0.5)
