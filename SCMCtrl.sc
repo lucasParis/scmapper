@@ -462,6 +462,7 @@ SCMCtrl {
 	}
 
 	augmentedSet{
+		//set with the meta control stuff (for prepare, jump etc)
 		arg value;
 		//set (when not in metactrl mode)
 		if(inAutomateMode)

@@ -16,6 +16,7 @@ SCM {
 	classvar <dataOutputs;// to touchdesigner, but could be other?
 
 	classvar < imu;
+	classvar < matrix;
 
 	classvar < anvoMotors;
 
@@ -89,7 +90,6 @@ SCM {
 
 		// imu = SCMimu.new();
 
-
 		OSCdef(\fpsReroute,
 			{
 				arg msg;
@@ -140,6 +140,10 @@ SCM {
 	/**divideTempo{
 
 	}*/
+
+	*setupMatrix{
+		matrix = SCMMatrix.new();
+	}
 
 	*masterFX{
 		arg function, channels = 2;
@@ -270,11 +274,13 @@ SCM {
 
 	*eventToTD{
 		arg event, groupName, patternName;
-		var evt = event.copy, stringEvent, sendAddr, delay, formatedEvent;//copy event, leave the original event unmodified
+		var evt = event.copy, stringEvent, sendAddr, delay, formatedEvent, instrument;//copy event, leave the original event unmodified
 
 		//add patternEvent tag and instrument name to OSC address
 		// sendAddr = ('/patternEvent/'++ groupName ++ '/' ++ evt[\instrument].asString);
 		sendAddr = ('/patternEvent/'++ groupName ++ '/' ++ patternName ++ '/' ++ evt[\instrument].asString);
+
+		instrument = evt[\instrument].asString;
 
 		//optional osc address append, to diferentiate the same instrument in multiple patterns of the same group
 		(evt[\osc_append] != nil).if{
@@ -363,7 +369,11 @@ SCM {
 
 				if(evt.isRest.not)
 				{
-					tdOut.dat.sendMsg(sendAddr ++ "/trigger", 1);
+					var trigAddr;
+					trigAddr= ('/trigger/'++ groupName ++ '/' ++ patternName ++ '/' ++ instrument);
+
+					// tdOut.dat.sendMsg(sendAddr ++ "/trigger", 1);
+					tdOut.dat.sendMsg(trigAddr, *[patternName ++ '_' ++ instrument,1]);
 				};
 
 
@@ -475,6 +485,7 @@ SCMLemurCtrlr{
 
 
 	setupInstanceListener{
+		//replace with srcid arg
 		arg adr, function;
 		OSCFunc(
 			{
@@ -728,6 +739,9 @@ SCMLemurCtrlr{
 	jumpGroup{
 		if(groupReference != nil){
 			groupReference.controls.do{arg ctrl; ctrl.jump};
+
+			this.updateMenuElementsFromGroup;
+			// groupReference.getCtrl(\volume).value;
 		};
 	}
 

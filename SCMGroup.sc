@@ -469,7 +469,8 @@ SCMGroup {
 				arg msg;
 				var values;
 
-				values = msg[3..];//get the signal values
+				// values = msg[3..];//get the signal values
+				values = [nameSig.asString, 1];//get the signal values
 				//send to touch, with sync delay
 				SCM.dataOutputs.do{
 					arg tdOut;
