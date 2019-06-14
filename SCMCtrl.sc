@@ -6,12 +6,195 @@ BusMapper {
 	}
 }
 
+// SCMMenuCtrl {
+//
+// }
+
+
+SCMMetaCtrl {
+	var < value;
+
+	var oscAddr, colorAddr;
+	var <name;
+	// var <>parentGroup;
+	var < postFix;
+
+	//for proxy
+	var proxyNodeName;
+	var proxyCtrlName;
+
+	var defaultValue;
+	var isRadio;
+
+	//bus and bus mapper players
+	var bus;
+	var busMapSynths;
+
+	//for function callback
+	var <> functionSet;
+
+	// for automate
+	var <> disableAutomation;
+
+	*new{
+		arg ctrlName, defaultValue, postFix;
+		^super.new.init(ctrlName, defaultValue, postFix);
+	}
+
+	init{
+		arg ctrlName, defaultValue_, postFix_;
+		name = ctrlName.asSymbol;
+		value = defaultValue_;
+		postFix = postFix_.asSymbol;
+		isRadio = false;
+		defaultValue = defaultValue_;
+
+		//setup control bus
+		bus = Bus.control(Server.local, defaultValue_.size.max(1));
+
+
+	}
+
+	setupProxyControl
+	{
+		arg nodeName, ctrlName;
+		proxyNodeName = nodeName;
+		proxyCtrlName = ctrlName;
+	}
+
+	play{
+		busMapSynths.do{ arg synth; synth.run(true);};
+	}
+
+	stop{
+		busMapSynths.do{ arg synth; synth.run(false);};
+	}
+
+	// simple interfaces to SCM content
+	busMap{
+		arg min = 0, max = 1, curve = 0, lagUp = 0, lagDown = 0;
+		var return, outBus, busMap;
+
+		//create a control mapper synth
+		outBus = Bus.control(Server.local, bus.numChannels);
+		busMap = {Out.kr(outBus, In.kr(bus, bus.numChannels).lincurve(0,1,min,max,curve).lag(lagUp, lagDown) ); }.play;//bus mapper synthdef
+		busMapSynths = busMapSynths.add(busMap);
+
+		//calculate busmap array if needed
+		(outBus.numChannels == 1).if{
+			return = outBus.asMap; //return bus map
+		}
+		{
+			//if multichannel bus mapping, return an array of sc bus map strings ["c1", "c2", ...]
+			return = outBus.numChannels.collect{arg i; ("c" ++ (outBus.index + i).asString).asSymbol};
+		};
+		//return
+		^return;
+	}
+
+	pfunc{
+		arg index = nil;
+		var return;
+
+		if(index != nil)
+		{
+			return = Pfunc{value[index]};
+		}
+		{
+			return = Pfunc{value};
+		}
+		^return;
+	}
+
+	hardSet{
+		arg val, toFunction = true;
+		//set value
+		value = val;
+
+		//set bus value
+		bus.set(*value);
+
+		//set proxy value
+		if(proxyNodeName != nil)
+		{
+			SCM.proxySpace[proxyNodeName].set(proxyCtrlName, value);
+		};
+
+		if( functionSet != nil)
+		{
+			if(toFunction)
+			{
+				functionSet.value(value);
+			};
+		};
+
+		//to td
+		SCM.dataOutputs.do{
+			arg tdOut;
+			tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *value);//append /controls
+		};
+
+		// update osc outputs
+		// this.updateFeedback(val, toCtrlrs);
+	}
+
+
+	//controller/datastructure model
+	getValueByInteractionMethod{
+		arg interactionMethod;
+		var returnVal;
+
+		returnVal = case
+		{interactionMethod == \normal}
+		{
+			value;
+		}{interactionMethod == \prepare}
+		{
+			// preparedValue;
+		}{interactionMethod == \automate}
+		{
+			// automateValue;
+		};
+
+		//radio mode for controllers only
+		/*isRadio.if({
+			var radioValue;
+			radioValue = Array.fill(32,0);
+			radioValue[value] = 1;
+			value = radioValue;
+		}
+		);*/
+
+
+		^returnVal;
+	}
+
+	setValueByInteractionMethod{
+		arg val, interactionMethod;
+		case
+		{interactionMethod == \normal}
+		{
+			value = val;
+			this.hardSet(value);
+		}{interactionMethod == \prepare}
+		{
+			// preparedValue = val;
+		}{interactionMethod == \automate}
+		{
+			// automateValue = val;
+		};
+	}
+}
+
 SCMCtrl {
 	var < value;
 	var type, oscAddr, colorAddr;
 	var <name;
 	var <>parentGroup;
 	var < postFix;
+
+	var defaultValue;
+	var isRadio;
 
 	var <> ignoreFeedback;
 
@@ -64,8 +247,6 @@ SCMCtrl {
 
 	//presets
 	var presets;
-	var defaultValue;
-	var isRadio;
 
 
 	var <> menuFeedbackIndex;
@@ -118,7 +299,7 @@ SCMCtrl {
 		/*
 		if(name == 'volume')
 		{
-			disablePrepjump = true;
+		disablePrepjump = true;
 		};*/
 
 		//automate variables
@@ -231,7 +412,7 @@ SCMCtrl {
 		//set to prep mode color
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.setColor(colorAddr, prepareColor);
+			ctrlr.sendColorMsg(colorAddr, prepareColor);
 			// ctrlr.setPhysics(colorAddr, 0);
 		};
 
@@ -247,7 +428,7 @@ SCMCtrl {
 		//return to original color
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.setColor(colorAddr, normalColor);
+			ctrlr.sendColorMsg(colorAddr, normalColor);
 			// ctrlr.setPhysics(colorAddr, 1);
 		};
 	}
@@ -272,7 +453,7 @@ SCMCtrl {
 		//set to automate color
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.setColor(colorAddr, automateColor);
+			ctrlr.sendColorMsg(colorAddr, automateColor);
 			// ctrlr.setPhysics(colorAddr, 1);
 		};
 		inAutomateMode = true;
@@ -348,11 +529,11 @@ SCMCtrl {
 			if(inPrepMode)
 			{
 				//return to prep color
-				ctrlr.setColor(colorAddr, prepareColor);
+				ctrlr.sendColorMsg(colorAddr, prepareColor);
 			}
 			{
 				//return to original color
-				ctrlr.setColor(colorAddr, normalColor);
+				ctrlr.sendColorMsg(colorAddr, normalColor);
 			}
 		};
 
@@ -437,15 +618,15 @@ SCMCtrl {
 				//update osc outputs
 				SCM.ctrlrs.do{
 					arg ctrlr;
-					ctrlr.set(oscAddr, value)//for midi if a param is mapped, store relation path->encoder/button
+					ctrlr.sendMsg(oscAddr, value)//for midi if a param is mapped, store relation path->encoder/button
 				};
 			};
 		};
 
-		if(menuFeedbackIndex != nil)
-		{
-			SCM.ctrlrs[menuFeedbackIndex].set("/masterMenu/" ++ name ++ postFix, value);
-		};
+		// if(menuFeedbackIndex != nil)
+		// {
+		// SCM.ctrlrs[menuFeedbackIndex].set("/masterMenu/" ++ name ++ postFix, value);
+		// };
 
 		if(toTD)
 		{
@@ -460,6 +641,8 @@ SCMCtrl {
 	printOn { | stream |
 		stream << "SCMCtrl (" << name << ")";
 	}
+
+
 
 	augmentedSet{
 		//set with the meta control stuff (for prepare, jump etc)

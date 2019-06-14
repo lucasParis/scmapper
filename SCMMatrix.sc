@@ -35,15 +35,15 @@ SCMMatrix {
 		//init controllers
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/matrix/routingVisualiser/inConnections", [\none]);
-			ctrlr.set("/matrix/routingVisualiser/outConnections", [\none]);
-			ctrlr.set("/matrix/routingVisualiser/rangesMax", [1]);
-			ctrlr.set("/matrix/routingVisualiser/rangesMin", [0]);
-			ctrlr.set("/matrix/routingVisualiser4/setModules", modules);
-			ctrlr.set("/matrix/moduleRoutingSelect/setLabels", modules);
-			ctrlr.set("/matrix/matrixEditMode/x", [0,1]);
-			ctrlr.set("/matrix/outputName/value", selectedOutModule);
-			ctrlr.set("/matrix/inputName/value", selectedInModule);
+			ctrlr.sendMsg("/matrix/routingVisualiser/inConnections", [\none]);
+			ctrlr.sendMsg("/matrix/routingVisualiser/outConnections", [\none]);
+			ctrlr.sendMsg("/matrix/routingVisualiser/rangesMax", [1]);
+			ctrlr.sendMsg("/matrix/routingVisualiser/rangesMin", [0]);
+			ctrlr.sendMsg("/matrix/routingVisualiser4/setModules", modules);
+			ctrlr.sendMsg("/matrix/moduleRoutingSelect/setLabels", modules);
+			ctrlr.sendMsg("/matrix/matrixEditMode/x", [0,1]);
+			ctrlr.sendMsg("/matrix/outputName/value", selectedOutModule);
+			ctrlr.sendMsg("/matrix/inputName/value", selectedInModule);
 		};
 
 		this.setupOscListeners();
@@ -58,7 +58,7 @@ SCMMatrix {
 		//update osc outputs
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/matrix/routingVisualiser4/connections", globalConnections.flatten);
+			ctrlr.sendMsg("/matrix/routingVisualiser4/connections", globalConnections.flatten);
 		};
 	}
 
@@ -66,7 +66,7 @@ SCMMatrix {
 		var names = moduleData[selectedInModule].inputs;
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/matrix/dragButton/labels", names);
+			ctrlr.sendMsg("/matrix/dragButton/labels", names);
 		};
 	}
 
@@ -74,7 +74,7 @@ SCMMatrix {
 		var names = moduleData[selectedOutModule].outputs;
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/matrix/outButtons/setLabels", names);
+			ctrlr.sendMsg("/matrix/outButtons/setLabels", names);
 		};
 	}
 
@@ -91,16 +91,16 @@ SCMMatrix {
 
 			if(allConnections[selectedKey].isEmpty)
 			{
-				ctrlr.set("/matrix/routingVisualiser/inConnections", [\none]);
-				ctrlr.set("/matrix/routingVisualiser/outConnections", [\none]);
-				ctrlr.set("/matrix/routingVisualiser/rangesMax", [1]);
-				ctrlr.set("/matrix/routingVisualiser/rangesMin", [0]);
+				ctrlr.sendMsg("/matrix/routingVisualiser/inConnections", [\none]);
+				ctrlr.sendMsg("/matrix/routingVisualiser/outConnections", [\none]);
+				ctrlr.sendMsg("/matrix/routingVisualiser/rangesMax", [1]);
+				ctrlr.sendMsg("/matrix/routingVisualiser/rangesMin", [0]);
 			}
 			{
-				ctrlr.set("/matrix/routingVisualiser/inConnections", ins);
-				ctrlr.set("/matrix/routingVisualiser/outConnections", outs);
-				ctrlr.set("/matrix/routingVisualiser/rangesMin", mins);
-				ctrlr.set("/matrix/routingVisualiser/rangesMax", maxs);
+				ctrlr.sendMsg("/matrix/routingVisualiser/inConnections", ins);
+				ctrlr.sendMsg("/matrix/routingVisualiser/outConnections", outs);
+				ctrlr.sendMsg("/matrix/routingVisualiser/rangesMin", mins);
+				ctrlr.sendMsg("/matrix/routingVisualiser/rangesMax", maxs);
 			};
 		};
 	}
@@ -185,7 +185,7 @@ SCMMatrix {
 
 				SCM.ctrlrs.do{
 					arg ctrlr;
-					ctrlr.set("/matrix/outputName/value", selectedInModule);
+					ctrlr.sendMsg("/matrix/outputName/value", selectedInModule);
 				};
 				this.sendConnections();
 				this.sendInputNames();
@@ -202,7 +202,7 @@ SCMMatrix {
 				this.sendConnections();
 				SCM.ctrlrs.do{
 					arg ctrlr;
-					ctrlr.set("/matrix/inputName/value", selectedOutModule);
+					ctrlr.sendMsg("/matrix/inputName/value", selectedOutModule);
 				};
 				this.sendInputNames();
 				this.sendOutputNames();

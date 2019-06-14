@@ -1,4 +1,4 @@
-SCMTestController{
+SCMStructureController{
 	/*
 	this class is meant to provide a bridge between a OSC UI (window/container/panel) and the controls (datastructure) of a module or menu
 	it is able to show the data to UI in different ways and set the data in different ways ( for meta)
@@ -7,7 +7,7 @@ SCMTestController{
 	*/
 
 	var containerName;
-	var lemurPort;
+	var oscPort;
 
 	var netAddr;
 	var formatAddressWithPostFix;
@@ -20,16 +20,16 @@ SCMTestController{
 	var < listenerList;
 
 	*new{
-		arg containerName = "interface1", lemurPort = 8000;
-		^super.newCopyArgs(containerName, lemurPort).init();
+		arg containerName = "interface1", oscPort = 8000;
+		^super.newCopyArgs(containerName, oscPort).init();
 	}
 
 	init {
 
-		netAddr = NetAddr("127.0.0.1", lemurPort);
+		netAddr = NetAddr("127.0.0.1", oscPort);
 
 		//formating address function
-		formatAddressWithPostFix = {arg name, ctrlname, postFix; "/" ++ name ++ "/" ++ ctrlname ++ "/" ++ postFix};
+		formatAddressWithPostFix = {arg name, ctrlname, postFix; "/" ++ name ++ "/" ++ ctrlname ++ postFix};
 		formatAddressWithoutPostFix = {arg name, ctrlname; "/" ++ name ++ "/" ++ ctrlname};
 
 		listenerList = [];
@@ -127,7 +127,7 @@ SCMTestController{
 							val = val[0];
 						};
 
-						focus.set(scmCtrl.name, val, this.interactionMethod, this);
+						focus.set(scmCtrl.name, scmCtrl.postFix, val, this.interactionMethod, this);
 					}, ctrlAddress,  netAddr
 				)
 			);
@@ -137,76 +137,10 @@ SCMTestController{
 
 }
 
-SCMTestCtrl {
-	//this class is very similar to the current SCMCtrl
-	//it probably needs to be aware of the datastructure that it is in (to update on change)
-	//make it polymorphic?
-
-	//*new arguments, keep in order, nothing above
-	var < name;
-	var <> value;
-	// --
-
-	var <> preparedValue;
-	var <> automateValue;
-
-	//for function callback
-	var <> functionSet;
 
 
-	var < postFix;
-	var containingDataStructures;
-
-	*new{
-		arg name, value = 0;
-		^super.newCopyArgs(name, value).init();
-
-	}
-
-	init {
-		postFix = "x"
-	}
-
-	getValueByInteractionMethod{
-		arg interactionMethod;
-		var returnVal;
-
-		returnVal = case
-		{interactionMethod == \normal}
-		{
-			value;
-		}{interactionMethod == \prepare}
-		{
-			preparedValue;
-		}{interactionMethod == \automate}
-		{
-			automateValue;
-		};
-
-		^returnVal;
-	}
-
-	setValueByInteractionMethod{
-		arg val, interactionMethod;
-		case
-		{interactionMethod == \normal}
-		{
-			value = val;
-			if( functionSet != nil)
-			{
-				functionSet.value(value);
-			};
-		}{interactionMethod == \prepare}
-		{
-			preparedValue = val;
-		}{interactionMethod == \automate}
-		{
-			automateValue = val;
-		};
-	}
-}
-
-SCMTestDataStructure {
+SCMControlDataStructure {
+	//always go thought this data structure, never touch controls directly, because it's this structure that is supposed to synchronise every controller
 	var <> controls;
 	var < focusers;
 
@@ -230,19 +164,18 @@ SCMTestDataStructure {
 		focusers.removeAt(focuser.hash);
 	}
 
-	loadExample1Controls{
-		//artificial creation of ctrls here for test purposes, in practise they will be scooped up from SCMGroup or elsewhere
-		3.do{
-			arg i;
-			var ctrlname;
-			ctrlname = "ctrl" ++ i;
-			controls[ctrlname.asSymbol] = SCMTestCtrl(ctrlname, 0);
-		};
-		controls[\button1] = SCMTestCtrl("button1", 0);
+	addControl{
+		arg scmCtrl;
+		var name, postFix;
+
+		name = scmCtrl.name;
+		postFix = scmCtrl.postFix;
+		//addpostfix to key
+		controls[name] = scmCtrl;
 	}
 
 	set{
-		arg name, val, interactionMethod = \normal, setfocuser = nil; // , hash; //use hash to not send back to where the control came from
+		arg name, postFix, val, interactionMethod = \normal, sourceFocuser = nil; // , hash; //use hash to not send back to where the control came from
 		name = name.asSymbol;
 
 		controls[name].setValueByInteractionMethod(val, interactionMethod);
@@ -251,7 +184,7 @@ SCMTestDataStructure {
 		focusers.keysValuesDo{
 			arg focuserHash, focuser;
 			//if this is not the source focuser and it's interaction method matches
-			if(focuserHash != setfocuser.hash && focuser.interactionMethod == interactionMethod)
+			if(focuserHash != sourceFocuser.hash && focuser.interactionMethod == interactionMethod)
 			{
 				var value = controls[name].getValueByInteractionMethod(interactionMethod);
 
@@ -259,9 +192,4 @@ SCMTestDataStructure {
 			};
 		};
 	}
-
-
-
-
-
 }

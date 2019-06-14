@@ -90,8 +90,7 @@ SCMProxy {
 
 					//create a control and store reference to nodeproxy and proxy control
 					ctrl = parentGroup.newCtrl(name[0].asSymbol, value, postFix.asSymbol);
-					ctrl.proxyNodeName = proxySpaceName;
-					ctrl.proxyCtrlName = proxyCtrlName;
+					ctrl.setupProxyControl(proxySpaceName, proxyCtrlName)
 				};
 			};
 

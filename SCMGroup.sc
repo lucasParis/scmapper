@@ -1,6 +1,11 @@
+
+
+
 SCMGroup {
 	var <name;
+
 	var <controls;
+
 
 	var <patterns;
 	var <>proxies;
@@ -29,6 +34,10 @@ SCMGroup {
 
 	var < filePresetNames;
 
+	//menuFocusers
+	// var mainMenuControlDataStructure;
+	var < allControlsDataStructure;
+	var < menuControlsDataStructure;
 
 
 	*new{
@@ -72,6 +81,22 @@ SCMGroup {
 
 		scmGroupIndex = scmGroupIndex_;
 		this.initPresetNames;
+
+		menuControlsDataStructure = SCMControlDataStructure();
+		allControlsDataStructure = SCMControlDataStructure();
+
+		this.newCtrl(\play, 0).functionSet_{
+			arg val;
+			if(val > 0.5)
+			{
+
+				this.play;
+			}
+			{
+				this.stop;
+			};
+
+		};
 
 	}
 
@@ -215,13 +240,24 @@ SCMGroup {
 	}
 
 	newCtrl{
-		arg name, defaultValue = 0, postFix = "/x"; // subGroup = \pattern1 / nil
+		arg ctrlName, defaultValue = 0, postFix = "/x"; // subGroup = \pattern1 / nil
 		var ctrl;
+		var menuControls;
 
 		//new ctrl
-		ctrl = SCMCtrl.new(name, defaultValue, postFix, this);
+		ctrl = SCMMetaCtrl.new(ctrlName, defaultValue, postFix);
 		// add control to this group
+		allControlsDataStructure.addControl(ctrl);
 		controls = controls.add(ctrl);
+
+		//if this is a menu control add it to that datastructure
+		menuControls = [\volume, \play, \ledsOn];
+		if(menuControls.includes(ctrlName) == true)
+		{
+			menuControlsDataStructure.addControl(ctrl);
+		};
+
+
 		^ctrl;//return
 	}
 
@@ -388,10 +424,10 @@ SCMGroup {
 			controls.do{arg control; control.play; };
 			//send OSC feedback
 			this.updateMenuFeedback('/play/x', 1, quantize:true);
-			if(scmGroupIndex != nil)
+			/* refact if(scmGroupIndex != nil)
 			{
-				SCM.setGroupPlayStates(scmGroupIndex, 1);
-			};
+			SCM.setGroupPlayStates(scmGroupIndex, 1);
+			};*/
 		}
 
 	}
@@ -437,7 +473,7 @@ SCMGroup {
 		//update osc outputs
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set(path, value);//for midi if a param is mapped, store relation path->encoder/button
+			ctrlr.sendMsg(path, value);//for midi if a param is mapped, store relation path->encoder/button
 		};
 		//update touchdesigner outputs
 		SCM.dataOutputs.do{

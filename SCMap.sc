@@ -34,6 +34,8 @@ SCM {
 	classvar < masterGroup;//hold SCMGroup for masterFX
 
 	classvar < playStates;//hold SCMGroup for masterFX
+	classvar < colors;
+
 
 
 
@@ -65,6 +67,8 @@ SCM {
 
 		masterServerGroup = Group.new(Server.local);
 
+		colors = (	\prepare: 8336384, \normal: 4868682, \automate: 2129688);
+
 		//reset database
 		groups = [];
 		dataOutputs = [];
@@ -95,7 +99,7 @@ SCM {
 				arg msg;
 				SCM.ctrlrs.do{
 					arg ctrlr;
-					ctrlr.set("/fps", msg[1]);
+					ctrlr.sendMsg("/fps", msg[1]);
 				};
 			}, "/touch/fps"
 		);
@@ -164,12 +168,12 @@ SCM {
 
 	*setGroupPlayStates{
 		arg scmGroupIndex, state;
-		playStates[scmGroupIndex] = state;
+		/*playStates[scmGroupIndex] = state;
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/masterMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
+			ctrlr.sendMsg("/masterMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
 		};
-
+		*/
 	}
 
 	*newGroup{
@@ -198,7 +202,7 @@ SCM {
 
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/scTempo", tempo.linlin(tempoMin,tempoMax,0,1));
+			ctrlr.sendMsg("/scTempo", tempo.linlin(tempoMin,tempoMax,0,1));
 		};
 
 	}
@@ -220,6 +224,14 @@ SCM {
 		dataOutputs = dataOutputs.add(dataOut);
 	}
 
+	*newOscCtrlr{
+		arg ip, port, name = \notNamed;
+		var return;
+		return = SCMOSCCtrlr.new(ip, port, name);
+		ctrlrs = ctrlrs.add(return);
+		^return;
+	}
+
 	*newLemurCtrlr{
 		arg ip, port, name = \notNamed, globalCtrlrIndex = 0;
 		var return;
@@ -236,11 +248,11 @@ SCM {
 		//send group names to lemur
 		ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set('/masterMenu/changeModule/names', names);
+			ctrlr.sendMsg('/mainMenu/changeModule/names', names);
 		};
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.set("/masterMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
+			ctrlr.sendMsg("/mainMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
 		};
 
 	}
@@ -433,357 +445,6 @@ SCM {
 
 
 
-SCMLemurCtrlr{
-	var < netAddr;
-	var name;
-	var <selectedGroupName;
-	var <groupReference;
-
-	var inPresetSaveMode;
-	var globalCtrlrIndex;
-
-	var liveOrDisk;
-
-	*new{
-		arg ip, port, name, globalCtrlrIndex;
-		^super.new.init(ip, port, name, globalCtrlrIndex);
-	}
-
-	init{
-		arg ip, port, name_, globalCtrlrIndex_;
-		name = name_;
-		netAddr = NetAddr(ip, port);
-		selectedGroupName = nil;
-
-		globalCtrlrIndex = globalCtrlrIndex_;
-
-		inPresetSaveMode = false;
-
-		this.setupMasterGroupMenu;
-
-		liveOrDisk = 1;
-
-		this.set("/masterMenu2/diskNames", ([1,2,3,4,5]).collect{arg i; i.asString});
-		this.set("/masterMenu2/liveOrDisk/x", 0);
-		this.set("/masterMenu2/savePreset/x", 0);
-		this.set("/scTempo", 120.linlin(SCM.tempoMin, SCM.tempoMax,0,1));
-
-
-		SCM.proxySpace.clock.play({
-			var beatCount;
-			beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
-			// netAddr.sendM
-			this.set("/clockCount", beatCount);
-			0.25;
-
-		},4);
-
-
-
-	}
-
-
-
-	setupInstanceListener{
-		//replace with srcid arg
-		arg adr, function;
-		OSCFunc(
-			{
-				|msg, time, addr, recvPort|
-				//check if the message is comming from this controller
-				if(addr.port == netAddr.port)
-				{
-					function.value(msg[1..]);
-				}
-			},
-			adr
-		);
-	}
-
-	selectGroup{
-		arg groupName;
-		//check if it's valid
-		if(groupName.isKindOf(Symbol)){
-			//check if it is in active groups
-			var scmGroup = SCM.getGroup(groupName);
-
-			if(scmGroup != nil,{
-				//if found, store name and group reference
-				selectedGroupName = groupName;
-				// groupReference = scmGroup;
-				this.setGroupRef(scmGroup);
-
-				//and send values from group to UI
-				this.updateMenuElementsFromGroup;
-			},{
-				//otherwise set to nil
-				selectedGroupName = nil;
-				groupReference = nil;
-			});
-		};
-	}
-
-	setGroupRef{
-		arg ref;
-		groupReference = ref;
-	}
-
-	getGroupRef{
-		^groupReference;
-	}
-
-	setupMasterGroupMenu{
-		//listener for menu group CHANGE
-		this.setupInstanceListener('/masterMenu/changeModule/name', {
-			arg args;
-			//get the selected group from OSC
-			var groupName = args[0];
-			this.selectGroup(groupName);
-			groupReference.controls.do{arg ctrl; ctrl.menuFeedbackIndex = globalCtrlrIndex};
-
-
-		});
-
-		//listener for menu group currentToPrep
-		this.setupInstanceListener('/masterMenu2/currentToPrep/x', {
-			arg args;
-			"current to prep".postln;
-			if(groupReference != nil){
-				if(args[0] > 0.5)
-				{
-
-					groupReference.controls.do{arg ctrl; ctrl.currentToPrep};
-
-				}
-			};
-
-		});
-
-		// ledsOn
-
-		//listener for menu group ledsOn
-		this.setupInstanceListener('/masterMenu/ledsOn/x', {
-			arg args;
-			if(groupReference != nil){
-				groupReference.getCtrl('ledsOn').augmentedSet(args[0]); //
-			};
-		});
-
-
-		//listener for menu group PLAY
-		this.setupInstanceListener('/masterMenu/play/x', {
-			arg args;
-			if(this.getGroupRef != nil){
-				if(args[0] >0.5)
-				{
-					this.getGroupRef.play();
-				}
-				{
-					this.getGroupRef.stop();
-				};
-			};
-		});
-
-		//listener for menu group volume
-		this.setupInstanceListener('/masterMenu/volume/x', {
-			arg args;
-			if(groupReference != nil){
-				groupReference.getCtrl('volume').augmentedSet(args[0]); //
-			};
-		});
-
-
-
-
-		//listener for menu group prep
-		this.setupInstanceListener('/masterMenu/prep/x', {
-			arg args;
-			if(groupReference != nil){
-				if(args[0] > 0.5)
-				{groupReference.controls.do{arg ctrl; ctrl.enterPrepMode}; }
-				{groupReference.controls.do{arg ctrl; ctrl.exitPrepMode}; }
-			};
-		});
-
-		//listener for menu group prep
-		this.setupInstanceListener('/masterMenu/jump/x', {
-			arg args;
-			if(args[0] > 0.5)
-			{
-				this.jumpGroup;
-			}
-		});
-		//listener for automateTime
-		this.setupInstanceListener('/masterMenu/automateTime/x', {
-			arg args;
-
-			if(groupReference != nil){
-				var autoTime = pow(2,args[0]*5+2).round;
-				groupReference.controls.do{arg ctrl; ctrl.setAutomateTime(autoTime)};
-			}
-		});
-
-		//listener for stopAutomation
-		this.setupInstanceListener('/masterMenu/stopAutomation/x', {
-			arg args;
-
-			if(groupReference != nil){
-				if(args[0] > 0.5)
-				{
-					groupReference.controls.do{arg ctrl; ctrl.stopAutomation()};
-				};
-			};
-		});
-
-		//listener for loadDefault
-		this.setupInstanceListener('/masterMenu2/loadDefault/x', {
-			arg args;
-
-			if(groupReference != nil){
-				if(args[0] > 0.5)
-				{
-					groupReference.controls.do{arg ctrl; ctrl.loadDefaultToPrep()};
-				};
-			};
-		});
-
-
-		//listener for liveOrDisk
-		this.setupInstanceListener('/masterMenu2/liveOrDisk/x', {
-			arg args;
-			if(groupReference != nil){
-				liveOrDisk = args[0];
-				if(liveOrDisk> 0.5)
-				{
-					this.set("/masterMenu2/diskNames",groupReference.filePresetNames)
-				}
-				{
-					this.set("/masterMenu2/diskNames", ([1,2,3,4,5]).collect{arg i; i.asString});
-					this.set('/masterMenu2/preset/light', groupReference.activePresets * 0.4);
-				};
-			};
-		});
-
-
-
-		//listener for menu group automate
-		this.setupInstanceListener('/masterMenu/automate/x', {
-			arg args;
-			if(groupReference != nil){
-				if(args[0] > 0.5)
-				{
-					groupReference.controls.do{arg ctrl; ctrl.enterAutomateMode};
-				}
-				{
-					groupReference.controls.do{arg ctrl; ctrl.exitAutomateMode};
-				}
-			};
-		});
-
-		//listener for menu group presetSave
-		this.setupInstanceListener('/masterMenu2/savePreset/x', {
-			arg args;
-			if(groupReference != nil){
-				if(args[0] > 0.5)
-				{
-					inPresetSaveMode = true;
-				}
-				{
-					inPresetSaveMode = false;
-				};
-			};
-		});
-
-		//listener for menu group preset
-		this.setupInstanceListener('/masterMenu2/preset/x', {
-			arg args;
-			if(groupReference != nil){
-				var radioValue;
-				radioValue = args.find([1]);
-				(radioValue != nil).if{
-					if(inPresetSaveMode)
-					{
-						//SAVE
-						if(liveOrDisk > 0.5)
-						{//disk mode
-							groupReference.savePresetToFile(radioValue);
-							"yo?".postln;
-							this.set("/masterMenu2/diskNames",groupReference.filePresetNames);
-
-						}
-						{//live Mode
-							groupReference.controls.do{arg ctrl; ctrl.savePreset(radioValue)};
-							groupReference.updatePresetStatus(radioValue);
-							this.set('/masterMenu2/preset/light', groupReference.activePresets * 0.4);
-						};
-					}
-					{
-						//LOAD
-						if(liveOrDisk > 0.5)
-						{//disk mode
-							groupReference.loadPresetFromFile(radioValue);
-						}
-						{//live Mode
-							if(groupReference.activePresets[radioValue] > 0.5)
-							{
-								groupReference.controls.do{arg ctrl; ctrl.loadPresetToPrep(radioValue)};
-							};
-						};
-					};
-				};
-			};
-		});
-
-	}
-
-	jumpGroup{
-		if(groupReference != nil){
-			groupReference.controls.do{arg ctrl; ctrl.jump};
-
-			this.updateMenuElementsFromGroup;
-			// groupReference.getCtrl(\volume).value;
-		};
-	}
-
-	updateMenuElementsFromGroup{
-		var volume, ledsOn;
-
-		this.set('/masterMenu/play/x', SCM.getGroup(selectedGroupName).isPlaying.asInt);
-
-		volume = SCM.getGroup(selectedGroupName).getCtrl('volume').value;
-		this.set('/masterMenu/volume/x', volume);
-
-
-		ledsOn = SCM.getGroup(selectedGroupName).getCtrl('ledsOn').value;
-		this.set('/masterMenu/ledsOn/x', ledsOn);
-
-		this.set('/masterMenu2/preset/light', SCM.getGroup(selectedGroupName).activePresets * 0.8);
-		if(liveOrDisk> 0.5)
-		{
-			this.set("/masterMenu2/diskNames",groupReference.filePresetNames)
-		};
-
-	}
-
-	set{
-		arg path, value;
-		netAddr.sendMsg(path, *value);
-	}
-
-	setColor{
-		arg path, color;
-		netAddr.sendMsg(path, '@color', color);
-		// ctrlr.sendMsg(ctrldict['addr'].asString.replace("/x", ""),'@color', shiftJumpColor);//send color orange
-
-	}
-
-	setPhysics{
-		arg path, value;
-		netAddr.sendMsg(path, '@physic', value);
-		// ctrlr.sendMsg(ctrldict['addr'].asString.replace("/x", ""),'@color', shiftJumpColor);//send color orange
-
-	}
-}
 
 SCMMidiCtrlr{
 
@@ -897,7 +558,7 @@ SCMAnVoMotors{
 				this.setSpeed(msg[1].clip(0,1));
 				SCM.ctrlrs.do{
 					arg ctrlr;
-					ctrlr.set( "/menu3/motorspeed/x", msg[1])//for midi if a param is mapped, store relation path->encoder/button
+					ctrlr.sendMsg( "/menu3/motorspeed/x", msg[1])//for midi if a param is mapped, store relation path->encoder/button
 				};
 			}, "/menu3/motorspeed/x"
 		);
