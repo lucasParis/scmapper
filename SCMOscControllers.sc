@@ -28,6 +28,7 @@ SCMOSCCtrlrMainMenu{
 	var moduleGenericMenuControlsController;//specific generic controls also found in the menu
 
 	//controllers for this class menuControls
+
 	var mainMenuController;
 	//data structure for menu items affecting controls in this class (prep, jump, automate, automatestop, preptoggle...)
 	var mainMenuDataStructure;
