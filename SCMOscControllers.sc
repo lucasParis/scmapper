@@ -1,20 +1,20 @@
-OSCMenuItem{
-	var <> name, <> postFix, <> value, <> oscFunction;
+// OSCMenuItem{
+// 	var <> name, <> postFix, <> value, <> oscFunction;
+//
+// 	*new{
+// 		arg name, postFix = "x", value = 0, oscFunction = nil;
+// 		^super.newCopyArgs(name, postFix, value, oscFunction).init();
+// 	}
+//
+// 	init{
+//
+// 	}
+// }
+//
 
-	*new{
-		arg name, postFix = "x", value = 0, oscFunction = nil;
-		^super.newCopyArgs(name, postFix, value, oscFunction).init();
-	}
-
-	init{
-
-	}
-}
 
 
-
-
-SCMOSCCtrlrMainMenu{
+SCMOSCMainMenu{
 	var netAddr;
 	var name;
 
@@ -28,7 +28,6 @@ SCMOSCCtrlrMainMenu{
 	var moduleGenericMenuControlsController;//specific generic controls also found in the menu
 
 	//controllers for this class menuControls
-
 	var mainMenuController;
 	//data structure for menu items affecting controls in this class (prep, jump, automate, automatestop, preptoggle...)
 	var mainMenuDataStructure;
@@ -82,7 +81,7 @@ SCMOSCCtrlrMainMenu{
 	}
 
 
-	makeMenuPath { arg menuItem; ^("/" ++ name ++ "/" ++ menuItem.name.asString ++ "/" ++ menuItem.postFix)}
+	// makeMenuPath { arg menuItem; ^("/" ++ name ++ "/" ++ menuItem.name.asString ++ "/" ++ menuItem.postFix)}
 
 	init{
 		//list of controls for this menu
@@ -367,6 +366,7 @@ SCMOSCCtrlr{
 	var name;
 
 	var < mainMenu;
+	var < matrixMenu;
 
 	*new{
 		arg ip, port, name;
@@ -379,7 +379,8 @@ SCMOSCCtrlr{
 		netAddr = NetAddr(ip, port);
 
 		//main per group menu
-		mainMenu = SCMOSCCtrlrMainMenu(netAddr, "mainMenu");
+		mainMenu = SCMOSCMainMenu(netAddr, "mainMenu");
+		matrixMenu = SCMOSCMatrixMenu(netAddr, "matrix");
 
 
 		// output clock, simple stuff

@@ -171,14 +171,14 @@ SCMControlDataStructure {
 		name = scmCtrl.name;
 		postFix = scmCtrl.postFix;
 		//addpostfix to key
-		controls[name] = scmCtrl;
+		controls[(name ++ postFix.asString).asSymbol] = scmCtrl;
 	}
 
 	set{
 		arg name, postFix, val, interactionMethod = \normal, sourceFocuser = nil; // , hash; //use hash to not send back to where the control came from
 		name = name.asSymbol;
 
-		controls[name].setValueByInteractionMethod(val, interactionMethod);
+		controls[(name ++ postFix.asString).asSymbol].setValueByInteractionMethod(val, interactionMethod);
 
 		//send value to focusers if they are in the right mode
 		focusers.keysValuesDo{
@@ -186,9 +186,9 @@ SCMControlDataStructure {
 			//if this is not the source focuser and it's interaction method matches
 			if(focuserHash != sourceFocuser.hash && focuser.interactionMethod == interactionMethod)
 			{
-				var value = controls[name].getValueByInteractionMethod(interactionMethod);
+				var value = controls[(name ++ postFix.asString).asSymbol].getValueByInteractionMethod(interactionMethod);
 
-				focuser.valueChangedFromFocus(value, controls[name]);
+				focuser.valueChangedFromFocus(value, controls[(name ++ postFix.asString).asSymbol]);
 			};
 		};
 	}

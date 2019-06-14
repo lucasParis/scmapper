@@ -1,4 +1,99 @@
+
+SCMOSCMatrixMenu {
+	var netAddr;
+	var name;
+
+
+	var < matrixControls;
+	var < matrixController;
+	var < matrixDataStructure;
+
+
+	*new{
+		arg netAddr, name;
+		^super.newCopyArgs(netAddr, name).init();
+	}
+
+	init{
+		//list of controls for matrix
+		matrixControls = [];
+
+		//select input module
+		matrixControls = matrixControls.add(
+			SCMMetaCtrl(\moduleRoutingSelect, 0, "/selectedinput").functionSet_{
+				arg val;
+				"input".postln;
+				val.postln;
+				// var groupName = msg;
+				// this.selectGroup(groupName);
+			};
+		);
+
+		//select output module
+		matrixControls = matrixControls.add(
+			SCMMetaCtrl(\moduleRoutingSelect, 0, "/selectedoutput").functionSet_{
+				arg val;
+				"output".postln;
+				val.postln;
+				// var groupName = msg;
+				// this.selectGroup(groupName);
+			};
+		);
+
+		//drag button down (edit/delete selection)
+		matrixControls = matrixControls.add(
+			SCMMetaCtrl(\dragButton, 0, "/down").functionSet_{
+				arg val;
+				val.postln;
+				// var groupName = msg;
+				// this.selectGroup(groupName);
+			};
+		);
+
+		//drag button minmax(move) set range
+		matrixControls = matrixControls.add(
+			SCMMetaCtrl(\dragButton, 0, "/minmax").functionSet_{
+				arg val;
+				val.postln;
+				// var groupName = msg;
+				// this.selectGroup(groupName);
+			};
+		);
+
+		//set edit mode (delete/modify)
+		matrixControls = matrixControls.add(
+			SCMMetaCtrl(\matrixEditMode, 0, "/x").functionSet_{
+				arg val;
+				val.postln;
+				// var groupName = msg;
+				// this.selectGroup(groupName);
+			};
+		);
+
+
+		//init controller and data structure
+		matrixController = SCMStructureController('matrix', netAddr.port);
+		matrixDataStructure = SCMControlDataStructure();
+
+		//copy the controls over to the datastructure
+		matrixControls.do{
+			arg ctrl;
+			matrixDataStructure.addControl(ctrl);
+		};
+
+		//set controller to datastructure
+		matrixController.setFocus(matrixDataStructure);
+
+
+
+	}
+}
+
 SCMMatrix {
+	//datacontrolsstructures:
+	// matrixControls (buttonIn, customButton, input/output select...)
+	//
+
 	//variables
 	var editMode;
 	var oscout;
@@ -8,12 +103,10 @@ SCMMatrix {
 	var rndNames, moduleData;
 
 	*new{
-		// arg groupName, channels = 2, quant = 4, scmGroupIndex = nil;
 		^super.new.init();
 	}
 
 	init{
-		// arg groupName, channels_, quant_, scmGroupIndex_;
 		editMode = \modify;
 
 		rndNames = ["Low", "Hi", "Mid", "Dirty", "Spacy", "Synth", "Freq", "Tone", "Delay", "Crunch", "Smear", "Lfo", "Env", "Punch"];
