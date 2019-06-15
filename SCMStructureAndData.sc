@@ -1,4 +1,10 @@
+//make an alternative structureController for data that is always set and presented through a mediated interface (menu) (ie controls that have no dedicated UI element with a constant OSC address)
+
+//just like SCMStructureController but with diferrent input and output mecanisms
+
+
 SCMStructureController{
+	//in truth this one is actually very specific to a direct OSC workflow, make another polyphormphic class for the different kind of interaction?
 	/*
 	this class is meant to provide a bridge between a OSC UI (window/container/panel) and the controls (datastructure) of a module or menu
 	it is able to show the data to UI in different ways and set the data in different ways ( for meta)
@@ -19,6 +25,8 @@ SCMStructureController{
 
 	var < listenerList;
 
+	var <> callbackFunction;
+
 	*new{
 		arg containerName = "interface1", oscPort = 8000;
 		^super.newCopyArgs(containerName, oscPort).init();
@@ -37,6 +45,7 @@ SCMStructureController{
 		// displayMethod = \prepare;
 		// displayMethod = \automate;
 		this.interactionMethod = \normal;
+		callbackFunction = nil;
 
 	}
 
@@ -82,16 +91,44 @@ SCMStructureController{
 
 
 	valueChangedFromFocus{
-		//notification from focus, called when a ctrl changes
-		//the controller knows what interaction mode this controller is in so it feeds the right data
 		arg value, scmCtrl;
+		//notification from focus, called when a ctrl changes
 
-		netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), value);
+		// ---- > in alternative version of controller (for scenarios like the matrix) this does something else
+
+		//the controller knows what interaction mode this controller is in so it feeds the right data
+
+		//make this a function so you can control how it sends the value back, or make a child class of this controller to replace this
+		if(callbackFunction != nil)
+		{
+			callbackFunction.(scmCtrl, containerName);
+		}
+		{
+			netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), value);
+		}
+
 
 	}
 
+	set{
+		//excludeFromCallback is usefull when the data being show doesnt have a direct osc element in the interface.
+		//we then rely on this feedback for visualisation so we dont want to exclude
+
+		arg name, postFix = "/x", value = 0, excludeFromCallback = true;
+		var focuserReference;
+		focuserReference = this;
+		if(excludeFromCallback == false)
+		{
+			focuserReference = nil;
+		};
+
+		focus.set(name, postFix, value, this.interactionMethod, focuserReference);
+	}
+
 	setFocus{
-		arg focus_;
+		//set a focused database
+		//add listerners according to whats in the database
+		arg focus_, createOscListeners = true;
 		//if we are focused on something, then remove ourselves from that focus
 		if(focus != nil)
 		{
@@ -107,32 +144,36 @@ SCMStructureController{
 		//add ourselves to the focused object
 		focus.addFocuser(this);
 
-		//iterate through focus controls to setup brigde
-		focus.controls.keysValuesDo{
-			arg key, scmCtrl;
-			var ctrlAddress = formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix);
+		if(createOscListeners == true)
+		{
+			//iterate through focus controls to setup brigde
+			focus.controls.keysValuesDo{
+				arg key, scmCtrl;
+				var ctrlAddress = formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix);
 
-			//send OSC initial value
-			netAddr.sendMsg(ctrlAddress, scmCtrl.value);
+				//send OSC initial value
+				netAddr.sendMsg(ctrlAddress, scmCtrl.value);
 
-			// addListener
-			listenerList = listenerList.add(
-				OSCFunc(
-					{
-						arg msg;
-						var val;
-						val = msg[1..];
-						if(val.size == 1)
+				// addListener
+				listenerList = listenerList.add(
+					OSCFunc(
 						{
-							val = val[0];
-						};
+							arg msg;
+							var val;
+							val = msg[1..];
+							if(val.size == 1)
+							{
+								val = val[0];
+							};
 
-						focus.set(scmCtrl.name, scmCtrl.postFix, val, this.interactionMethod, this);
-					}, ctrlAddress,  netAddr
-				)
-			);
+							focus.set(scmCtrl.name, scmCtrl.postFix, val, this.interactionMethod, this);
+						}, ctrlAddress,  netAddr
+					)
+				);
+			};
 		};
 	}
+
 
 
 }
@@ -174,21 +215,35 @@ SCMControlDataStructure {
 		controls[(name ++ postFix.asString).asSymbol] = scmCtrl;
 	}
 
+	removeControl{
+		arg name, postFix = "/x";
+
+		controls.removeAt((name ++ postFix.asString).asSymbol);
+	}
+
+	includesControl{
+		arg name, postFix = "/x";
+		^controls.includesKey((name ++ postFix.asString).asSymbol);
+	}
+
 	set{
 		arg name, postFix, val, interactionMethod = \normal, sourceFocuser = nil; // , hash; //use hash to not send back to where the control came from
 		name = name.asSymbol;
 
-		controls[(name ++ postFix.asString).asSymbol].setValueByInteractionMethod(val, interactionMethod);
+		if(controls[(name ++ postFix.asString).asSymbol] != nil)
+		{
+			controls[(name ++ postFix.asString).asSymbol].setValueByInteractionMethod(val, interactionMethod);
 
-		//send value to focusers if they are in the right mode
-		focusers.keysValuesDo{
-			arg focuserHash, focuser;
-			//if this is not the source focuser and it's interaction method matches
-			if(focuserHash != sourceFocuser.hash && focuser.interactionMethod == interactionMethod)
-			{
-				var value = controls[(name ++ postFix.asString).asSymbol].getValueByInteractionMethod(interactionMethod);
+			//send value to focusers if they are in the right mode
+			focusers.keysValuesDo{
+				arg focuserHash, focuser;
+				//if this is not the source focuser and it's interaction method matches
+				if(focuserHash != sourceFocuser.hash && focuser.interactionMethod == interactionMethod)
+				{
+					var value = controls[(name ++ postFix.asString).asSymbol].getValueByInteractionMethod(interactionMethod);
 
-				focuser.valueChangedFromFocus(value, controls[(name ++ postFix.asString).asSymbol]);
+					focuser.valueChangedFromFocus(value, controls[(name ++ postFix.asString).asSymbol]);
+				};
 			};
 		};
 	}

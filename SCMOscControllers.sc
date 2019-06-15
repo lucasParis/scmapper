@@ -1,17 +1,3 @@
-// OSCMenuItem{
-// 	var <> name, <> postFix, <> value, <> oscFunction;
-//
-// 	*new{
-// 		arg name, postFix = "x", value = 0, oscFunction = nil;
-// 		^super.newCopyArgs(name, postFix, value, oscFunction).init();
-// 	}
-//
-// 	init{
-//
-// 	}
-// }
-//
-
 
 
 SCMOSCMainMenu{

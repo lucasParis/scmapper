@@ -29,6 +29,7 @@ SCMMetaCtrl {
 	//bus and bus mapper players
 	var bus;
 	var busMapSynths;
+	var busMapBusses;
 
 	//for function callback
 	var <> functionSet;
@@ -52,7 +53,15 @@ SCMMetaCtrl {
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue_.size.max(1));
 
+		busMapBusses = [];
+		busMapSynths = [];
 
+	}
+
+	free {
+		bus.free;
+		busMapSynths.do{arg synth; synth.free};
+		busMapBusses.do{arg bus; busMapBusses.free};
 	}
 
 	setupProxyControl
@@ -77,6 +86,7 @@ SCMMetaCtrl {
 
 		//create a control mapper synth
 		outBus = Bus.control(Server.local, bus.numChannels);
+		busMapBusses = busMapBusses.add(outBus);
 		busMap = {Out.kr(outBus, In.kr(bus, bus.numChannels).lincurve(0,1,min,max,curve).lag(lagUp, lagDown) ); }.play;//bus mapper synthdef
 		busMapSynths = busMapSynths.add(busMap);
 

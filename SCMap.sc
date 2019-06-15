@@ -147,6 +147,11 @@ SCM {
 
 	*setupMatrix{
 		matrix = SCMMatrix.new();
+
+		SCM.ctrlrs.do{
+			arg ctrlr;
+			ctrlr.matrixMenu.scmMatrix = matrix;
+		}
 	}
 
 	*masterFX{

@@ -30,14 +30,54 @@ SCMGroup {
 	var < activePresets;
 
 	var < scmGroupIndex;
-
-
 	var < filePresetNames;
 
+
+
 	//menuFocusers
-	// var mainMenuControlDataStructure;
 	var < allControlsDataStructure;
 	var < menuControlsDataStructure;
+
+	//matrix routing stuff //looked at by matrix
+	var < matrixOutputs;
+	var < matrixInputs;
+
+	createInputkr{
+		arg name;
+		matrixInputs = matrixInputs.add(name);
+		// ~busses[name] = Bus.control(s);
+		// In.kr(~busses[name]);
+	}
+
+	createOutputkr{
+		arg name, sig;
+		matrixOutputs = matrixOutputs.add(name);
+		// ~busses[name] = Bus.control(s);
+
+		// Out.kr(~busses[name], sig);
+	}
+
+	createInputar{
+		arg name;
+		matrixInputs = matrixInputs.add(name);
+		// var channels = 2;
+		// channels = 4;
+
+		// ~busses[name] = Bus.audio(s, channels);
+
+		// InFeedback.ar(~busses[name],channels);
+	}
+
+	createOutputar{
+		arg name, sig;
+		matrixOutputs = matrixOutputs.add(name);
+		// var channels = 2;
+		//check signal size
+		// channels = 4;
+		// ~busses[name] = Bus.audio(s, channels);
+		// OffsetOut.ar(~busses[name], sig);
+	}
+
 
 
 	*new{
@@ -82,8 +122,14 @@ SCMGroup {
 		scmGroupIndex = scmGroupIndex_;
 		this.initPresetNames;
 
+		//control/data structure menu
 		menuControlsDataStructure = SCMControlDataStructure();
 		allControlsDataStructure = SCMControlDataStructure();
+
+		//matrix routing stuff //looked at by matrix
+		matrixOutputs = [];
+		matrixInputs = [];
+
 
 		this.newCtrl(\play, 0).functionSet_{
 			arg val;
