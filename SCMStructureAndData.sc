@@ -125,6 +125,24 @@ SCMStructureController{
 		focus.set(name, postFix, value, this.interactionMethod, focuserReference);
 	}
 
+	jump{
+		focus.jump;
+	}
+
+	checkForAutomationAndGo{
+		focus.checkForAutomationAndGo;
+	}
+
+	stopAutomation{
+		focus.stopAutomation;
+	}
+
+	setAutomationTime
+	{
+		arg autoTime;
+		focus.setAutomationTime(autoTime);
+	}
+
 	setFocus{
 		//set a focused database
 		//add listerners according to whats in the database
@@ -211,12 +229,23 @@ SCMControlDataStructure {
 
 		name = scmCtrl.name;
 		postFix = scmCtrl.postFix;
+
 		//addpostfix to key
 		controls[(name ++ postFix.asString).asSymbol] = scmCtrl;
+
+		//add callback to this for automation
+		controls[(name ++ postFix.asString).asSymbol].automationCallback = {
+			arg name, postFix;
+			this.onAutomationMoveCallback(name, postFix);
+		};
+
 	}
 
 	removeControl{
 		arg name, postFix = "/x";
+
+		//remove automation callback
+		controls[(name ++ postFix.asString).asSymbol].automationCallback = nil;
 
 		controls.removeAt((name ++ postFix.asString).asSymbol);
 	}
@@ -226,6 +255,36 @@ SCMControlDataStructure {
 		^controls.includesKey((name ++ postFix.asString).asSymbol);
 	}
 
+	jump{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.jump;
+			this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
+		};
+	}
+
+	checkForAutomationAndGo{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.checkForAutomationAndGo();
+		};
+	}
+
+	stopAutomation{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.stopAutomation();
+		};
+	}
+	setAutomationTime{
+		arg autoTime;
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.setAutomationTime(autoTime);
+		};
+	}
+
+
 	set{
 		arg name, postFix, val, interactionMethod = \normal, sourceFocuser = nil; // , hash; //use hash to not send back to where the control came from
 		name = name.asSymbol;
@@ -234,7 +293,18 @@ SCMControlDataStructure {
 		{
 			controls[(name ++ postFix.asString).asSymbol].setValueByInteractionMethod(val, interactionMethod);
 
-			//send value to focusers if they are in the right mode
+			this.executeCallback(name, postFix, interactionMethod, sourceFocuser);
+		};
+	}
+
+	onAutomationMoveCallback{
+		arg name, postFix;
+		this.executeCallback(name, postFix);
+	}
+
+	executeCallback{
+		arg name, postFix, interactionMethod = \normal, sourceFocuser = nil;
+		//send value to focusers if they are in the right mode
 			focusers.keysValuesDo{
 				arg focuserHash, focuser;
 				//if this is not the source focuser and it's interaction method matches
@@ -245,6 +315,5 @@ SCMControlDataStructure {
 					focuser.valueChangedFromFocus(value, controls[(name ++ postFix.asString).asSymbol]);
 				};
 			};
-		};
 	}
 }

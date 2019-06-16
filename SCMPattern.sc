@@ -133,6 +133,7 @@ SCMPattern {
 			//add listeners/ctrls for reset
 			parent.newCtrl((name.asString ++ 'Reset').asSymbol).functionSet = {
 				arg value;
+				value.postln;
 				if(value > 0.5)
 				{
 					manualStream.reset;

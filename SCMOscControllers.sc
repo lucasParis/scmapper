@@ -1,13 +1,9 @@
-
-
 SCMOSCMainMenu{
 	var netAddr;
 	var name;
 
 	var menuControls;
-	var moduleInteractionMethod;
 	var selectedGroup;
-
 
 	//controllers for the selected module
 	var moduleControlsController;//module controls
@@ -18,6 +14,9 @@ SCMOSCMainMenu{
 	//data structure for menu items affecting controls in this class (prep, jump, automate, automatestop, preptoggle...)
 	var mainMenuDataStructure;
 	var mainMenuControls;
+
+
+	var moduleInteractionMethod;
 
 
 	*new{
@@ -73,7 +72,7 @@ SCMOSCMainMenu{
 		//list of controls for this menu
 		mainMenuControls = [];
 
-		//changeModule play
+		//changeModule changeModule
 		mainMenuControls = mainMenuControls.add(
 			SCMMetaCtrl(\changeModule, 0, '/name').functionSet_{
 				arg groupName;
@@ -82,16 +81,103 @@ SCMOSCMainMenu{
 			};
 		);
 
+		//automate
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\automate, 0, "/x").functionSet_{
+				arg val;
+				if(val > 0.5)
+				{
+					this.setModuleInteractionMethod(\automate);
+				}
+				{
+					//on down, tell params to start their thing
+					//
+					"gotomate".postln;
+					moduleControlsController.checkForAutomationAndGo;
+					moduleGenericMenuControlsController.checkForAutomationAndGo;
+
+
+					//check that not in prep mode:
+					if(mainMenuControls['prep/x'].value > 0.5)
+					{
+						this.setModuleInteractionMethod(\prepare);
+					}
+					{
+						this.setModuleInteractionMethod(\normal);
+					};
+				};
+			};
+		);
+		//automate Time
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\automateTime, 1/5, "/x").functionSet_{
+				arg valTime;
+
+				var autoTime = pow(2,valTime*5+2).round;
+				autoTime.postln;
+				moduleControlsController.setAutomationTime(autoTime);
+				moduleGenericMenuControlsController.setAutomationTime(autoTime);
+
+
+			};
+		);
+
+		//automate stop
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\stopAutomation, 0, "/x").functionSet_{
+				arg val;
+				if(val > 0.5)
+				{
+					// "automate stop".postln;
+					moduleControlsController.stopAutomation;
+					moduleGenericMenuControlsController.stopAutomation;
+				}
+			};
+		);
+
+		//jump
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\jump, 0, "/x").functionSet_{
+				arg val;
+
+				if(val > 0.5)
+				{
+					moduleControlsController.jump;
+					moduleGenericMenuControlsController.jump;
+				};
+				"jump".postln;
+				val.postln;
+			};
+		);
+		//prep
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\prep, 0, "/x").functionSet_{
+				arg val;
+				if(val>0.5)
+				{
+					this.setModuleInteractionMethod(\prepare);
+				}
+				{
+					this.setModuleInteractionMethod(\normal);
+				};
+			};
+		);
+
+
+		//convert to dict
+		mainMenuControls = mainMenuControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
 
 		//init controller and data structure
 		mainMenuController = SCMStructureController('mainMenu', netAddr.port);
 		mainMenuDataStructure = SCMControlDataStructure();
 
 		//copy the controls over to the datastructure
-		mainMenuControls.do{
-			arg ctrl;
+		mainMenuControls.keysValuesDo{
+			arg key, ctrl;
 			mainMenuDataStructure.addControl(ctrl);
 		};
+
+		moduleInteractionMethod = \normal;
 
 		//set controller to datastructure
 		mainMenuController.setFocus(mainMenuDataStructure);
@@ -139,9 +225,18 @@ SCMOSCMainMenu{
 		};*/
 	}
 
+	setModuleInteractionMethod{
+		arg interactionMethod;
+		moduleInteractionMethod = interactionMethod;
+
+		moduleControlsController.interactionMethod = interactionMethod;
+		moduleGenericMenuControlsController.interactionMethod = interactionMethod;
+
+	}
+
 	getModuleInteractionMethod{
 		//called when a value comes in to a module on the same ipad as this menu
-		^\normal;
+		^moduleInteractionMethod;
 
 	}
 

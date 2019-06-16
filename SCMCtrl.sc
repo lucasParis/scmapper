@@ -36,6 +36,21 @@ SCMMetaCtrl {
 
 	// for automate
 	var <> disableAutomation;
+	var automateValue;
+	var automationWasSet;
+	var automateTime;
+	var automationIsHappening;
+	var automationRoutine;
+	var automationEndTime;
+	var automationStartTime;
+	var <> automationCallback;
+
+
+
+
+	// for prep
+	var preparedValue;
+	var <> disablePrepjump;
 
 	*new{
 		arg ctrlName, defaultValue, postFix;
@@ -50,11 +65,21 @@ SCMMetaCtrl {
 		isRadio = false;
 		defaultValue = defaultValue_;
 
+		//prep
+		preparedValue = defaultValue;
+		disablePrepjump = false;
+
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue_.size.max(1));
 
 		busMapBusses = [];
 		busMapSynths = [];
+
+		//automate
+		automationWasSet = false;
+		disableAutomation = false;
+		automateTime = 8;
+		automationIsHappening = false;
 
 	}
 
@@ -143,9 +168,90 @@ SCMMetaCtrl {
 			arg tdOut;
 			tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *value);//append /controls
 		};
+	}
 
-		// update osc outputs
-		// this.updateFeedback(val, toCtrlrs);
+	//meta control stuff
+	jump{
+		if(disablePrepjump.not)
+		{
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			this.hardSet(preparedValue);
+		};
+	}
+
+	stopAutomation{
+		automationIsHappening = false;
+		automationRoutine.stop;
+	}
+
+	setAutomationTime{
+		arg autoTime;
+		automateTime = autoTime;
+	}
+
+	//automate
+	checkForAutomationAndGo{
+		var startValue, endValue, timeTo;
+
+		//if automation was set
+		if(disableAutomation.not){
+			if(automationWasSet)
+			{
+				var thisAutomationTime;
+				thisAutomationTime = automateTime;
+				"gomation".postln;
+				thisAutomationTime.postln;
+
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+
+				//start automation
+				automationIsHappening = true;
+				startValue = value;
+				endValue = automateValue;
+				automateValue.postln;
+
+				automationStartTime = SCM.proxySpace.clock.beats;
+				automationEndTime = automationStartTime + thisAutomationTime;
+
+				automationRoutine = Routine(
+					{
+						loop{
+							var automationProgress, automationProgressValue;
+
+							automationProgress = (SCM.proxySpace.clock.beats - automationStartTime)/thisAutomationTime;
+
+							automationProgressValue = automationProgress.linlin(0,1,startValue, endValue);
+
+
+							// automationProgressValue.postln;
+							this.hardSet(automationProgressValue);
+
+							//notify datastructure(s)
+
+							automationCallback.(name, postFix);
+
+							if(SCM.proxySpace.clock.beats > automationEndTime)
+							{
+								"finishing".postln;
+								automationIsHappening = false;
+								nil.yield;
+							}
+							{
+								(0.125).wait;
+							};
+						};
+					}
+				).play(SCM.proxySpace.clock);
+			};
+			automationWasSet = false;
+		};
+		// inAutomateMode = false;
 	}
 
 
@@ -160,18 +266,18 @@ SCMMetaCtrl {
 			value;
 		}{interactionMethod == \prepare}
 		{
-			// preparedValue;
+			preparedValue;
 		}{interactionMethod == \automate}
 		{
-			// automateValue;
+			value;
 		};
 
 		//radio mode for controllers only
 		/*isRadio.if({
-			var radioValue;
-			radioValue = Array.fill(32,0);
-			radioValue[value] = 1;
-			value = radioValue;
+		var radioValue;
+		radioValue = Array.fill(32,0);
+		radioValue[value] = 1;
+		value = radioValue;
 		}
 		);*/
 
@@ -185,13 +291,20 @@ SCMMetaCtrl {
 		{interactionMethod == \normal}
 		{
 			value = val;
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+
 			this.hardSet(value);
 		}{interactionMethod == \prepare}
 		{
-			// preparedValue = val;
+			preparedValue = val;
 		}{interactionMethod == \automate}
 		{
 			// automateValue = val;
+			automateValue = val;
+			automationWasSet = true;
 		};
 	}
 }
@@ -517,6 +630,7 @@ SCMCtrl {
 
 
 							this.set(automationProgressValue, true, toCtrlrs);
+							//automationCallback.(name, postFix)
 
 							if(SCM.proxySpace.clock.beats > automationEndTime)
 							{
