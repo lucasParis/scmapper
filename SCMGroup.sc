@@ -41,41 +41,45 @@ SCMGroup {
 	//matrix routing stuff //looked at by matrix
 	var < matrixOutputs;
 	var < matrixInputs;
+	var < matrixBusses;
 
 	createInputkr{
 		arg name;
 		matrixInputs = matrixInputs.add(name);
-		// ~busses[name] = Bus.control(s);
-		// In.kr(~busses[name]);
+		matrixBusses[name] = Bus.control(Server.local);
+		^In.kr(matrixBusses[name]);
 	}
 
 	createOutputkr{
 		arg name, sig;
 		matrixOutputs = matrixOutputs.add(name);
-		// ~busses[name] = Bus.control(s);
+		matrixBusses[name] = Bus.control(Server.local);
+		matrixBusses[name].postln;
 
-		// Out.kr(~busses[name], sig);
+		^Out.kr(matrixBusses[name], sig);
 	}
 
 	createInputar{
 		arg name;
+		var channels = 2;
+
 		matrixInputs = matrixInputs.add(name);
-		// var channels = 2;
 		// channels = 4;
 
-		// ~busses[name] = Bus.audio(s, channels);
+		matrixBusses[name] = Bus.audio(Server.local, channels);
 
-		// InFeedback.ar(~busses[name],channels);
+		^InFeedback.ar(matrixBusses[name],channels);
 	}
 
 	createOutputar{
 		arg name, sig;
+		var channels = 2;
+
 		matrixOutputs = matrixOutputs.add(name);
-		// var channels = 2;
 		//check signal size
 		// channels = 4;
-		// ~busses[name] = Bus.audio(s, channels);
-		// OffsetOut.ar(~busses[name], sig);
+		matrixBusses[name] = Bus.audio(Server.local, channels);
+		^OffsetOut.ar(matrixBusses[name], sig);
 	}
 
 
@@ -129,6 +133,7 @@ SCMGroup {
 		//matrix routing stuff //looked at by matrix
 		matrixOutputs = [];
 		matrixInputs = [];
+		matrixBusses = ();
 
 
 		this.newCtrl(\play, 0).functionSet_{

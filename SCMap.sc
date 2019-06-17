@@ -435,6 +435,7 @@ SCM {
 					//otherwise load resources
 					(pathSCM ++ "/resourcesSC/noteFX.scd").load;
 					(pathSCM ++ "/resourcesSC/synthlib.scd").load;
+					(pathSCM ++ "/resourcesSC/matrixRouting.scd").load;
 					(pathSCM ++ "/resourcesSC/busPlayer.scd").load;
 					(pathSCM ++ "/resourcesSC/evtToPyDict.scd").load;
 				};

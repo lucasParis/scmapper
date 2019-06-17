@@ -38,6 +38,7 @@ SCMOSCMatrixMenu {
 		this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
 	}
 
+
 	convertConnectionNameToIndexes{
 		arg name;
 		var indexes;
@@ -84,13 +85,21 @@ SCMOSCMatrixMenu {
 	sendInputNames {
 		//get names from matrix
 		var names = scmMatrix.moduleData[selectedInModule].inputs;
+		if(names.isEmpty)
+		{
+			names = ['empty'];
+		};
 		//send to this controller
-		netAddr.sendMsg("/matrix/dragButton/labels", *names);
+		netAddr.sendMsg("/matrix/dragButton/setLabels", *names);
 	}
 
 	sendOutputNames{
 		//get names from matrix
 		var names = scmMatrix.moduleData[selectedOutModule].outputs;
+		if(names.isEmpty)
+		{
+			names = ['empty'];
+		};
 		//send to this controller
 		netAddr.sendMsg("/matrix/outButtons/setLabels", *names);
 
@@ -180,7 +189,8 @@ SCMOSCMatrixMenu {
 									//check if connection exists
 									if(scmMatrix.connectionsDataStructureDict[selectedKey].includesControl(connectionName, postFix:"") == false)
 									{
-										scmMatrix.connectionsDataStructureDict[selectedKey].addControl(SCMMetaCtrl(connectionName, [0,0], postFix:""))
+										scmMatrix.connectionsDataStructureDict[selectedKey].addControl(SCMMetaCtrl(connectionName, [0,0], postFix:""));
+										scmMatrix.connectBusses(selectedOutModule, selectedInModule, outputIndex, moduleInput,0,0);
 									};
 									scmMatrix.sendGlobalConnections();
 								};
@@ -191,6 +201,7 @@ SCMOSCMatrixMenu {
 									{
 										scmMatrix.connectionsDataStructureDict[selectedKey].removeControl(connectionName, postFix:"");
 										this.sendConnections();
+										scmMatrix.deleteConnectionSynth(selectedOutModule, selectedInModule, outputIndex, moduleInput);
 									};
 									scmMatrix.sendGlobalConnections();
 								};
@@ -221,6 +232,7 @@ SCMOSCMatrixMenu {
 						var connectionName;
 						connectionName = this.convertIndexesToConnectionName([ inputIndex, output]);
 						matrixController.set(connectionName, postFix:"", value:[min,max], excludeFromCallback:false);
+						scmMatrix.modifySynthConnection(selectedOutModule, selectedInModule, inputIndex, output, min* -1, max * -1);
 						// connectionName.postln;
 						// [min, max].postln;
 
@@ -276,16 +288,11 @@ SCMOSCMatrixMenu {
 }
 
 SCMMatrix {
-	//old stuff to delete
-	// var allConnections;
-
-	//transfer to controller
-	var selectedInModule, selectedOutModule, selectedKey; //via
-	var editMode;
 
 	//data used by matrixMenu
 	var < modulesNames;
-	var < moduleData;
+	var < moduleData;// datastructure of type: (\module1Name : (\inputs: [\name, \name], \outputs: [\name, \name]), \module2Name ...)
+	//state of intermodules
 	var globalConnections;
 
 
@@ -295,12 +302,14 @@ SCMMatrix {
 	//dictionary of data structures of connection controls(variable size)
 	var < connectionsDataStructureDict;
 
+	//dict to keep track of connection synths
+	var interModuleConnectionSynthsDict;
+
 	*new{
 		^super.new.init();
 	}
 
 	init{
-		editMode = \modify;
 
 		modulesNames = SCM.groups.collect{ arg group; group.name; };
 
@@ -323,19 +332,101 @@ SCMMatrix {
 				[name, dataDict]
 			}
 		).flatten.asDict;
-
-		//goes to controller
-		selectedInModule = modulesNames[0];
-		selectedOutModule = modulesNames[1];
-		selectedKey = (selectedInModule ++ "_" ++ selectedOutModule).asSymbol;
+		moduleData.postln;
 
 		allPossibleConnections = (modulesNames!2).allTuples.collect{arg array; (array[0] ++ "_" ++ array[1]).asSymbol};
 
 		//dict of SCMControlDataStructure
 		connectionsDataStructureDict = allPossibleConnections.collect{arg connectionName; [connectionName, SCMControlDataStructure()]}.flatten.asDict;
 
+		//dict to keep track of connection synths
+		interModuleConnectionSynthsDict = ();
+
 		// allConnections = allPossibleConnections.collect({arg name; [name, ()]}).flatten.asDict;
 		this.sendGlobalConnections();
+	}
+
+	deleteConnectionSynth{
+		arg outModuleName, inModuleName, outputIndex, inputIndex;
+		var connectionKey, synth, inIndexName, inbus;
+		connectionKey = [outModuleName, inModuleName, outputIndex, inputIndex].asCompileString.asSymbol;
+		synth = interModuleConnectionSynthsDict[connectionKey];
+		synth.set(\base, 0);
+		synth.set(\range, 0);
+		//it might be a problem that the set doesnt get confirmed... maybe find another aproach to recenter...
+		{
+			interModuleConnectionSynthsDict[connectionKey].free;
+			interModuleConnectionSynthsDict[connectionKey] = nil;
+
+		}.defer(0.2);
+	}
+
+	modifySynthConnection{
+		arg outModuleName, inModuleName, outputIndex, inputIndex, min, max;
+		var connectionKey, synth;
+		connectionKey = [outModuleName, inModuleName, outputIndex, inputIndex].asCompileString.asSymbol;
+		synth = interModuleConnectionSynthsDict[connectionKey];
+		synth.set(\base, min);
+		synth.set(\range, max);
+
+	}
+
+	connectBusses{
+		arg outModuleName, inModuleName, outputIndex, inputIndex, min, max;
+		var inbus, outbus, inIndexName, outIndexName, inModule, outModule, varConnectionType, connectionKey,  isQuad = false;
+
+		//get group from name
+		inModule = SCM.getGroup(inModuleName);
+		outModule = SCM.getGroup(outModuleName);
+
+
+		//convert from index to name
+		outIndexName = moduleData[outModuleName][\outputs][outputIndex];
+		inIndexName = moduleData[inModuleName][\inputs][inputIndex];
+
+
+		//get bus numbers
+		inbus = inModule.matrixBusses[inIndexName];
+		outbus = outModule.matrixBusses[outIndexName];
+		inbus.postln;
+		outbus.postln;
+
+		if(inbus.rate == \control && outbus.rate == \control)
+		{
+			varConnectionType = \matrixConnectionKr;
+		};
+		if(inbus.rate == \control && outbus.rate == \audio)
+		{
+			varConnectionType = \matrixConnectionArKr;
+			if(isQuad == true)
+			{
+				varConnectionType = \matrixConnectionArKr;
+			};
+		};
+		if(inbus.rate == \audio && outbus.rate == \control )
+		{
+			varConnectionType = \matrixConnectionKrAr;
+			if(isQuad == true)
+			{
+				varConnectionType = \matrixConnectionKrAr;
+			}
+		};
+		if(inbus.rate == \audio && outbus.rate == \audio)
+		{
+			varConnectionType = \matrixConnectionAr;
+			if(isQuad == true)
+			{
+				varConnectionType = \matrixConnectionAr;
+			}
+		};
+
+
+		connectionKey = [outModuleName, inModuleName, outputIndex, inputIndex].asCompileString.asSymbol;
+		varConnectionType.postln;
+		if(varConnectionType != nil)
+		{
+			interModuleConnectionSynthsDict[connectionKey] = Synth.new(varConnectionType, [\in:outbus, out:inbus, \base:min,\range:max]);
+		}
 	}
 
 
@@ -346,7 +437,6 @@ SCMMatrix {
 
 		//convert the group names to indexes
 		globalConnections = globalConnections.deepCollect(2, {arg v; modulesNames.indexOf(v.asSymbol)});
-		globalConnections.postln;
 		if(globalConnections.isEmpty)
 		{
 			globalConnections = "empty";
