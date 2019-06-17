@@ -27,6 +27,7 @@ SCMOSCMatrixMenu {
 	}
 
 	scmMatrix_ {
+		//called in SCM.setupMatrix
 		arg matrix;
 		scmMatrix = matrix;
 
@@ -233,17 +234,6 @@ SCMOSCMatrixMenu {
 						connectionName = this.convertIndexesToConnectionName([ inputIndex, output]);
 						matrixController.set(connectionName, postFix:"", value:[min,max], excludeFromCallback:false);
 						scmMatrix.modifySynthConnection(selectedOutModule, selectedInModule, inputIndex, output, min* -1, max * -1);
-						// connectionName.postln;
-						// [min, max].postln;
-
-						// {
-						// var valueArray;
-						// valueArray = [min, max];
-
-						// allConnections[selectedKey][connectionName].min = min;
-						// allConnections[selectedKey][connectionName].max = max;
-						// this.sendConnections();
-						// }
 					}
 				}
 
@@ -332,7 +322,6 @@ SCMMatrix {
 				[name, dataDict]
 			}
 		).flatten.asDict;
-		moduleData.postln;
 
 		allPossibleConnections = (modulesNames!2).allTuples.collect{arg array; (array[0] ++ "_" ++ array[1]).asSymbol};
 
@@ -388,8 +377,6 @@ SCMMatrix {
 		//get bus numbers
 		inbus = inModule.matrixBusses[inIndexName];
 		outbus = outModule.matrixBusses[outIndexName];
-		inbus.postln;
-		outbus.postln;
 
 		if(inbus.rate == \control && outbus.rate == \control)
 		{
@@ -422,7 +409,6 @@ SCMMatrix {
 
 
 		connectionKey = [outModuleName, inModuleName, outputIndex, inputIndex].asCompileString.asSymbol;
-		varConnectionType.postln;
 		if(varConnectionType != nil)
 		{
 			interModuleConnectionSynthsDict[connectionKey] = Synth.new(varConnectionType, [\in:outbus, out:inbus, \base:min,\range:max]);

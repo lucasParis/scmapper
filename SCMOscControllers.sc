@@ -92,7 +92,6 @@ SCMOSCMainMenu{
 				{
 					//on down, tell params to start their thing
 					//
-					"gotomate".postln;
 					moduleControlsController.checkForAutomationAndGo;
 					moduleGenericMenuControlsController.checkForAutomationAndGo;
 
@@ -114,7 +113,6 @@ SCMOSCMainMenu{
 				arg valTime;
 
 				var autoTime = pow(2,valTime*5+2).round;
-				autoTime.postln;
 				moduleControlsController.setAutomationTime(autoTime);
 				moduleGenericMenuControlsController.setAutomationTime(autoTime);
 
@@ -145,8 +143,6 @@ SCMOSCMainMenu{
 					moduleControlsController.jump;
 					moduleGenericMenuControlsController.jump;
 				};
-				"jump".postln;
-				val.postln;
 			};
 		);
 		//prep
@@ -785,7 +781,6 @@ SCMLemurCtrlr{
 						if(liveOrDisk > 0.5)
 						{//disk mode
 							groupReference.savePresetToFile(radioValue);
-							"yo?".postln;
 							this.set("/masterMenu2/diskNames",groupReference.filePresetNames);
 
 						}

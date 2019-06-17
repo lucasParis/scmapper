@@ -40,15 +40,19 @@ SCMPattern {
 
 	var independantIsPlaying;
 
+	var splitMixing;
+	var splitMixBusses;
+	var splitBusPlayers;
+
 
 
 	*new{
-		arg patternName, pattern, parent, channels = 2, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1 ;
-		^super.new.init(patternName, pattern, parent, channels, manualMode, independentPlay, trigBus, manualGrouping);
+		arg patternName, pattern, parent, channels = 2, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1, splitMixing = false;
+		^super.new.init(patternName, pattern, parent, channels, manualMode, independentPlay, trigBus, manualGrouping, splitMixing);
 	}
 
 	init{
-		arg patternName, pattern, parent, channelCount, manualMode_, independentPlay_, trigBus_, manualGrouping_;
+		arg patternName, pattern, parent, channelCount, manualMode_, independentPlay_, trigBus_, manualGrouping_, splitMixing_;
 
 		//set variables
 		parentGroup = parent;
@@ -56,6 +60,7 @@ SCMPattern {
 		channels = channelCount;
 		manualMode = manualMode_;
 		independentPlay = independentPlay_;
+		splitMixing = splitMixing_;
 
 		//set default values
 		isPlaying = false;
@@ -76,11 +81,55 @@ SCMPattern {
 		busPlayerGroup = Group(serverGroup, 'addAfter');//add busPlayer after all
 
 		rawPattern = Pbindf(pattern,
-			\out, bus,//the bus for all pbind stuff
+
 			\group, serverGroup,//group for pbinds
 			\fx_group, serverGroup,
 
 		);
+
+		if(splitMixing == true)
+		{
+			//if is a splitting scenario:
+			var streamForNameExtraction, stream;
+
+			//findout all the names and create a bus for each
+			splitMixBusses = ();
+			streamForNameExtraction = Pbindf(rawPattern, \findThatStuffYo,
+				Pfunc{
+					arg e;
+					var mixName =  e[\mixingName];
+					if(mixName != nil)
+					{
+						if(splitMixBusses.includesKey(mixName) != true){
+							splitMixBusses[mixName] = Bus.audio(Server.local, 2);
+						};
+					};
+					0;
+				};
+			);
+
+			//do the extraction
+			streamForNameExtraction = streamForNameExtraction.asStream;
+			{streamForNameExtraction.next(())}!100;
+
+
+			//add pfunc that maps from mixing name to bus
+			rawPattern = Pbindf(rawPattern,
+				\out, Pfunc{
+					arg e;
+					var mixName =  e[\mixingName];
+					splitMixBusses[mixName];
+				}
+			);
+		}
+		{
+			//otherwise set to basic output
+			rawPattern = Pbindf(rawPattern,
+				\out, bus,//the bus for all pbind stuff
+			);
+
+
+		};
 
 
 
@@ -117,7 +166,6 @@ SCMPattern {
 				{
 					if(value > 0.5)
 					{
-						manualGrouping.postln;
 						if(quant == nil)
 						{
 							manualGrouping.do{manualStream.next(()).play;};
@@ -133,7 +181,6 @@ SCMPattern {
 			//add listeners/ctrls for reset
 			parent.newCtrl((name.asString ++ 'Reset').asSymbol).functionSet = {
 				arg value;
-				value.postln;
 				if(value > 0.5)
 				{
 					manualStream.reset;
@@ -181,6 +228,91 @@ SCMPattern {
 			\dur, 1
 		);
 
+		if(splitMixing == true)
+		{
+			splitBusPlayers = splitMixBusses.values.collect{
+				arg splitBus;
+				Pmono(\SCMbusPlayer_stereo,
+					\in, splitBus,
+					\out, outputBus,
+					\addAction, 3 ,
+					\group, busPlayerGroup,
+					\dur, 1
+				);
+			};
+		};
+
+
+	}
+
+	copySplitMixNames{
+		var str;
+		// SCM.quickStringToPaste.
+
+
+		str = "";
+		splitMixBusses.keys.do{
+			arg key, i;
+			str = str ++ key;
+			if(i != (splitMixBusses.keys.size-1))
+			{
+				str = str ++ ", ";
+			}
+		};
+
+		SCM.quickStringToPaste(str, "~/_SCcopySplitString");
+	}
+
+	copySplitMixVariables{
+		var str;
+		// SCM.quickStringToPaste.
+
+
+		str = "\tvar splitMix, ";
+		splitMixBusses.keys.do{
+			arg key, i;
+			str = str ++ key;
+			if(i != (splitMixBusses.keys.size-1))
+			{
+				str = str ++ "SM, ";
+			}
+			{
+				str = str ++ "SM; \n";
+			};
+		};
+		str = str ++ "\tsplitMix =  ?.getSplitMix();//change to pattern here\n";
+		splitMixBusses.keys.do{
+			arg key;
+			str =  str ++  "\t" ++ key ++ "SM = splitMix[\\" ++ key ++ "];\n" ;
+			// name1SM = splitmix[name1];
+
+		};
+		str =  str ++  "\t";
+
+		splitMixBusses.keys.do{
+			arg key, i;
+			str =  str ++key;
+			if(i != (splitMixBusses.keys.size-1))
+			{
+				str = str ++ "SM + ";
+			}
+			{
+				str = str ++ "SM;\n";
+			};
+			// name1SM = splitmix[name1];
+
+		};
+
+		SCM.quickStringToPaste(str, "~/_SCcopySplitString");
+
+
+	}
+
+	getSplitMix{
+		^splitMixBusses.collect{
+			arg bus;
+			In.ar(bus,2);
+		};
 	}
 
 	getTrigger{
@@ -247,7 +379,14 @@ SCMPattern {
 			};
 		};
 
-		busPlayer = rawBusPlayer.play(clock: SCM.proxySpace.clock, quant:quant);//, doReset:true
+		if(splitMixing == true)
+		{
+			splitBusPlayers.do{arg busplay; busplay.play(clock: SCM.proxySpace.clock, quant:quant);};
+		}
+		{
+			busPlayer = rawBusPlayer.play(clock: SCM.proxySpace.clock, quant:quant);//, doReset:true
+		};
+
 	}
 
 	stop{
@@ -255,7 +394,14 @@ SCMPattern {
 
 		this.stopPattern();
 
-		busPlayer.stop;
+
+		if(splitMixing == true)
+		{
+			splitBusPlayers.do{arg busplay; busplay.stop;};
+		}
+		{
+			busPlayer.stop;
+		};
 	}
 
 	printOn { | stream |

@@ -323,10 +323,10 @@ SCMGroup {
 
 	//add a pattern to this group
 	linkPattern{
-		arg patternName, pattern, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1;
+		arg patternName, pattern, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1, splitMixing = false;
 		var pat;
 		//new pattern
-		pat = SCMPattern.new(patternName, pattern, this, channels, manualMode, independentPlay, trigBus, manualGrouping);
+		pat = SCMPattern.new(patternName, pattern, this, channels, manualMode, independentPlay, trigBus, manualGrouping, splitMixing);
 		// add pattern to this group
 		patterns = patterns.add(pat);
 		^pat;//return

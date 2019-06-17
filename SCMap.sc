@@ -11,6 +11,10 @@ SCM {
 
 	//list of things
 	classvar <> groups;
+
+	// visual groups sympbolise a TD subpatch with its ins and out
+	// classvar <> visualgroups;
+
 	classvar <ctrlrs;
 	classvar <midiCtrlrs;
 	classvar <dataOutputs;// to touchdesigner, but could be other?
@@ -145,6 +149,18 @@ SCM {
 
 	}*/
 
+	*quickStringToPaste{
+		arg string, fileName ="~/_splitMixPaste.txt";
+		var path, f, descSynth, outEnv;
+		path = (fileName.asString).standardizePath;
+		f = File(path,"w");
+		f.write(string);
+		f.close;
+
+		("pbcopy < "++path).asString.unixCmd;
+
+	}
+
 	*setupMatrix{
 		matrix = SCMMatrix.new();
 
@@ -175,8 +191,8 @@ SCM {
 		arg scmGroupIndex, state;
 		/*playStates[scmGroupIndex] = state;
 		SCM.ctrlrs.do{
-			arg ctrlr;
-			ctrlr.sendMsg("/masterMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
+		arg ctrlr;
+		ctrlr.sendMsg("/masterMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
 		};
 		*/
 	}
@@ -254,6 +270,7 @@ SCM {
 		ctrlrs.do{
 			arg ctrlr;
 			ctrlr.sendMsg('/mainMenu/changeModule/names', names);
+			ctrlr.sendMsg('/moduleNames', names);
 		};
 		SCM.ctrlrs.do{
 			arg ctrlr;
