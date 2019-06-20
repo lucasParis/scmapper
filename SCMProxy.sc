@@ -87,10 +87,12 @@ SCMProxy {
 					{
 						postFix = "/" ++ name[1];
 					};
-
-					//create a control and store reference to nodeproxy and proxy control
-					ctrl = parentGroup.newCtrl(name[0].asSymbol, value, postFix.asSymbol);
-					ctrl.setupProxyControl(proxySpaceName, proxyCtrlName)
+					if([\wet1, \wet2, \wet3, \wet4].includes(name[0].asSymbol) != true)
+					{
+						//create a control and store reference to nodeproxy and proxy control
+						ctrl = parentGroup.newCtrl(name[0].asSymbol, value, postFix.asSymbol);
+						ctrl.setupProxyControl(proxySpaceName, proxyCtrlName)
+					}
 				};
 			};
 

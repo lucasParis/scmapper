@@ -263,7 +263,7 @@ SCMOSCMatrixMenu {
 
 
 		//init controller and data structure
-		matrixCtrlsController = SCMStructureController('matrix', netAddr.port);
+		matrixCtrlsController = SCMStructureController('matrix', netAddr);
 		matrixCtrlsDataStructure = SCMControlDataStructure();
 
 		//copy the controls over to the datastructure

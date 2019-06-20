@@ -160,7 +160,7 @@ SCMPattern {
 			manualStream = rawPattern.asStream;
 
 			//add listeners/ctrls for play
-			parent.newCtrl((name.asString ++ 'Play').asSymbol).functionSet = {
+			parent.newCtrl((name.asString ++ 'Play').asSymbol).valueType_(\button).functionSet = {
 				arg value;
 				if(isPlaying)
 				{
@@ -179,7 +179,7 @@ SCMPattern {
 			};
 
 			//add listeners/ctrls for reset
-			parent.newCtrl((name.asString ++ 'Reset').asSymbol).functionSet = {
+			parent.newCtrl((name.asString ++ 'Reset').asSymbol).valueType_(\button).functionSet = {
 				arg value;
 				if(value > 0.5)
 				{
@@ -194,7 +194,7 @@ SCMPattern {
 		{
 
 			//osc controller for play
-			independentPlayCtrl = parent.newCtrl((name.asString ++ 'Play').asSymbol).functionSet = {
+			independentPlayCtrl = parent.newCtrl((name.asString ++ 'Play').asSymbol).valueType_(\button).functionSet = {
 				arg value;
 				if(value > 0.5)
 				{

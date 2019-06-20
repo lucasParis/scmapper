@@ -298,14 +298,18 @@ SCMGroup {
 		//new ctrl
 		ctrl = SCMMetaCtrl.new(ctrlName, defaultValue, postFix);
 		// add control to this group
-		allControlsDataStructure.addControl(ctrl);
 		controls = controls.add(ctrl);
+
+
 
 		//if this is a menu control add it to that datastructure
 		menuControls = [\volume, \play, \ledsOn];
 		if(menuControls.includes(ctrlName) == true)
 		{
 			menuControlsDataStructure.addControl(ctrl);
+		}
+		{
+			allControlsDataStructure.addControl(ctrl);
 		};
 
 

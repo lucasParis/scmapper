@@ -1414,13 +1414,13 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 SynthDef.new(\l1_trigToBus,{
 	arg trigOut = 0, gate = 1, replyID = -1, trigOn = 1;
 	var src, env, quitAfter, trig;
-	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
+	env = Env.adsr(0.01, 0.3,1,0.05).ar(2, gate);
 
 	trig = Impulse.ar(0) * trigOn;
 
 	// quitAfter = Done.kr(env);
-	quitAfter = DelayN.kr(trig, 2/60, 2/60);// twoframe delay
-	quitAfter = FreeSelf.kr(quitAfter);
+	// quitAfter = DelayN.kr(trig, 2/60, 2/60);// twoframe delay
+	// quitAfter = FreeSelf.kr(quitAfter);
 
 	// SendReply.kr(Impulse.kr(60), "/instrument/param", env, replyID);
 

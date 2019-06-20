@@ -13,9 +13,9 @@ SCMStructureController{
 	*/
 
 	var containerName;
-	var oscPort;
-
 	var netAddr;
+
+
 	var formatAddressWithPostFix;
 	var formatAddressWithoutPostFix;
 
@@ -28,13 +28,13 @@ SCMStructureController{
 	var <> callbackFunction;
 
 	*new{
-		arg containerName = "interface1", oscPort = 8000;
-		^super.newCopyArgs(containerName, oscPort).init();
+		arg containerName = "interface1", netAddr;
+		^super.newCopyArgs(containerName, netAddr).init();
 	}
 
 	init {
 
-		netAddr = NetAddr("127.0.0.1", oscPort);
+		// netAddr = NetAddr("127.0.0.1", oscPort);
 
 		//formating address function
 		formatAddressWithPostFix = {arg name, ctrlname, postFix; "/" ++ name ++ "/" ++ ctrlname ++ postFix};
@@ -62,7 +62,7 @@ SCMStructureController{
 			focus.controls.keysValuesDo{
 				arg name, scmCtrl;
 				netAddr.sendMsg(formatAddressWithoutPostFix.(containerName, scmCtrl.name), '@color', colors[interactionMethod]);
-				netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), scmCtrl.getValueByInteractionMethod(interactionMethod));
+				netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), *scmCtrl.getValueByInteractionMethod(interactionMethod));
 			};
 		};
 
@@ -104,7 +104,7 @@ SCMStructureController{
 			callbackFunction.(scmCtrl, containerName);
 		}
 		{
-			netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), value);
+			netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), *value);
 		}
 
 
@@ -125,9 +125,33 @@ SCMStructureController{
 		focus.set(name, postFix, value, this.interactionMethod, focuserReference);
 	}
 
+	//meta controls passdown
 	jump{
 		focus.jump;
 	}
+
+	shiftUpDown{
+		arg shiftValue;
+		focus.shiftUpDown(shiftValue);
+	}
+
+	startShiftUpDown{
+		focus.startShiftUpDown();
+	}
+
+	endShiftUpDown{
+		focus.endShiftUpDown();
+	}
+
+	startRandomize{
+		focus.startRandomize();
+	}
+
+	randomize{
+		arg val;
+		focus.randomize(val);
+	}
+
 
 	checkForAutomationAndGo{
 		focus.checkForAutomationAndGo;
@@ -170,14 +194,14 @@ SCMStructureController{
 				var ctrlAddress = formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix);
 
 				//send OSC initial value
-				netAddr.sendMsg(ctrlAddress, scmCtrl.value);
-
+				netAddr.sendMsg(ctrlAddress, *scmCtrl.value);
 				// addListener
 				listenerList = listenerList.add(
 					OSCFunc(
 						{
 							arg msg;
 							var val;
+
 							val = msg[1..];
 							if(val.size == 1)
 							{
@@ -234,9 +258,9 @@ SCMControlDataStructure {
 		controls[(name ++ postFix.asString).asSymbol] = scmCtrl;
 
 		//add callback to this for automation
-		controls[(name ++ postFix.asString).asSymbol].automationCallback = {
+		controls[(name ++ postFix.asString).asSymbol].valueInternalChangeCallback = {
 			arg name, postFix;
-			this.onAutomationMoveCallback(name, postFix);
+			this.onInternalChangeCallback(name, postFix);
 		};
 
 	}
@@ -245,7 +269,7 @@ SCMControlDataStructure {
 		arg name, postFix = "/x";
 
 		//remove automation callback
-		controls[(name ++ postFix.asString).asSymbol].automationCallback = nil;
+		controls[(name ++ postFix.asString).asSymbol].valueInternalChangeCallback = nil;
 
 		controls.removeAt((name ++ postFix.asString).asSymbol);
 	}
@@ -262,6 +286,53 @@ SCMControlDataStructure {
 			this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
 		};
 	}
+
+	shiftUpDown{
+		arg shiftValue;
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			// name.postln;
+			scmCtrl.shiftUpDown(shiftValue);
+			this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
+		};
+	}
+
+	startShiftUpDown{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			// name.postln;
+			scmCtrl.startShiftUpDown();
+			// this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
+		};
+	}
+
+	//can remove?
+	endShiftUpDown{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			// name.postln;
+			scmCtrl.endShiftUpDown();
+			// this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
+		};
+	}
+
+	startRandomize{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.startRandomize();
+		};
+	}
+
+	randomize{
+		arg val;
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			// name.postln;
+			scmCtrl.randomize(val);
+			this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
+		};
+	}
+
 
 	checkForAutomationAndGo{
 		controls.keysValuesDo{
@@ -297,7 +368,7 @@ SCMControlDataStructure {
 		};
 	}
 
-	onAutomationMoveCallback{
+	onInternalChangeCallback{
 		arg name, postFix;
 		this.executeCallback(name, postFix);
 	}
@@ -305,15 +376,15 @@ SCMControlDataStructure {
 	executeCallback{
 		arg name, postFix, interactionMethod = \normal, sourceFocuser = nil;
 		//send value to focusers if they are in the right mode
-			focusers.keysValuesDo{
-				arg focuserHash, focuser;
-				//if this is not the source focuser and it's interaction method matches
-				if(focuserHash != sourceFocuser.hash && focuser.interactionMethod == interactionMethod)
-				{
-					var value = controls[(name ++ postFix.asString).asSymbol].getValueByInteractionMethod(interactionMethod);
+		focusers.keysValuesDo{
+			arg focuserHash, focuser;
+			//if this is not the source focuser and it's interaction method matches
+			if(focuserHash != sourceFocuser.hash && focuser.interactionMethod == interactionMethod)
+			{
+				var value = controls[(name ++ postFix.asString).asSymbol].getValueByInteractionMethod(interactionMethod);
 
-					focuser.valueChangedFromFocus(value, controls[(name ++ postFix.asString).asSymbol]);
-				};
+				focuser.valueChangedFromFocus(value, controls[(name ++ postFix.asString).asSymbol]);
 			};
+		};
 	}
 }

@@ -43,27 +43,44 @@ SCMMetaCtrl {
 	var automationRoutine;
 	var automationEndTime;
 	var automationStartTime;
-	var <> automationCallback;
+	var <> valueInternalChangeCallback;
 
 
+	//for meta
+	var < valueType;
+	var intSteps;
 
 
 	// for prep
 	var preparedValue;
 	var <> disablePrepjump;
 
+	//for shift
+	var shiftStartValue;
+
+	//for randomize
+	var randomValue;
+	var randomStartValue;
+
 	*new{
-		arg ctrlName, defaultValue, postFix;
-		^super.new.init(ctrlName, defaultValue, postFix);
+		arg ctrlName, defaultValue, postFix, valueType = \float;// \bool \int
+		^super.new.init(ctrlName, defaultValue, postFix, valueType);
+	}
+
+	valueType_ {
+		arg type, intStepsArg = 2;
+		valueType = type;
+		intSteps = intStepsArg;
 	}
 
 	init{
-		arg ctrlName, defaultValue_, postFix_;
+		arg ctrlName, defaultValue_, postFix_, valueType_;
 		name = ctrlName.asSymbol;
 		value = defaultValue_;
 		postFix = postFix_.asSymbol;
 		isRadio = false;
 		defaultValue = defaultValue_;
+		valueType = valueType_;
 
 		//prep
 		preparedValue = defaultValue;
@@ -80,6 +97,13 @@ SCMMetaCtrl {
 		disableAutomation = false;
 		automateTime = 8;
 		automationIsHappening = false;
+
+		//shift
+		shiftStartValue = defaultValue;
+
+		//random
+		randomValue = rrand(0.0,1.0);
+		randomStartValue = defaultValue;
 
 	}
 
@@ -202,8 +226,6 @@ SCMMetaCtrl {
 			{
 				var thisAutomationTime;
 				thisAutomationTime = automateTime;
-				"gomation".postln;
-				thisAutomationTime.postln;
 
 				if(automationIsHappening)
 				{
@@ -214,7 +236,6 @@ SCMMetaCtrl {
 				automationIsHappening = true;
 				startValue = value;
 				endValue = automateValue;
-				automateValue.postln;
 
 				automationStartTime = SCM.proxySpace.clock.beats;
 				automationEndTime = automationStartTime + thisAutomationTime;
@@ -229,16 +250,14 @@ SCMMetaCtrl {
 							automationProgressValue = automationProgress.linlin(0,1,startValue, endValue);
 
 
-							// automationProgressValue.postln;
 							this.hardSet(automationProgressValue);
 
 							//notify datastructure(s)
 
-							automationCallback.(name, postFix);
+							valueInternalChangeCallback.(name, postFix);
 
 							if(SCM.proxySpace.clock.beats > automationEndTime)
 							{
-								"finishing".postln;
 								automationIsHappening = false;
 								nil.yield;
 							}
@@ -283,6 +302,90 @@ SCMMetaCtrl {
 
 
 		^returnVal;
+	}
+
+	startShiftUpDown{
+		shiftStartValue = value;
+	}
+
+	//remove?
+	endShiftUpDown{
+
+	}
+
+	startRandomize{
+		randomStartValue = value;
+		randomValue = rrand(0.0,1.0);
+		if(value.size > 0)
+		{
+			randomValue = value.size.collect{rrand(0.0,1.0)};
+		}
+	}
+
+	randomize{
+		arg amount;
+
+
+		if(valueType == \float)
+		{
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			value = amount.lincurve(0,1,randomStartValue, randomValue,2);
+			this.hardSet(value);
+		};
+		if(valueType == \int)
+		{
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			value = amount.lincurve(0,1,randomStartValue, randomValue,2).round(1/intSteps);
+			this.hardSet(value);
+		};
+		if(valueType == \bool)
+		{
+			if(amount > 0.98)
+			{
+				value = randomValue.round(1).asInt;
+			}
+			{
+				value = randomStartValue;
+			};
+			this.hardSet(value);
+
+		}
+	}
+
+
+
+	shiftUpDown{
+		arg shiftAmount;
+		var shiftVal;
+		if(valueType == \float)
+		{
+			shiftVal = (shiftStartValue + shiftAmount).clip(0,1);
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			this.hardSet(shiftVal);
+		};
+		if(valueType == \int)
+		{
+			shiftVal = (shiftStartValue + shiftAmount).clip(0,1);
+			shiftVal = shiftVal.round(1/intSteps);
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			this.hardSet(shiftVal);
+		};
+	}
+
+	fadeToPrep{
+
 	}
 
 	setValueByInteractionMethod{

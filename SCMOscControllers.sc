@@ -5,7 +5,7 @@ SCMOSCMainMenu{
 	var menuControls;
 	var selectedGroup;
 
-	//controllers for the selected module
+	//controllers for the selected module (should they all be already created for all the groups and you just switch the index?)
 	var moduleControlsController;//module controls
 	var moduleGenericMenuControlsController;//specific generic controls also found in the menu
 
@@ -53,20 +53,17 @@ SCMOSCMainMenu{
 
 
 			//for all module controls
-			moduleControlsController = SCMStructureController(groupName, netAddr.port);
+			moduleControlsController = SCMStructureController(groupName, netAddr);
 			moduleControlsController.setFocus(scmGroup.allControlsDataStructure);
 
 			//for generic controls also found in the menu
 			//could move this to init but test like this for now
-			moduleGenericMenuControlsController = SCMStructureController(\mainMenu, netAddr.port);
+			moduleGenericMenuControlsController = SCMStructureController(\mainMenu, netAddr);
 			moduleGenericMenuControlsController.setFocus(scmGroup.menuControlsDataStructure);
 
 			// and send values from group'menu to UI
 		};
 	}
-
-
-	// makeMenuPath { arg menuItem; ^("/" ++ name ++ "/" ++ menuItem.name.asString ++ "/" ++ menuItem.postFix)}
 
 	init{
 		//list of controls for this menu
@@ -133,6 +130,45 @@ SCMOSCMainMenu{
 			};
 		);
 
+		// randomize
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\randomize, 0, "/x").functionSet_{
+				arg val;
+				var value, firstTouch;
+				value = val[0];
+				firstTouch = val[1];
+				if(firstTouch > 0.5)
+				{
+					moduleControlsController.startRandomize();
+				};
+
+				moduleControlsController.randomize(value);
+				// moduleGenericMenuControlsController.jump;
+			};
+		);
+
+		//fadeToPrep
+
+
+		//shiftUpDown x
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\shiftUpDown, 0.5, "/x").functionSet_{
+				arg val;
+				var value, firstTouch;
+				var deadZone = 0.08;
+				value = val[0].linlin(0,1,-1,1).excess(deadZone);
+				value = value.linlin(-1+deadZone,1-deadZone, -1,1);
+				firstTouch = val[1];
+				if(firstTouch > 0.5)
+				{
+					moduleControlsController.startShiftUpDown();
+				};
+
+				moduleControlsController.shiftUpDown(value);
+				// moduleGenericMenuControlsController.jump;
+			};
+		);
+
 		//jump
 		mainMenuControls = mainMenuControls.add(
 			SCMMetaCtrl(\jump, 0, "/x").functionSet_{
@@ -164,7 +200,7 @@ SCMOSCMainMenu{
 		mainMenuControls = mainMenuControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
 
 		//init controller and data structure
-		mainMenuController = SCMStructureController('mainMenu', netAddr.port);
+		mainMenuController = SCMStructureController('mainMenu', netAddr);
 		mainMenuDataStructure = SCMControlDataStructure();
 
 		//copy the controls over to the datastructure
@@ -177,48 +213,6 @@ SCMOSCMainMenu{
 
 		//set controller to datastructure
 		mainMenuController.setFocus(mainMenuDataStructure);
-
-		// menuControls = [\changeModule, \currentToPrep, \ledsOn, \play, \volume, \prep, \jump,
-		// \automateTime, \stopAutomation, \loadDefault, \liveOrDisk, \automate, \savePreset, \preset];
-
-		// menuControls[\jump].oscFunction = {
-		// 	arg msg;
-		// 	if(msg[1] > 0.5)
-		// 	{
-		// 		/*if(groupReference != nil){
-		// 		groupReference.controls.do{arg ctrl; ctrl.jump};
-		//
-		// 		this.updateMenuElementsFromGroup;
-		// 		// groupReference.getCtrl(\volume).value;
-		// 		};
-		// 		*/
-		// 	};
-		// };
-
-
-		/*menuControls[\play].oscFunction = {
-		arg msg;
-		if( selectedGroup!= nil)
-		{
-		if(msg[1] > 0.5)
-		{
-
-		selectedGroup.play;
-		}
-		{
-		selectedGroup.stop;
-		}
-		/*if(groupReference != nil){
-		groupReference.controls.do{arg ctrl; ctrl.jump};
-
-		this.updateMenuElementsFromGroup;
-		// groupReference.getCtrl(\volume).value;
-		};
-		*/
-		};
-		};
-
-		};*/
 	}
 
 	setModuleInteractionMethod{
@@ -233,217 +227,83 @@ SCMOSCMainMenu{
 	getModuleInteractionMethod{
 		//called when a value comes in to a module on the same ipad as this menu
 		^moduleInteractionMethod;
-
 	}
-
-
-
-
-	/*
-	this.set("/masterMenu2/diskNames", ([1,2,3,4,5]).collect{arg i; i.asString});
-	this.set("/masterMenu2/liveOrDisk/x", 0);
-	this.set("/masterMenu2/savePreset/x", 0);
-	this.set("/scTempo", 120.linlin(SCM.tempoMin, SCM.tempoMax,0,1));
-
-	setupMasterGroupMenu{
-	//listener for menu group CHANGE
-	this.setupInstanceListener('/masterMenu/changeModule/name', {
-	arg args;
-	//get the selected group from OSC
-	var groupName = args[0];
-	this.selectGroup(groupName);
-	groupReference.controls.do{arg ctrl; ctrl.menuFeedbackIndex = globalCtrlrIndex};
-
-
-	});
-
-	//listener for menu group currentToPrep
-	this.setupInstanceListener('/masterMenu2/currentToPrep/x', {
-	arg args;
-	"current to prep".postln;
-	if(groupReference != nil){
-	if(args[0] > 0.5)
-	{
-
-	groupReference.controls.do{arg ctrl; ctrl.currentToPrep};
-
-	}
-	};
-
-	});
-
-	// ledsOn
-
-	//listener for menu group ledsOn
-	this.setupInstanceListener('/masterMenu/ledsOn/x', {
-	arg args;
-	if(groupReference != nil){
-	groupReference.getCtrl('ledsOn').augmentedSet(args[0]); //
-	};
-	});
-
-
-	//listener for menu group volume
-	this.setupInstanceListener('/masterMenu/volume/x', {
-	arg args;
-	if(groupReference != nil){
-	groupReference.getCtrl('volume').augmentedSet(args[0]); //
-	};
-	});
-
-
-
-
-	//listener for menu group prep
-	this.setupInstanceListener('/masterMenu/prep/x', {
-	arg args;
-	if(groupReference != nil){
-	if(args[0] > 0.5)
-	{groupReference.controls.do{arg ctrl; ctrl.enterPrepMode}; }
-	{groupReference.controls.do{arg ctrl; ctrl.exitPrepMode}; }
-	};
-	});
-
-	//listener for menu group prep
-	this.setupInstanceListener('/masterMenu/jump/x', {
-	arg args;
-	if(args[0] > 0.5)
-	{
-	this.jumpGroup;
-	}
-	});
-	//listener for automateTime
-	this.setupInstanceListener('/masterMenu/automateTime/x', {
-	arg args;
-
-	if(groupReference != nil){
-	var autoTime = pow(2,args[0]*5+2).round;
-	groupReference.controls.do{arg ctrl; ctrl.setAutomateTime(autoTime)};
-	}
-	});
-
-	//listener for stopAutomation
-	this.setupInstanceListener('/masterMenu/stopAutomation/x', {
-	arg args;
-
-	if(groupReference != nil){
-	if(args[0] > 0.5)
-	{
-	groupReference.controls.do{arg ctrl; ctrl.stopAutomation()};
-	};
-	};
-	});
-
-	//listener for loadDefault
-	this.setupInstanceListener('/masterMenu2/loadDefault/x', {
-	arg args;
-
-	if(groupReference != nil){
-	if(args[0] > 0.5)
-	{
-	groupReference.controls.do{arg ctrl; ctrl.loadDefaultToPrep()};
-	};
-	};
-	});
-
-
-	//listener for liveOrDisk
-	this.setupInstanceListener('/masterMenu2/liveOrDisk/x', {
-	arg args;
-	if(groupReference != nil){
-	liveOrDisk = args[0];
-	if(liveOrDisk> 0.5)
-	{
-	this.set("/masterMenu2/diskNames",groupReference.filePresetNames)
-	}
-	{
-	this.set("/masterMenu2/diskNames", ([1,2,3,4,5]).collect{arg i; i.asString});
-	this.set('/masterMenu2/preset/light', groupReference.activePresets * 0.4);
-	};
-	};
-	});
-
-
-
-	//listener for menu group automate
-	this.setupInstanceListener('/masterMenu/automate/x', {
-	arg args;
-	if(groupReference != nil){
-	if(args[0] > 0.5)
-	{
-	groupReference.controls.do{arg ctrl; ctrl.enterAutomateMode};
-	}
-	{
-	groupReference.controls.do{arg ctrl; ctrl.exitAutomateMode};
-	}
-	};
-	});
-
-	//listener for menu group presetSave
-	this.setupInstanceListener('/masterMenu2/savePreset/x', {
-	arg args;
-	if(groupReference != nil){
-	if(args[0] > 0.5)
-	{
-	inPresetSaveMode = true;
-	}
-	{
-	inPresetSaveMode = false;
-	};
-	};
-	});
-
-	//listener for menu group preset
-	this.setupInstanceListener('/masterMenu2/preset/x', {
-	arg args;
-	if(groupReference != nil){
-	var radioValue;
-	radioValue = args.find([1]);
-	(radioValue != nil).if{
-	if(inPresetSaveMode)
-	{
-	//SAVE
-	if(liveOrDisk > 0.5)
-	{//disk mode
-	groupReference.savePresetToFile(radioValue);
-	"yo?".postln;
-	this.set("/masterMenu2/diskNames",groupReference.filePresetNames);
-
-	}
-	{//live Mode
-	groupReference.controls.do{arg ctrl; ctrl.savePreset(radioValue)};
-	groupReference.updatePresetStatus(radioValue);
-	this.set('/masterMenu2/preset/light', groupReference.activePresets * 0.4);
-	};
-	}
-	{
-	//LOAD
-	if(liveOrDisk > 0.5)
-	{//disk mode
-	groupReference.loadPresetFromFile(radioValue);
-	}
-	{//live Mode
-	if(groupReference.activePresets[radioValue] > 0.5)
-	{
-	groupReference.controls.do{arg ctrl; ctrl.loadPresetToPrep(radioValue)};
-	};
-	};
-	};
-	};
-	};
-	});
-
-	}
-
-	*/
 }
 
-SCMOSCCtrlr{
+
+SCMOSCDirectCtrlr{
 	var < netAddr;
 	var name;
 
 	var < mainMenu;
 	var < matrixMenu;
+
+	var moduleControlsControllers;//module controls
+	var moduleGenericMenuControlsControllers;//specific generic controls also found in the menu
+
+
+	*new{
+		arg ip, port, name;
+		^super.new.init(ip, port, name);
+	}
+
+	init{
+		arg ip, port, name_, globalCtrlrIndex_;
+		name = name_;
+		netAddr = NetAddr(ip, port);
+
+
+
+
+
+		// output clock, simple stuff
+		SCM.proxySpace.clock.play({
+			var beatCount;
+			//get beats loop over 2 bars
+			beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
+			// this.sendMsg("/clockCount", beatCount);
+			//wait until next 16h
+			0.25;
+		},4);
+	}
+
+	initCtrlrData{
+		//controllers for all SCM groups
+		moduleControlsControllers = ();
+		moduleGenericMenuControlsControllers = ();
+
+		SCM.groups.do{
+			arg group;
+
+			moduleControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, netAddr);
+			moduleControlsControllers[group.name.asSymbol].setFocus(group.allControlsDataStructure);
+
+			moduleGenericMenuControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, netAddr);
+			moduleGenericMenuControlsControllers[group.name.asSymbol].setFocus(group.menuControlsDataStructure);
+		};
+	}
+
+	sendMsg{
+		arg path, value;
+		netAddr.sendMsg(path, *value);
+	}
+
+	sendColorMsg{
+		arg path, color;
+		netAddr.sendMsg(path, '@color', color);
+	}
+}
+
+
+
+SCMOSCMenuedCtrlr{
+	var < netAddr;
+	var name;
+
+	var < mainMenu;
+	var < matrixMenu;
+
+	var < initCtrlrData;
 
 	*new{
 		arg ip, port, name;
@@ -465,33 +325,11 @@ SCMOSCCtrlr{
 			var beatCount;
 			//get beats loop over 2 bars
 			beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
-			// this.set("/clockCount", beatCount);
+			this.sendMsg("/clockCount", beatCount);
 			//wait until next 16h
 			0.25;
 		},4);
 	}
-
-
-
-	/*updateMenuElementsFromGroup{
-	var volume, ledsOn;
-
-	this.set('/masterMenu/play/x', SCM.getGroup(selectedGroupName).isPlaying.asInt);
-
-	volume = SCM.getGroup(selectedGroupName).getCtrl('volume').value;
-	this.set('/masterMenu/volume/x', volume);
-
-
-	ledsOn = SCM.getGroup(selectedGroupName).getCtrl('ledsOn').value;
-	this.set('/masterMenu/ledsOn/x', ledsOn);
-
-	this.set('/masterMenu2/preset/light', SCM.getGroup(selectedGroupName).activePresets * 0.8);
-	if(liveOrDisk> 0.5)
-	{
-	this.set("/masterMenu2/diskNames",groupReference.filePresetNames)
-	};
-
-	}*/
 
 	sendMsg{
 		arg path, value;
@@ -555,8 +393,6 @@ SCMLemurCtrlr{
 
 
 	}
-
-
 
 	setupInstanceListener{
 		//replace with srcid arg

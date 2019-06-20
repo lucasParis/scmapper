@@ -166,7 +166,10 @@ SCM {
 
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.matrixMenu.scmMatrix = matrix;
+			if(ctrlr.matrixMenu != nil)
+			{
+				ctrlr.matrixMenu.scmMatrix = matrix;
+			}
 		}
 	}
 
@@ -245,10 +248,18 @@ SCM {
 		dataOutputs = dataOutputs.add(dataOut);
 	}
 
-	*newOscCtrlr{
+	*newOscMenuedCtrlr{
 		arg ip, port, name = \notNamed;
 		var return;
-		return = SCMOSCCtrlr.new(ip, port, name);
+		return = SCMOSCMenuedCtrlr.new(ip, port, name);
+		ctrlrs = ctrlrs.add(return);
+		^return;
+	}
+
+	*newOscDirectCtrlr{
+		arg ip, port, name = \notNamed;
+		var return;
+		return = SCMOSCDirectCtrlr.new(ip, port, name);
 		ctrlrs = ctrlrs.add(return);
 		^return;
 	}
@@ -261,9 +272,15 @@ SCM {
 		^return;
 	}
 
-	*initLemurData{
+	*initCtrlrData{
 		//after all group declarations...
 		var names;
+
+		ctrlrs.do{
+			arg ctrlr;
+			ctrlr.initCtrlrData;
+		};
+
 		names = groups.collect{arg group; group.name};
 		groups.collect{arg group; ("'" + group.name + "'").replace(" ", "")};
 		//send group names to lemur
