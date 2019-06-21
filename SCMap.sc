@@ -190,22 +190,25 @@ SCM {
 		^masterGroup;
 	}
 
-	*setGroupPlayStates{
-		arg scmGroupIndex, state;
-		/*playStates[scmGroupIndex] = state;
+	*updatePlayStates{
+		// var playstates;
+
+		playStates = groups.collect{arg group; if(group.isPlaying){1}{0}};
 		SCM.ctrlrs.do{
 		arg ctrlr;
-		ctrlr.sendMsg("/masterMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
+			ctrlr.sendMsg("/mainMenu/changeModule/light", (playStates * 0.6).extend(30,-0.5));
 		};
-		*/
+
+
 	}
+
 
 	*newGroup{
 		arg name, channels = 2;
 		var group;
 
 		playStates = playStates.add(0);
-		group = SCMGroup.new(name, channels, 4, groups.size);
+		group = SCMGroup.new(name, channels, 4);
 		groups = groups.add(group);
 		^group;
 	}

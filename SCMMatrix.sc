@@ -138,20 +138,28 @@ SCMOSCMatrixMenu {
 
 		//select input module
 		matrixCtrls = matrixCtrls.add(
-			SCMMetaCtrl(\moduleRoutingSelect, 0, "/selectedinput").functionSet_{
+			SCMMetaCtrl(\chooseModule, 0, "/selectedinput").functionSet_{
 				arg moduleIndex;
-				selectedInModule = scmMatrix.modulesNames[moduleIndex];
-				this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
+				if(moduleIndex < scmMatrix.modulesNames.size)
+				{
+					selectedInModule = scmMatrix.modulesNames[moduleIndex];
+					this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
+				};
 			};
 		);
 
 		//select output module
 		matrixCtrls = matrixCtrls.add(
-			SCMMetaCtrl(\moduleRoutingSelect, 0, "/selectedoutput").functionSet_{
+			SCMMetaCtrl(\chooseModule, 0, "/selectedoutput").functionSet_{
 				arg moduleIndex;
-				//get in SCMMatrix the module name
-				selectedOutModule = scmMatrix.modulesNames[moduleIndex];
-				this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
+
+				if(moduleIndex < scmMatrix.modulesNames.size)
+				{
+					//get in SCMMatrix the module name
+					selectedOutModule = scmMatrix.modulesNames[moduleIndex];
+					this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
+
+				}
 			};
 		);
 
@@ -303,9 +311,11 @@ SCMMatrix {
 
 		modulesNames = SCM.groups.collect{ arg group; group.name; };
 
+		//send names to matrix
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.sendMsg("/matrix/moduleRoutingSelect/setLabels", modulesNames);
+			// ctrlr.sendMsg("/matrix/moduleRoutingSelect/setLabels", modulesNames);
+			ctrlr.sendMsg("/matrix/chooseModule/setLabels", modulesNames);
 		};
 
 

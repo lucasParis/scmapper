@@ -1,4 +1,32 @@
+SCMVisualGroup{
+	var <name;
+	//? var <controls;
+	//? var midiMappings;// = [nil,nil,nil];
 
+	//menuFocusers
+	var < allControlsDataStructure;
+	var < menuControlsDataStructure;
+
+	//matrix routing stuff //looked at by matrix
+	var < matrixOutputs;
+	var < matrixInputs;
+	var < matrixBusses;
+
+
+	createInput{
+
+	}
+
+	createOutput{
+
+	}
+
+	// *new{
+	// 	arg groupName, quant = 4;
+	// 	^super.new.init(groupName, quant);
+	// }
+
+}
 
 
 SCMGroup {
@@ -6,14 +34,11 @@ SCMGroup {
 
 	var <controls;
 
-
 	var <patterns;
 	var <>proxies;
 
 	var <> serverGroup;
 
-	var oscAddrPrefix;
-	var oscAddrMenu;
 	var < isPlaying;
 
 	var <> fxSCMProxy;
@@ -29,7 +54,7 @@ SCMGroup {
 	var sharedSignals;
 	var < activePresets;
 
-	var < scmGroupIndex;
+	// var < scmGroupIndex;
 	var < filePresetNames;
 
 
@@ -85,12 +110,12 @@ SCMGroup {
 
 
 	*new{
-		arg groupName, channels = 2, quant = 4, scmGroupIndex = nil;
-		^super.new.init(groupName, channels, quant, scmGroupIndex);
+		arg groupName, channels = 2, quant = 4;
+		^super.new.init(groupName, channels, quant);
 	}
 
 	init{
-		arg groupName, channels_, quant_, scmGroupIndex_;
+		arg groupName, channels_, quant_;
 		name = groupName;
 
 
@@ -104,14 +129,14 @@ SCMGroup {
 		isPlaying = false;
 
 		//setupOscAddresses
-		oscAddrPrefix = ("/" ++ name).asSymbol;
-		oscAddrMenu = (oscAddrPrefix ++ "/menu").asSymbol;
+		// oscAddrPrefix = ("/" ++ name).asSymbol;
+		// oscAddrMenu = (oscAddrPrefix ++ "/menu").asSymbol;
 
 		//setup OSC mappings
-		this.setupOscListeners();
+		// this.setupOscListeners();
 
 		//send default values
-		this.updateMenuFeedback('/play/x', 0);
+		// this.updateMenuFeedback('/play/x', 0);
 
 		//setup group
 		serverGroup = Group.new(SCM.masterServerGroup, 'addBefore');
@@ -123,7 +148,7 @@ SCMGroup {
 
 		activePresets = 0!5;
 
-		scmGroupIndex = scmGroupIndex_;
+		// scmGroupIndex = scmGroupIndex_;
 		this.initPresetNames;
 
 		//control/data structure menu
@@ -146,6 +171,8 @@ SCMGroup {
 			{
 				this.stop;
 			};
+
+			SCM.updatePlayStates;
 
 		};
 
@@ -447,25 +474,6 @@ SCMGroup {
 		stream << "SCMGroup (" << name << ")";
 	}
 
-	setupOscListeners{
-		var playAddr;
-		//PLAY / STOP
-		playAddr = (oscAddrMenu ++ "/play/x").asSymbol;
-		OSCdef(
-			playAddr,
-			{
-				arg msg;
-				if(msg[1] >0.5)
-				{
-					this.play();
-				}
-				{
-					this.stop();
-				}
-			},
-			playAddr
-		);
-	}
 
 	play{
 		if(isPlaying.not)
@@ -477,12 +485,6 @@ SCMGroup {
 			proxies.do{arg proxy; proxy.play; };
 			//play controls (busMappers)
 			controls.do{arg control; control.play; };
-			//send OSC feedback
-			this.updateMenuFeedback('/play/x', 1, quantize:true);
-			/* refact if(scmGroupIndex != nil)
-			{
-			SCM.setGroupPlayStates(scmGroupIndex, 1);
-			};*/
 		}
 
 	}
@@ -497,12 +499,11 @@ SCMGroup {
 			proxies.do{arg proxy; proxy.stop; };
 			//stop controls (busMappers)
 			controls.do{arg control; control.stop; };
-			//send OSC feedback
-			this.updateMenuFeedback('/play/x', 0);
-			if(scmGroupIndex != nil)
-			{
-				SCM.setGroupPlayStates(scmGroupIndex, 0);
-			};
+
+			// if(scmGroupIndex != nil)
+			// {
+			// SCM.setGroupPlayStates(scmGroupIndex, 0);
+		// };
 		}
 	}
 
@@ -521,7 +522,7 @@ SCMGroup {
 
 	}
 
-	updateMenuFeedback{
+	/*updateMenuFeedback{
 		arg menuPath, value, quantize = false;
 		var path;
 		path = (oscAddrMenu ++ menuPath).asSymbol;
@@ -543,7 +544,7 @@ SCMGroup {
 			);
 		};
 
-	}
+	}*/
 
 	sendTrigger{
 		arg nameSig, signal;
