@@ -147,7 +147,6 @@ SCMOSCMainMenu{
 			};
 		);
 
-		//fadeToPrep
 
 
 		//shiftUpDown x
@@ -195,6 +194,76 @@ SCMOSCMainMenu{
 			};
 		);
 
+		//matrixOuts
+		/*mainMenuControls = mainMenuControls.add(
+		SCMMetaCtrl(\matrixOuts, 0, "/x").functionSet_{
+		arg val;
+
+		};
+		);
+
+		//matrixIns
+		mainMenuControls = mainMenuControls.add(
+		SCMMetaCtrl(\matrixIns, 0, "/x").functionSet_{
+		arg val;
+
+		};
+		);*/
+
+		//fadeToPrep
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\fadeToPrep, 0, "/x").functionSet_{
+				arg val;
+				var value, firstTouch;
+				value = val[0];
+				firstTouch = val[1];
+				if(firstTouch > 0.5)
+				{
+					moduleControlsController.startFadeToPrep();
+				};
+				moduleControlsController.fadeToPrep(value);
+			};
+		);
+
+		//fast Prep
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\fastPrep, 0, "/x").functionSet_{
+				arg val;
+
+			};
+		);
+
+
+		//save preset
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\save, 0, "/x").functionSet_{
+				arg val;
+
+			};
+		);
+
+		//presetMorph X
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\presetMorph, 0, "/x").functionSet_{
+				arg val;
+
+			};
+		);
+
+		//presetMorph Y
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\presetMorph, 0, "/y").functionSet_{
+				arg val;
+
+			};
+		);
+		//presetMorph Z
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\presetMorph, 0, "/z").functionSet_{
+				arg val;
+
+			};
+		);
 
 		//convert to dict
 		mainMenuControls = mainMenuControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;

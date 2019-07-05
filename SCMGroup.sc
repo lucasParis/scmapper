@@ -70,41 +70,50 @@ SCMGroup {
 
 	createInputkr{
 		arg name;
+		var value;
 		matrixInputs = matrixInputs.add(name);
 		matrixBusses[name] = Bus.control(Server.local);
-		^In.kr(matrixBusses[name]);
+
+		value = In.kr(matrixBusses[name]) * this.getCtrl(\matrixIns).asSignal;
+		^value;
 	}
 
 	createOutputkr{
 		arg name, sig;
+		var value;
 		matrixOutputs = matrixOutputs.add(name);
 		matrixBusses[name] = Bus.control(Server.local);
-		matrixBusses[name].postln;
+		// matrixBusses[name].postln;
 
-		^Out.kr(matrixBusses[name], sig);
+		value = Out.kr(matrixBusses[name], sig * this.getCtrl(\matrixOuts).asSignal);
+		^value;
 	}
 
 	createInputar{
 		arg name;
-		var channels = 2;
+		var channels = 2, value;
 
 		matrixInputs = matrixInputs.add(name);
 		// channels = 4;
 
 		matrixBusses[name] = Bus.audio(Server.local, channels);
 
-		^InFeedback.ar(matrixBusses[name],channels);
+		value = InFeedback.ar(matrixBusses[name],channels) * this.getCtrl(\matrixIns).asSignal;
+		^value;
 	}
 
 	createOutputar{
 		arg name, sig;
-		var channels = 2;
+		var channels = 2, value;
 
 		matrixOutputs = matrixOutputs.add(name);
 		//check signal size
 		// channels = 4;
 		matrixBusses[name] = Bus.audio(Server.local, channels);
-		^OffsetOut.ar(matrixBusses[name], sig);
+
+		value = OffsetOut.ar(matrixBusses[name], sig * this.getCtrl(\matrixOuts).asSignal);
+		^value;
+
 	}
 
 
@@ -160,6 +169,8 @@ SCMGroup {
 		matrixInputs = [];
 		matrixBusses = ();
 
+		this.newCtrl(\matrixIns, 1);
+		this.newCtrl(\matrixOuts, 1);
 
 		this.newCtrl(\play, 0).functionSet_{
 			arg val;
@@ -330,7 +341,7 @@ SCMGroup {
 
 
 		//if this is a menu control add it to that datastructure
-		menuControls = [\volume, \play, \ledsOn];
+		menuControls = [\volume, \play, \ledsOn, \matrixOuts, \matrixIns];
 		if(menuControls.includes(ctrlName) == true)
 		{
 			menuControlsDataStructure.addControl(ctrl);

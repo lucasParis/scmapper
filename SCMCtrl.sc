@@ -62,6 +62,9 @@ SCMMetaCtrl {
 	var randomValue;
 	var randomStartValue;
 
+	//for fade to Prep
+	var fadePrepStartValue;
+
 	*new{
 		arg ctrlName, defaultValue, postFix, valueType = \float;// \bool \int
 		^super.new.init(ctrlName, defaultValue, postFix, valueType);
@@ -88,6 +91,7 @@ SCMMetaCtrl {
 
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue_.size.max(1));
+		bus.set(defaultValue_);
 
 		busMapBusses = [];
 		busMapSynths = [];
@@ -149,6 +153,10 @@ SCMMetaCtrl {
 		};
 		//return
 		^return;
+	}
+
+	asSignal{
+		^In.kr(bus);
 	}
 
 	pfunc{
@@ -313,6 +321,50 @@ SCMMetaCtrl {
 
 	}
 
+
+	startFadeToPrep{
+		fadePrepStartValue = value;
+	}
+
+	fadeToPrep{
+		arg amount;
+
+		if(valueType == \float)
+		{
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			value = amount.lincurve(0,1,fadePrepStartValue, preparedValue,1);
+			this.hardSet(value);
+		};
+
+		if(valueType == \int)
+		{
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			value = amount.lincurve(0,1,fadePrepStartValue, preparedValue,1).round(1/intSteps);
+			this.hardSet(value);
+		};
+
+		if(valueType == \bool)
+		{
+			if(amount > 0.98)
+			{
+				value = preparedValue;
+			}
+			{
+				value = fadePrepStartValue;
+			};
+			this.hardSet(value);
+
+		}
+
+	}
+
+
 	startRandomize{
 		randomStartValue = value;
 		randomValue = rrand(0.0,1.0);
@@ -382,10 +434,6 @@ SCMMetaCtrl {
 			};
 			this.hardSet(shiftVal);
 		};
-	}
-
-	fadeToPrep{
-
 	}
 
 	setValueByInteractionMethod{

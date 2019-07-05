@@ -111,7 +111,7 @@ SCMStructureController{
 	}
 
 	set{
-		//excludeFromCallback is usefull when the data being show doesnt have a direct osc element in the interface.
+		//excludeFromCallback is usefull when the data being shown doesnt have a direct osc element in the interface.
 		//we then rely on this feedback for visualisation so we dont want to exclude
 
 		arg name, postFix = "/x", value = 0, excludeFromCallback = true;
@@ -150,6 +150,15 @@ SCMStructureController{
 	randomize{
 		arg val;
 		focus.randomize(val);
+	}
+
+	startFadeToPrep{
+		focus.startFadeToPrep();
+	}
+
+	fadeToPrep{
+		arg val;
+		focus.fadeToPrep(val);
 	}
 
 
@@ -329,6 +338,25 @@ SCMControlDataStructure {
 			arg name, scmCtrl;
 			// name.postln;
 			scmCtrl.randomize(val);
+			//update to UI values
+			this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
+		};
+	}
+
+	startFadeToPrep{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.startFadeToPrep();
+		};
+	}
+
+	fadeToPrep{
+		arg val;
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			// name.postln;
+			scmCtrl.fadeToPrep(val);
+			//update to UI values
 			this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
 		};
 	}
