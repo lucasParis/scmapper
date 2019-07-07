@@ -365,10 +365,10 @@ SCMGroup {
 
 	//add a pattern to this group
 	linkPattern{
-		arg patternName, pattern, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1, splitMixing = false;
+		arg patternName, pattern, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1, splitMixing = false, manualMuteLast = false;
 		var pat;
 		//new pattern
-		pat = SCMPattern.new(patternName, pattern, this, channels, manualMode, independentPlay, trigBus, manualGrouping, splitMixing);
+		pat = SCMPattern.new(patternName, pattern, this, channels, manualMode, independentPlay, trigBus, manualGrouping, splitMixing, manualMuteLast);
 		// add pattern to this group
 		patterns = patterns.add(pat);
 		^pat;//return

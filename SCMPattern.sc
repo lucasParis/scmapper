@@ -33,7 +33,9 @@ SCMPattern {
 
 	var manualMode;
 	var manualStream;
+	var manualLastNotes;
 	var <> manualGrouping;
+	var manualMuteLast;
 
 	var independentPlay;
 	var independentPlayCtrl;
@@ -47,12 +49,12 @@ SCMPattern {
 
 
 	*new{
-		arg patternName, pattern, parent, channels = 2, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1, splitMixing = false;
-		^super.new.init(patternName, pattern, parent, channels, manualMode, independentPlay, trigBus, manualGrouping, splitMixing);
+		arg patternName, pattern, parent, channels = 2, manualMode = false, independentPlay = false, trigBus = false, manualGrouping =1, splitMixing = false, manualMuteLast = false;
+		^super.new.init(patternName, pattern, parent, channels, manualMode, independentPlay, trigBus, manualGrouping, splitMixing, manualMuteLast);
 	}
 
 	init{
-		arg patternName, pattern, parent, channelCount, manualMode_, independentPlay_, trigBus_, manualGrouping_, splitMixing_;
+		arg patternName, pattern, parent, channelCount, manualMode_, independentPlay_, trigBus_, manualGrouping_, splitMixing_, manualMuteLast_;
 
 		//set variables
 		parentGroup = parent;
@@ -61,6 +63,8 @@ SCMPattern {
 		manualMode = manualMode_;
 		independentPlay = independentPlay_;
 		splitMixing = splitMixing_;
+
+		manualMuteLast = manualMuteLast_;
 
 		//set default values
 		isPlaying = false;
@@ -160,26 +164,43 @@ SCMPattern {
 			manualStream = rawPattern.asStream;
 
 			//add listeners/ctrls for play
-			parent.newCtrl((name.asString ++ 'Play').asSymbol).valueType_(\button).functionSet = {
+			parent.newCtrl((name.asString ++ 'Play').asSymbol).valueType_(\bool).functionSet = {
 				arg value;
 				if(isPlaying)
 				{
 					if(value > 0.5)
 					{
+						//muting last note
+
+
 						if(quant == nil)
 						{
-							manualGrouping.do{manualStream.next(()).play;};
+							if(manualMuteLast == true)
+							{
+								manualLastNotes.do{arg note; note.release;};
+								manualLastNotes = [];
+							};
+							manualGrouping.do{var note; note = manualStream.next(()).play; manualLastNotes = manualLastNotes.add(note)};
 						}
 						{
 
-							SCM.proxySpace.clock.play({ manualGrouping.do{ manualStream.next(()).play;};  nil;}, quant);
+							SCM.proxySpace.clock.play(
+								{
+									if(manualMuteLast == true)
+									{
+										manualLastNotes.do{arg note; note.release;};
+										manualLastNotes = [];
+									};
+									manualGrouping.do{ var note; note = manualStream.next(()).play; manualLastNotes = manualLastNotes.add(note);};
+									nil;
+							}, quant);
 						};
 					};
 				};
 			};
 
 			//add listeners/ctrls for reset
-			parent.newCtrl((name.asString ++ 'Reset').asSymbol).valueType_(\button).functionSet = {
+			parent.newCtrl((name.asString ++ 'Reset').asSymbol).valueType_(\bool).functionSet = {
 				arg value;
 				if(value > 0.5)
 				{
@@ -194,7 +215,7 @@ SCMPattern {
 		{
 
 			//osc controller for play
-			independentPlayCtrl = parent.newCtrl((name.asString ++ 'Play').asSymbol).valueType_(\button).functionSet = {
+			independentPlayCtrl = parent.newCtrl((name.asString ++ 'Play').asSymbol).valueType_(\bool).functionSet = {
 				arg value;
 				if(value > 0.5)
 				{
