@@ -200,10 +200,23 @@ SCMStructureController{
 			//iterate through focus controls to setup brigde
 			focus.controls.keysValuesDo{
 				arg key, scmCtrl;
+				var valueOut;
 				var ctrlAddress = formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix);
 
 				//send OSC initial value
-				netAddr.sendMsg(ctrlAddress, *scmCtrl.value);
+
+				valueOut = scmCtrl.value;
+
+				//radio mode
+				if(scmCtrl.isRadio == true)
+				{
+					var radioValue;
+					radioValue = Array.fill(32,0);
+					radioValue[valueOut] = 1;
+					valueOut = radioValue;
+				};
+
+				netAddr.sendMsg(ctrlAddress, *valueOut);
 				// addListener
 				listenerList = listenerList.add(
 					OSCFunc(
@@ -390,6 +403,15 @@ SCMControlDataStructure {
 
 		if(controls[(name ++ postFix.asString).asSymbol] != nil)
 		{
+			if(controls[(name ++ postFix.asString).asSymbol].isRadio == true)
+			{
+				var radioValue;
+
+				radioValue = val.find([1]);
+				(radioValue != nil).if{
+					val = radioValue;
+				};
+			};
 			controls[(name ++ postFix.asString).asSymbol].setValueByInteractionMethod(val, interactionMethod);
 
 			this.executeCallback(name, postFix, interactionMethod, sourceFocuser);

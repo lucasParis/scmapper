@@ -24,7 +24,7 @@ SCMMetaCtrl {
 	var proxyCtrlName;
 
 	var defaultValue;
-	var isRadio;
+	var < isRadio;
 
 	//bus and bus mapper players
 	var bus;
@@ -57,17 +57,29 @@ SCMMetaCtrl {
 
 	//for shift
 	var shiftStartValue;
+	var <> disableShift;
 
 	//for randomize
 	var randomValue;
 	var randomStartValue;
+	var <> disableRandom;
 
 	//for fade to Prep
 	var fadePrepStartValue;
+	var <> disableFadeToPrep;
+
 
 	*new{
 		arg ctrlName, defaultValue, postFix, valueType = \float;// \bool \int
 		^super.new.init(ctrlName, defaultValue, postFix, valueType);
+	}
+
+	disableAllMeta_{
+		disableFadeToPrep = true;
+		disableRandom = true;
+		disableShift = true;
+		disablePrepjump = true;
+		disableAutomation = true;
 	}
 
 	valueType_ {
@@ -89,6 +101,7 @@ SCMMetaCtrl {
 		preparedValue = defaultValue;
 		disablePrepjump = false;
 
+
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue_.size.max(1));
 		bus.set(defaultValue_);
@@ -104,11 +117,20 @@ SCMMetaCtrl {
 
 		//shift
 		shiftStartValue = defaultValue;
+		disableShift = false;
 
 		//random
 		randomValue = rrand(0.0,1.0);
 		randomStartValue = defaultValue;
+		disableRandom = false;
 
+	}
+
+	isRadio_{
+		arg radioValue;
+		isRadio = radioValue;
+		this.disableAllMeta_;
+		// this.valueType_(\int,);
 	}
 
 	free {
@@ -300,13 +322,13 @@ SCMMetaCtrl {
 		};
 
 		//radio mode for controllers only
-		/*isRadio.if({
-		var radioValue;
-		radioValue = Array.fill(32,0);
-		radioValue[value] = 1;
-		value = radioValue;
+		isRadio.if({
+			var radioValue;
+			radioValue = Array.fill(32,0);
+			radioValue[returnVal] = 1;
+			returnVal = radioValue;
 		}
-		);*/
+		);
 
 
 		^returnVal;
@@ -415,24 +437,28 @@ SCMMetaCtrl {
 	shiftUpDown{
 		arg shiftAmount;
 		var shiftVal;
-		if(valueType == \float)
+
+		if(disableShift != true)
 		{
-			shiftVal = (shiftStartValue + shiftAmount).clip(0,1);
-			if(automationIsHappening)
+			if(valueType == \float)
 			{
-				this.stopAutomation;
+				shiftVal = (shiftStartValue + shiftAmount).clip(0,1);
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				this.hardSet(shiftVal);
 			};
-			this.hardSet(shiftVal);
-		};
-		if(valueType == \int)
-		{
-			shiftVal = (shiftStartValue + shiftAmount).clip(0,1);
-			shiftVal = shiftVal.round(1/intSteps);
-			if(automationIsHappening)
+			if(valueType == \int)
 			{
-				this.stopAutomation;
+				shiftVal = (shiftStartValue + shiftAmount).clip(0,1);
+				shiftVal = shiftVal.round(1/intSteps);
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				this.hardSet(shiftVal);
 			};
-			this.hardSet(shiftVal);
 		};
 	}
 
@@ -785,7 +811,6 @@ SCMCtrl {
 
 							if(SCM.proxySpace.clock.beats > automationEndTime)
 							{
-								"finishing".postln;
 								automationIsHappening = false;
 								nil.yield;
 							}
@@ -1019,7 +1044,6 @@ SCMCtrl {
 
 				if(midiType == \button)
 				{
-					// midiValue.postln;
 					this.set((midiValue>64).asInt);
 				};
 		},index, 0);
