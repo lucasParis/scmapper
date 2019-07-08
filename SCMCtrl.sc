@@ -156,7 +156,7 @@ SCMMetaCtrl {
 
 	// simple interfaces to SCM content
 	busMap{
-		arg min = 0, max = 1, curve = 0, lagUp = 0, lagDown = 0;
+		arg min = 0, max = 1, curve = 0, lagUp = 0, lagDown = 0, index = nil;
 		var return, outBus, busMap;
 
 		//create a control mapper synth
@@ -380,6 +380,7 @@ SCMMetaCtrl {
 			{
 				value = fadePrepStartValue;
 			};
+
 			this.hardSet(value);
 
 		}
@@ -399,37 +400,39 @@ SCMMetaCtrl {
 	randomize{
 		arg amount;
 
+		if(disableRandom != true)
+		{
+			if(valueType == \float)
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,randomStartValue, randomValue,2);
+				this.hardSet(value);
+			};
+			if(valueType == \int)
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,randomStartValue, randomValue,2).round(1/intSteps);
+				this.hardSet(value);
+			};
+			if(valueType == \bool)
+			{
+				if(amount > 0.98)
+				{
+					value = randomValue.round(1).asInt;
+				}
+				{
+					value = randomStartValue;
+				};
+				this.hardSet(value);
 
-		if(valueType == \float)
-		{
-			if(automationIsHappening)
-			{
-				this.stopAutomation;
 			};
-			value = amount.lincurve(0,1,randomStartValue, randomValue,2);
-			this.hardSet(value);
 		};
-		if(valueType == \int)
-		{
-			if(automationIsHappening)
-			{
-				this.stopAutomation;
-			};
-			value = amount.lincurve(0,1,randomStartValue, randomValue,2).round(1/intSteps);
-			this.hardSet(value);
-		};
-		if(valueType == \bool)
-		{
-			if(amount > 0.98)
-			{
-				value = randomValue.round(1).asInt;
-			}
-			{
-				value = randomStartValue;
-			};
-			this.hardSet(value);
-
-		}
 	}
 
 

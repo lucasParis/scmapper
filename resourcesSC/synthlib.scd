@@ -1414,7 +1414,11 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 SynthDef.new(\l1_trigToBus,{
 	arg trigOut = 0, gate = 1, replyID = -1, trigOn = 1;
 	var src, env, quitAfter, trig;
-	env = Env.adsr(0.01, 0.3,1,0.05).ar(2, gate);
+
+	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
 
 	trig = Impulse.ar(0) * trigOn;
 
@@ -1931,9 +1935,9 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 
 
 SynthDef.new(\l1_bassFeed,{
-	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, feedback = 0.3, impulseDelayFreq = 100, resonLen = 2, excessAmp = 1, rotate = 0, highWidth = 0.25, clockSpeed  = 1, sineFB = 0;
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, feedback = 0.3, impulseDelayFreq = 100, resonLen = 2, excessAmp = 1, rotate = 0, highWidth = 0.25, clockSpeed  = 1, sineFB = 0, sineTune = 2, combDryWet = 1;
 
-	var src, env, quitAfter, snd, fb;
+	var src, env, quitAfter, snd, fb, comb;
 	env = Env.adsr(0.01, 0.3,1,0.05).ar(0, gate);
 
 	quitAfter = Done.kr(env);
@@ -1952,7 +1956,8 @@ SynthDef.new(\l1_bassFeed,{
 	fb = (fb* feedback) + snd;
 	// fb = AllpassN.ar(fb, 0.2, LFPulse.ar(5).lag(0.1).range(10000,20),2);
 	// fb = CombL.ar(fb, 0.2, 20000.reciprocal, resonLen);
-	fb = CombL.ar(fb, 0.2, LFPulse.ar(0.25*clockSpeed,0,highWidth).lag(0.01).range(20000,freq).reciprocal, resonLen);
+	comb = CombL.ar(fb, 0.2, LFPulse.ar(0.25*clockSpeed,0,highWidth).lag(0.01).range(20000,freq).reciprocal, resonLen);
+	fb = SelectX.ar(combDryWet, [fb, comb]);
 
 	// fb = MidEQ.ar(fb, freq*5, 5,-25);
 
@@ -1960,7 +1965,7 @@ SynthDef.new(\l1_bassFeed,{
 	fb = fb.sanitize;
 	// fb = fb
 	fb = RotateL.ar(rotate,fb);
-	fb = fb.excess(SinOscFB.ar(freq*[2,3],sineFB ,mul:excessAmp));
+	fb = fb.excess(SinOscFB.ar(freq*[sineTune,3],sineFB ,mul:excessAmp));
 	// fb = fb.softclip;
 	fb = Compander.ar(fb, fb, 0.5,0.1);
 	fb = Limiter.ar(fb,1,0.004);
