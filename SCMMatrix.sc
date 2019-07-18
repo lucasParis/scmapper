@@ -10,6 +10,9 @@ SCMOSCMatrixMenu {
 
 	var < matrixController;
 
+	//reference to main menu to know what is the currently selected module
+	var <> refToMainMenu;
+
 
 	var < scmMatrix;
 
@@ -135,6 +138,33 @@ SCMOSCMatrixMenu {
 
 		//list of controls for matrix
 		matrixCtrls = [];
+
+		//select current module as output
+		matrixCtrls = matrixCtrls.add(
+			SCMMetaCtrl(\selectCurrentAsOutput, 0, "/x").functionSet_{
+				arg val;
+				if(val>0.5)
+				{
+					var currentModuleName;
+					currentModuleName = refToMainMenu.selectedGroup.name;
+					selectedOutModule = currentModuleName;
+					this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
+				};
+			};
+		);
+		//select current module as input
+		matrixCtrls = matrixCtrls.add(
+			SCMMetaCtrl(\selectCurrentAsInput, 0, "/x").functionSet_{
+				arg val;
+				if(val>0.5)
+				{
+					var currentModuleName;
+					currentModuleName = refToMainMenu.selectedGroup.name;
+					selectedInModule = currentModuleName;
+					this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
+				};
+			};
+		);
 
 		//select input module
 		matrixCtrls = matrixCtrls.add(

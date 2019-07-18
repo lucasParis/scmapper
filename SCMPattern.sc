@@ -164,7 +164,7 @@ SCMPattern {
 			manualStream = rawPattern.asStream;
 
 			//add listeners/ctrls for play
-			parent.newCtrl((name.asString ++ 'Play').asSymbol).valueType_(\bool).functionSet = {
+			parent.newCtrl((name.asString ++ 'Play').asSymbol).valueType_(\bool).disableAllMeta_.functionSet = {
 				arg value;
 				if(isPlaying)
 				{

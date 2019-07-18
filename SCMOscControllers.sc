@@ -3,7 +3,7 @@ SCMOSCMainMenu{
 	var name;
 
 	var menuControls;
-	var selectedGroup;
+	var < selectedGroup;
 
 	//controllers for the selected module (should they all be already created for all the groups and you just switch the index?)
 	var moduleControlsController;//module controls
@@ -387,6 +387,7 @@ SCMOSCMenuedCtrlr{
 		//main per group menu
 		mainMenu = SCMOSCMainMenu(netAddr, "mainMenu");
 		matrixMenu = SCMOSCMatrixMenu(netAddr, "matrix");
+		matrixMenu.refToMainMenu = mainMenu;
 
 
 		// output clock, simple stuff

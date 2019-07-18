@@ -120,7 +120,7 @@ SCM {
 						SCM.setTempo(tempo);
 					}, 1);
 				}
-			}, "/masterMenu2/tempoDiv2/x"
+			}, "/mainMenu/tempoDiv2/x"
 		);
 
 		OSCdef(\tempoMult,
@@ -134,7 +134,7 @@ SCM {
 						SCM.setTempo(tempo);
 					}, 1);
 				};
-			}, "/masterMenu2/tempoMult2/x"
+			}, "/mainMenu/tempoMult2/x"
 		);
 
 		OSCdef(\tempo,
