@@ -1,3 +1,56 @@
+SCMOSCOrchestrateMenu{
+	var netAddr;
+	var name;
+
+
+	//controllers for this class menuControls
+	var mainMenuController;
+	//data structure for menu items affecting controls in this class (prep, jump, automate, automatestop, preptoggle...)
+	var mainMenuDataStructure;
+	var mainMenuControls;
+
+	var moduleInteractionMethod;
+
+
+	*new{
+		arg netAddr, name;
+		^super.newCopyArgs(netAddr, name).init();
+	}
+
+
+
+	init{
+		//list of controls for this menu
+		mainMenuControls = [];
+
+		//changeModule changeModule
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\changeMode, 0, '/x').functionSet_{
+				arg val;
+				val.postln;
+
+			};
+		);
+		//convert to dict
+		mainMenuControls = mainMenuControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
+
+		//init controller and data structure
+		mainMenuController = SCMStructureController('orchestrate', netAddr);
+		mainMenuDataStructure = SCMControlDataStructure();
+
+		//copy the controls over to the datastructure
+		mainMenuControls.keysValuesDo{
+			arg key, ctrl;
+			mainMenuDataStructure.addControl(ctrl);
+		};
+
+		moduleInteractionMethod = \normal;
+
+		//set controller to datastructure
+		mainMenuController.setFocus(mainMenuDataStructure);
+	}
+}
+
 SCMOSCMainMenu{
 	var netAddr;
 	var name;
@@ -17,6 +70,7 @@ SCMOSCMainMenu{
 
 
 	var moduleInteractionMethod;
+
 
 
 	*new{
@@ -88,7 +142,14 @@ SCMOSCMainMenu{
 				}
 				{
 					//on down, tell params to start their thing
-					//
+
+					//update automation time
+					var autoTime = mainMenuControls['automateTime/x'].value;
+					autoTime = pow(2, autoTime*5+2).round;
+					moduleControlsController.setAutomationTime(autoTime);
+					moduleGenericMenuControlsController.setAutomationTime(autoTime);
+
+
 					moduleControlsController.checkForAutomationAndGo;
 					moduleGenericMenuControlsController.checkForAutomationAndGo;
 
@@ -371,6 +432,7 @@ SCMOSCMenuedCtrlr{
 
 	var < mainMenu;
 	var < matrixMenu;
+	var < orchestrateMenu;
 
 	var < initCtrlrData;
 
@@ -388,6 +450,8 @@ SCMOSCMenuedCtrlr{
 		mainMenu = SCMOSCMainMenu(netAddr, "mainMenu");
 		matrixMenu = SCMOSCMatrixMenu(netAddr, "matrix");
 		matrixMenu.refToMainMenu = mainMenu;
+
+		orchestrateMenu = SCMOSCOrchestrateMenu(netAddr, "orchestrate");
 
 
 		// output clock, simple stuff

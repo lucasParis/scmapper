@@ -212,6 +212,7 @@ SCMStructureController{
 				{
 					var radioValue;
 					radioValue = Array.fill(32,0);
+					valueOut = (valueOut * (scmCtrl.radioCount-1)).round;
 					radioValue[valueOut] = 1;
 					valueOut = radioValue;
 				};
@@ -403,7 +404,7 @@ SCMControlDataStructure {
 
 		if(controls[(name ++ postFix.asString).asSymbol] != nil)
 		{
-			if(controls[(name ++ postFix.asString).asSymbol].isRadio == true)
+			/*if(controls[(name ++ postFix.asString).asSymbol].isRadio == true)
 			{
 				var radioValue;
 
@@ -411,7 +412,7 @@ SCMControlDataStructure {
 				(radioValue != nil).if{
 					val = radioValue;
 				};
-			};
+			};*/
 			controls[(name ++ postFix.asString).asSymbol].setValueByInteractionMethod(val, interactionMethod);
 
 			this.executeCallback(name, postFix, interactionMethod, sourceFocuser);

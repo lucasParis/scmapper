@@ -31,6 +31,7 @@ SCMMetaCtrl {
 	var busMapSynths;
 	var busMapBusses;
 
+
 	//for function callback
 	var <> functionSet;
 
@@ -49,6 +50,7 @@ SCMMetaCtrl {
 	//for meta
 	var < valueType;
 	var intSteps;
+	var metaFactor;
 
 
 	// for prep
@@ -67,6 +69,9 @@ SCMMetaCtrl {
 	//for fade to Prep
 	var fadePrepStartValue;
 	var <> disableFadeToPrep;
+
+	//for radio mode
+	var < radioCount;
 
 
 	*new{
@@ -101,6 +106,11 @@ SCMMetaCtrl {
 		preparedValue = defaultValue;
 		disablePrepjump = false;
 
+		disableFadeToPrep = false;
+
+		//for meta
+		metaFactor = 1;
+
 
 		//setup control bus
 		bus = Bus.control(Server.local, defaultValue_.size.max(1));
@@ -127,10 +137,11 @@ SCMMetaCtrl {
 	}
 
 	isRadio_{
-		arg radioValue;
+		arg radioValue, radioCount_ = 4;
 		isRadio = radioValue;
-		this.disableAllMeta_;
-		// this.valueType_(\int,);
+		radioCount = radioCount_;
+		// this.disableAllMeta_;
+		this.valueType_(\radio);
 	}
 
 	free {
@@ -188,9 +199,17 @@ SCMMetaCtrl {
 		if(index != nil)
 		{
 			return = Pfunc{value[index]};
+			if(isRadio == true)
+			{
+				return = Pfunc{value[index] * (radioCount-1)};
+			};
 		}
 		{
 			return = Pfunc{value};
+			if(isRadio == true)
+			{
+				return = Pfunc{value * (radioCount-1)};
+			};
 		}
 		^return;
 	}
@@ -325,6 +344,7 @@ SCMMetaCtrl {
 		isRadio.if({
 			var radioValue;
 			radioValue = Array.fill(32,0);
+			returnVal = returnVal * (radioCount-1);
 			radioValue[returnVal] = 1;
 			returnVal = radioValue;
 		}
@@ -351,39 +371,52 @@ SCMMetaCtrl {
 	fadeToPrep{
 		arg amount;
 
-		if(valueType == \float)
+		if(disableFadeToPrep != true)
 		{
-			if(automationIsHappening)
+
+			if(valueType == \float)
 			{
-				this.stopAutomation;
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,fadePrepStartValue, preparedValue,1);
+				this.hardSet(value);
 			};
-			value = amount.lincurve(0,1,fadePrepStartValue, preparedValue,1);
-			this.hardSet(value);
+
+			if(valueType == \radio)
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,fadePrepStartValue, preparedValue,1).round(1/(radioCount-1));
+				this.hardSet(value);
+			};
+
+			if(valueType == \int)
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,fadePrepStartValue, preparedValue,1).round(1/intSteps);
+				this.hardSet(value);
+			};
+
+			if(valueType == \bool)
+			{
+				if(amount > 0.98)
+				{
+					value = preparedValue;
+				}
+				{
+					value = fadePrepStartValue;
+				};
+
+				this.hardSet(value);
+			};
 		};
-
-		if(valueType == \int)
-		{
-			if(automationIsHappening)
-			{
-				this.stopAutomation;
-			};
-			value = amount.lincurve(0,1,fadePrepStartValue, preparedValue,1).round(1/intSteps);
-			this.hardSet(value);
-		};
-
-		if(valueType == \bool)
-		{
-			if(amount > 0.98)
-			{
-				value = preparedValue;
-			}
-			{
-				value = fadePrepStartValue;
-			};
-
-			this.hardSet(value);
-
-		}
 
 	}
 
@@ -391,6 +424,10 @@ SCMMetaCtrl {
 	startRandomize{
 		randomStartValue = value;
 		randomValue = rrand(0.0,1.0);
+
+		//factor to reduce influence
+		randomValue = metaFactor.linlin(0,1,randomStartValue, randomValue);
+
 		if(value.size > 0)
 		{
 			randomValue = value.size.collect{rrand(0.0,1.0)};
@@ -420,6 +457,17 @@ SCMMetaCtrl {
 				value = amount.lincurve(0,1,randomStartValue, randomValue,2).round(1/intSteps);
 				this.hardSet(value);
 			};
+
+			if(valueType == \radio)
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,randomStartValue, randomValue,2).round(1/(radioCount-1));
+				this.hardSet(value);
+			};
+
 			if(valueType == \bool)
 			{
 				if(amount > 0.98)
@@ -436,10 +484,18 @@ SCMMetaCtrl {
 	}
 
 
+	metaFactor_{
+		arg metaInfluenceFactor;
+		metaFactor = metaInfluenceFactor;
+	}
+
 
 	shiftUpDown{
 		arg shiftAmount;
 		var shiftVal;
+
+		//reduce influence
+		shiftAmount = shiftAmount * metaFactor;
 
 		if(disableShift != true)
 		{
@@ -452,10 +508,22 @@ SCMMetaCtrl {
 				};
 				this.hardSet(shiftVal);
 			};
+
 			if(valueType == \int)
 			{
 				shiftVal = (shiftStartValue + shiftAmount).clip(0,1);
 				shiftVal = shiftVal.round(1/intSteps);
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				this.hardSet(shiftVal);
+			};
+
+			if(valueType == \radio)
+			{
+				shiftVal = (shiftStartValue + shiftAmount).clip(0,1);
+				shiftVal = shiftVal.round(1/(radioCount-1));
 				if(automationIsHappening)
 				{
 					this.stopAutomation;
@@ -467,6 +535,19 @@ SCMMetaCtrl {
 
 	setValueByInteractionMethod{
 		arg val, interactionMethod;
+		// val.postln;
+		//radio mode
+		if(isRadio == true)
+		{
+			var radioValue;
+
+			radioValue = val.find([1]);
+			(radioValue != nil).if{
+				val = radioValue/(radioCount-1);
+			};
+		};
+		// val.postln;
+
 		case
 		{interactionMethod == \normal}
 		{
