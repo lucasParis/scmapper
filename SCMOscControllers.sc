@@ -2,52 +2,250 @@ SCMOSCOrchestrateMenu{
 	var netAddr;
 	var name;
 
+	//controllers for this class modules Controls
+	var modulesMenuControllersDict;
+	var modulesControlsControllersDict;
+
+	//data structure for module items affecting controls in this class (prep, jump, automate, automatestop, preptoggle...)
+	var modulesDataStructuresDict;
+	// var modulesControlsDict;
 
 	//controllers for this class menuControls
-	var mainMenuController;
+	var menuController;
 	//data structure for menu items affecting controls in this class (prep, jump, automate, automatestop, preptoggle...)
-	var mainMenuDataStructure;
-	var mainMenuControls;
+	var menuDataStructure;
+	var menuControls;
 
-	var moduleInteractionMethod;
 
+	// var moduleInteractionMethod;
+	var metaItemsControllerDict;
+	var metaItemsDataStructureDict;
+	var metaItemsControlsDict;
+
+	//for meta control: need a controller connected to the module data structure that shifts things
+	var moduleOffset;
+
+
+	var moduleNames;
 
 	*new{
 		arg netAddr, name;
 		^super.newCopyArgs(netAddr, name).init();
 	}
 
-
-
 	init{
-		//list of controls for this menu
-		mainMenuControls = [];
 
+
+		moduleOffset = 0;
+
+		this.setupMenuCtrls;
+		// this.setupModuleCtrls;
+
+	}
+
+	initCtrlrData{
+		moduleNames = SCM.groups.collect{arg group; group.name};
+		this.setupModuleCtrls;
+	}
+
+	updateOffsetStructures{
+		netAddr.sendMsg("/orchestrate/offsetModules", moduleOffset);
+		// netAddr.sendMsg("/orchestrate/plays", moduleOffset);
+
+
+		//change the datastructures that each controller is connected to
+		10.do{
+			arg i;
+			var moduleMenuDataStructureToFocusOn;
+			var moduleControlsDataStructureToFocusOn;
+			var moduleIsPlaying;
+
+			moduleIsPlaying = SCM.groups[i+moduleOffset].isPlaying.asInt;
+
+			netAddr.sendMsg("/orchestrate/module" ++ i ++ "/active" , moduleIsPlaying);
+
+			//----- for menu items
+			moduleMenuDataStructureToFocusOn = SCM.groups[i+moduleOffset].menuControlsDataStructure;
+			modulesMenuControllersDict[i].setFocus(moduleMenuDataStructureToFocusOn);
+
+			//----- for other controls
+			moduleControlsDataStructureToFocusOn = SCM.groups[i+moduleOffset].allControlsDataStructure;
+			modulesControlsControllersDict[i].setFocus(moduleControlsDataStructureToFocusOn);
+		};
+
+
+
+		//send orchestrate/plays/x
+
+	}
+
+	setupModuleCtrls{
+
+		modulesMenuControllersDict = ();
+		modulesControlsControllersDict = ();
+		// modulesDataStructuresDict = ();
+		// modulesControlsDict = ();
+
+		metaItemsControllerDict = ();
+		metaItemsDataStructureDict = ();
+		metaItemsControlsDict = ();
+
+
+
+		//create 10 controllers
+		10.do{
+			arg i;
+			var mainMenuController, moduleMenuDataStructureToFocusOn;
+			var mainModuleController, moduleControlsDataStructureToFocusOn;
+			var metaController, metaDataStructure;
+			var metaControls;
+
+			var moduleName = ("module" ++ i).asSymbol;
+
+			//----- menu controls
+			//create a controller
+			mainMenuController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
+
+			//set
+			moduleMenuDataStructureToFocusOn = SCM.groups[i].menuControlsDataStructure;
+			mainMenuController.setFocus(moduleMenuDataStructureToFocusOn);
+
+			//store for later
+			modulesMenuControllersDict[i] = mainMenuController;
+
+
+			//----- all other controls
+			//create a controller
+			mainModuleController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
+
+			//set
+			moduleControlsDataStructureToFocusOn = SCM.groups[i].allControlsDataStructure;
+			mainModuleController.setFocus(moduleControlsDataStructureToFocusOn);
+
+			//store for later
+			modulesControlsControllersDict[i] = mainModuleController;
+
+
+
+			//create controls for meta control (focusing on allcontrolsDatastructure)
+			// randomize
+			metaControls = [];
+
+			metaControls = metaControls.add(
+				SCMMetaCtrl(\randomize, 0, "/x").functionSet_{
+					arg val;
+					var value, firstTouch;
+					value = val[0];
+					firstTouch = val[1];
+					if(firstTouch > 0.5)
+					{
+						mainModuleController.startRandomize();
+					};
+
+					mainModuleController.randomize(value);
+					// moduleGenericMenuControlsController.jump;
+				};
+			);
+
+
+
+			//shiftUpDown x
+			metaControls = metaControls.add(
+				SCMMetaCtrl(\shiftUpDown, 0.5, "/x").functionSet_{
+					arg val;
+					var value, firstTouch;
+					var deadZone = 0.08;
+					// val.postln;
+					value = val[0].linlin(0,1,-1,1).excess(deadZone);
+					value = value.linlin(-1+deadZone,1-deadZone, -1,1);
+					firstTouch = val[1];
+					if(firstTouch > 0.5)
+					{
+						mainModuleController.startShiftUpDown();
+					};
+
+					mainModuleController.shiftUpDown(value);
+				};
+			);
+
+			//convert to dict
+			metaControls = metaControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
+
+			//init controller and data structure
+			metaController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
+			metaDataStructure = SCMControlDataStructure();
+
+			//copy the controls over to the datastructure
+			metaControls.keysValuesDo{
+				arg key, ctrl;
+				metaDataStructure.addControl(ctrl);
+			};
+
+			// moduleInteractionMethod = \normal;
+
+			//set controller to datastructure
+			metaController.setFocus(metaDataStructure);
+
+			metaItemsControllerDict[i] = metaController;
+			metaItemsControlsDict[i] = metaControls;
+			metaItemsDataStructureDict[i] = metaDataStructure;
+
+		};
+	}
+
+	setupMenuCtrls{
+		//list of controls for this menu
+		menuControls = [];
 		//changeModule changeModule
-		mainMenuControls = mainMenuControls.add(
-			SCMMetaCtrl(\changeMode, 0, '/x').functionSet_{
+		menuControls = menuControls.add(
+			SCMMetaCtrl(\offsetPlus, 0, '/x').functionSet_{
 				arg val;
-				val.postln;
+				if(val > 0.5)
+				{
+					moduleOffset = (moduleOffset+1).clip(0,max(SCM.groups.size-10,0));
+					this.updateOffsetStructures;
+				};
+			};
+		);
+
+		menuControls = menuControls.add(
+			SCMMetaCtrl(\offsetMinus, 1, '/x').functionSet_{
+				arg val;
+				if(val > 0.5)
+				{
+					moduleOffset = (moduleOffset-1).clip(0,max(SCM.groups.size-10,0));
+					this.updateOffsetStructures;
+				};
 
 			};
 		);
+
+		menuControls = menuControls.add(
+			SCMMetaCtrl(\plays, 0!10, '/x').functionSet_{
+				arg vals;
+				vals.postln;
+			};
+		);
+
 		//convert to dict
-		mainMenuControls = mainMenuControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
+		menuControls = menuControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
 
 		//init controller and data structure
-		mainMenuController = SCMStructureController('orchestrate', netAddr);
-		mainMenuDataStructure = SCMControlDataStructure();
+		menuController = SCMStructureController(('orchestrate').asSymbol, netAddr);
+		menuDataStructure = SCMControlDataStructure();
 
 		//copy the controls over to the datastructure
-		mainMenuControls.keysValuesDo{
+		menuControls.keysValuesDo{
 			arg key, ctrl;
-			mainMenuDataStructure.addControl(ctrl);
+			menuDataStructure.addControl(ctrl);
 		};
 
-		moduleInteractionMethod = \normal;
+
+		// moduleInteractionMethod = \normal;
 
 		//set controller to datastructure
-		mainMenuController.setFocus(mainMenuDataStructure);
+		menuController.setFocus(menuDataStructure);
+
 	}
 }
 
@@ -434,7 +632,7 @@ SCMOSCMenuedCtrlr{
 	var < matrixMenu;
 	var < orchestrateMenu;
 
-	var < initCtrlrData;
+	// var < initCtrlrData;
 
 	*new{
 		arg ip, port, name;
@@ -463,6 +661,10 @@ SCMOSCMenuedCtrlr{
 			//wait until next 16h
 			0.25;
 		},4);
+	}
+
+	initCtrlrData{
+		orchestrateMenu.initCtrlrData;
 	}
 
 	sendMsg{

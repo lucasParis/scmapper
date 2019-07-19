@@ -106,8 +106,6 @@ SCMStructureController{
 		{
 			netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), *value);
 		}
-
-
 	}
 
 	set{
@@ -402,6 +400,7 @@ SCMControlDataStructure {
 		arg name, postFix, val, interactionMethod = \normal, sourceFocuser = nil; // , hash; //use hash to not send back to where the control came from
 		name = name.asSymbol;
 
+		// val.postln;
 		if(controls[(name ++ postFix.asString).asSymbol] != nil)
 		{
 			/*if(controls[(name ++ postFix.asString).asSymbol].isRadio == true)
@@ -429,11 +428,11 @@ SCMControlDataStructure {
 		//send value to focusers if they are in the right mode
 		focusers.keysValuesDo{
 			arg focuserHash, focuser;
+
 			//if this is not the source focuser and it's interaction method matches
 			if(focuserHash != sourceFocuser.hash && focuser.interactionMethod == interactionMethod)
 			{
 				var value = controls[(name ++ postFix.asString).asSymbol].getValueByInteractionMethod(interactionMethod);
-
 				focuser.valueChangedFromFocus(value, controls[(name ++ postFix.asString).asSymbol]);
 			};
 		};
