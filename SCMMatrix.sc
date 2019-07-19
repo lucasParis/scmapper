@@ -42,6 +42,10 @@ SCMOSCMatrixMenu {
 		this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
 	}
 
+	updatePlayStates{
+
+	}
+
 
 	convertConnectionNameToIndexes{
 		arg name;

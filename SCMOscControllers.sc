@@ -48,6 +48,22 @@ SCMOSCOrchestrateMenu{
 		this.setupModuleCtrls;
 	}
 
+	updatePlayStates{
+		//change the datastructures that each controller is connected to
+		var allModulesPlayStates = [];
+		10.do{
+			arg i;
+			var moduleIsPlaying;
+
+			moduleIsPlaying = SCM.groups[i+moduleOffset].isPlaying.asInt;
+			allModulesPlayStates = allModulesPlayStates.add(moduleIsPlaying);
+
+			netAddr.sendMsg("/orchestrate/module" ++ i ++ "/active" , moduleIsPlaying);
+		};
+
+		netAddr.sendMsg("/orchestrate/plays/x" , *allModulesPlayStates);
+	}
+
 	updateOffsetStructures{
 		netAddr.sendMsg("/orchestrate/offsetModules", moduleOffset);
 		// netAddr.sendMsg("/orchestrate/plays", moduleOffset);
@@ -58,11 +74,11 @@ SCMOSCOrchestrateMenu{
 			arg i;
 			var moduleMenuDataStructureToFocusOn;
 			var moduleControlsDataStructureToFocusOn;
-			var moduleIsPlaying;
-
-			moduleIsPlaying = SCM.groups[i+moduleOffset].isPlaying.asInt;
-
-			netAddr.sendMsg("/orchestrate/module" ++ i ++ "/active" , moduleIsPlaying);
+			// var moduleIsPlaying;
+			//
+			// moduleIsPlaying = SCM.groups[i+moduleOffset].isPlaying.asInt;
+			//
+			// netAddr.sendMsg("/orchestrate/module" ++ i ++ "/active" , moduleIsPlaying);
 
 			//----- for menu items
 			moduleMenuDataStructureToFocusOn = SCM.groups[i+moduleOffset].menuControlsDataStructure;
@@ -73,7 +89,7 @@ SCMOSCOrchestrateMenu{
 			modulesControlsControllersDict[i].setFocus(moduleControlsDataStructureToFocusOn);
 		};
 
-
+		this.updatePlayStates;
 
 		//send orchestrate/plays/x
 
@@ -209,7 +225,7 @@ SCMOSCOrchestrateMenu{
 		);
 
 		menuControls = menuControls.add(
-			SCMMetaCtrl(\offsetMinus, 1, '/x').functionSet_{
+			SCMMetaCtrl(\offsetMinus, 0, '/x').functionSet_{
 				arg val;
 				if(val > 0.5)
 				{
@@ -223,7 +239,17 @@ SCMOSCOrchestrateMenu{
 		menuControls = menuControls.add(
 			SCMMetaCtrl(\plays, 0!10, '/x').functionSet_{
 				arg vals;
-				vals.postln;
+				//set already is available in controller
+				vals.do{
+					arg val, j;
+					if(val > 0.5)
+					{
+						modulesMenuControllersDict[j].set(\play, "/x", 1);
+					}
+					{
+						modulesMenuControllersDict[j].set(\play, "/x", 0);
+					};
+				};
 			};
 		);
 
@@ -611,6 +637,10 @@ SCMOSCDirectCtrlr{
 		};
 	}
 
+	updatePlayStates{
+
+	}
+
 	sendMsg{
 		arg path, value;
 		netAddr.sendMsg(path, *value);
@@ -665,6 +695,11 @@ SCMOSCMenuedCtrlr{
 
 	initCtrlrData{
 		orchestrateMenu.initCtrlrData;
+	}
+
+	updatePlayStates{
+		orchestrateMenu.updatePlayStates;
+		matrixMenu.updatePlayStates;
 	}
 
 	sendMsg{

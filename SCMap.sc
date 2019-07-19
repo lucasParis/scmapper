@@ -195,9 +195,12 @@ SCM {
 
 		playStates = groups.collect{arg group; if(group.isPlaying){1}{0}};
 		SCM.ctrlrs.do{
-		arg ctrlr;
+			arg ctrlr;
+			ctrlr.updatePlayStates;
 			ctrlr.sendMsg("/mainMenu/changeModule/light", (playStates * 0.6).extend(30,-0.5));
 		};
+		//also send to orchestrate and matrix
+
 
 
 	}
