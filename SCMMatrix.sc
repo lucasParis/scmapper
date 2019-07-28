@@ -1,4 +1,62 @@
 
+SCMKeyboardOscMenu{
+	var netAddr;
+	var string;
+	var <> enterCallback;
+
+	var oscfunc;
+	*new{
+		arg netAddr;
+		^super.newCopyArgs(netAddr).init();
+	}
+
+	enable{
+		string = "";
+		oscfunc.enable;
+		netAddr.sendMsg("/keyboard/showKeyboardEntry/value", string);
+		netAddr.sendMsg("/keyboard/showMe", 1);
+	}
+
+	disable{
+		oscfunc.disable;
+		netAddr.sendMsg("/keyboard/showMe", 0);
+	}
+
+	init{
+
+		oscfunc = OSCFunc({
+			arg msg;
+			case {msg[1] == 8}
+			{
+				"delete".postln;
+				string = string.drop(-1);
+			}
+			{msg[1] == 13}
+			{
+				"return".postln;
+				if(enterCallback != nil)
+				{
+					enterCallback.(string);
+				};
+
+				this.disable;
+				//return
+
+			}
+			{true}
+			{
+				"else".postln;
+				msg[1].postln;
+				string = string ++ msg[1].asAscii.toLower;
+				string = string.toLower;
+
+			};
+			netAddr.sendMsg("/keyboard/showKeyboardEntry/value", string);
+		}, "/keyboard", netAddr);
+	}
+}
+
+
 SCMOSCMatrixMenu {
 	var netAddr;
 	var name;
@@ -20,6 +78,9 @@ SCMOSCMatrixMenu {
 	var selectedOutModule;
 	var selectedInModule;
 	var selectedKey;
+
+	//keyboard for save
+	var keyboard;
 
 	//behavior variables
 	var editMode;
@@ -44,6 +105,11 @@ SCMOSCMatrixMenu {
 
 	updatePlayStates{
 
+	}
+
+	saveMatrix{
+		arg name;
+		scmMatrix.saveMatrix(name);
 	}
 
 
@@ -131,6 +197,8 @@ SCMOSCMatrixMenu {
 	}
 
 	init{
+
+		keyboard = SCMKeyboardOscMenu(netAddr);
 
 		editMode = \modify;
 
@@ -303,6 +371,21 @@ SCMOSCMatrixMenu {
 			};
 		);
 
+		//save preset
+		matrixCtrls = matrixCtrls.add(
+			SCMMetaCtrl(\save, 0, "/x").functionSet_{
+				arg val;
+				if(val > 0.5)
+				{
+					keyboard.enable;
+					keyboard.enterCallback = {
+						arg string;
+						this.saveMatrix(string);
+					}
+				}
+			};
+		);
+
 
 		//init controller and data structure
 		matrixCtrlsController = SCMStructureController('matrix', netAddr);
@@ -377,6 +460,39 @@ SCMMatrix {
 
 		// allConnections = allPossibleConnections.collect({arg name; [name, ()]}).flatten.asDict;
 		this.sendGlobalConnections();
+	}
+
+
+	saveMatrix{
+		arg name;
+		var dir, file, saveDict;
+		dir = SCM.presetFolder ++ "/";//hardcoded
+		dir = dir ++ name.asString;
+
+		//create writable file
+		file = File.new(dir,"w");
+
+		//datastructure to fill with save values
+		saveDict = ();
+
+		connectionsDataStructureDict.keysValuesDo{
+			arg key, value;
+			if(value.controls.isEmpty.not)
+			{
+				saveDict[key] = value.controls.collect{arg ctrl; [ctrl.name, ctrl.value]};
+			}
+		};
+
+
+		saveDict[\presetName] = name;
+		//write preset dict to file
+		file.write(saveDict.asCompileString);
+		file.close;
+
+	}
+
+	loadMatrix{
+
 	}
 
 	deleteConnectionSynth{

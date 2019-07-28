@@ -243,6 +243,28 @@ SCMMetaCtrl {
 		};
 	}
 
+
+	midiButtonMap_{
+		arg index, toggleMode = false;
+		MIDIFunc.cc(
+			{
+				arg midiValue;
+				if(toggleMode)
+				{
+					if(midiValue>64)
+					{
+						this.hardSet(1 - value);
+					};
+
+				}
+				{
+					this.hardSet((midiValue>64).asInt);
+				};
+				valueInternalChangeCallback.(name, postFix);
+		},index, 0);
+
+	}
+
 	//meta control stuff
 	jump{
 		if(disablePrepjump.not)

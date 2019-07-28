@@ -278,6 +278,7 @@ SCMOSCOrchestrateMenu{
 SCMOSCMainMenu{
 	var netAddr;
 	var name;
+	var midiOffset;
 
 	var menuControls;
 	var < selectedGroup;
@@ -298,8 +299,8 @@ SCMOSCMainMenu{
 
 
 	*new{
-		arg netAddr, name;
-		^super.newCopyArgs(netAddr, name).init();
+		arg netAddr, name, midiOffset;
+		^super.newCopyArgs(netAddr, name, midiOffset).init();
 	}
 
 	selectGroup{
@@ -358,7 +359,7 @@ SCMOSCMainMenu{
 
 		//automate
 		mainMenuControls = mainMenuControls.add(
-			SCMMetaCtrl(\automate, 0, "/x").functionSet_{
+			SCMMetaCtrl(\automate, 0, "/x").midiButtonMap_(7 + midiOffset).functionSet_{
 				arg val;
 				if(val > 0.5)
 				{
@@ -455,19 +456,23 @@ SCMOSCMainMenu{
 
 		//jump
 		mainMenuControls = mainMenuControls.add(
-			SCMMetaCtrl(\jump, 0, "/x").functionSet_{
+			SCMMetaCtrl(\jump, 0, "/x").midiButtonMap_(11 + midiOffset).functionSet_({
 				arg val;
 
 				if(val > 0.5)
 				{
-					moduleControlsController.jump;
-					moduleGenericMenuControlsController.jump;
+					if(moduleControlsController!= nil)
+					{
+						moduleControlsController.jump;
+					};
+
+					// moduleGenericMenuControlsController.jump;
 				};
-			};
+			});
 		);
 		//prep
 		mainMenuControls = mainMenuControls.add(
-			SCMMetaCtrl(\prep, 0, "/x").functionSet_{
+			SCMMetaCtrl(\prep, 0, "/x").midiButtonMap_(9 + midiOffset, true).functionSet_{
 				arg val;
 				if(val>0.5)
 				{
@@ -657,6 +662,7 @@ SCMOSCDirectCtrlr{
 SCMOSCMenuedCtrlr{
 	var < netAddr;
 	var name;
+	var < midiOffset;
 
 	var < mainMenu;
 	var < matrixMenu;
@@ -665,17 +671,19 @@ SCMOSCMenuedCtrlr{
 	// var < initCtrlrData;
 
 	*new{
-		arg ip, port, name;
-		^super.new.init(ip, port, name);
+		arg ip, port, name, midiOffset;
+		^super.new.init(ip, port, name, midiOffset);
 	}
 
 	init{
-		arg ip, port, name_, globalCtrlrIndex_;
+		arg ip, port, name_, midiOffset_;
 		name = name_;
 		netAddr = NetAddr(ip, port);
 
+		midiOffset = midiOffset_;
+
 		//main per group menu
-		mainMenu = SCMOSCMainMenu(netAddr, "mainMenu");
+		mainMenu = SCMOSCMainMenu(netAddr, "mainMenu", midiOffset);
 		matrixMenu = SCMOSCMatrixMenu(netAddr, "matrix");
 		matrixMenu.refToMainMenu = mainMenu;
 

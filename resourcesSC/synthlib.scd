@@ -2202,10 +2202,42 @@ SynthDef.new(\l1_knarlReese,{
 metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
 ).add;
 
+SynthDef.new(\l1_darkArtic,{
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, seed = 1243, fm = 1, fmratio = 1, detuneFm = 1.01, mix = 0, attack = 0.01, sustainVal= 1;
+	var src, env, quitAfter, modEnv, source, mod1,mod2, dist;
+	RandID.ir(id: 0);
+	RandSeed.ir(trig: 1, seed: seed);
+
+	env = Env.adsr(0.01, 0.3,1,0.05,amp).ar(0, gate);
+
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
+
+	// SendReply.kr(Impulse.kr(60), "/instrument/param", env, replyID);
+
+	modEnv = Env.linen(attack, sustainVal, 0.1).ar(0,1);
+	// modEnv = EnvGen.ar(env, 1);
+
+	mod1 = SinOsc.ar(freq*fmratio*(detuneFm.reciprocal), mul: fm * freq);
+	mod2 = SinOsc.ar(freq*fmratio*detuneFm , mul: fm * freq);
+
+	source = LFCub.ar( freq + mod1 + mod2);
+
+	dist =  source.wrap(-0.1, 0.1) - DelayL.ar( source.wrap(-0.1342, 0.1244), 0.2, 0.02);
+	// dist = MoogLadder.ar(dist*10, 200 + (WaveLoss.ar(source,1,2)*500) ,0.5).clip(-1,1);
+	src = SelectX.ar(mix , [source, dist]);
+	src = LeakDC.ar(src, mul:amp*modEnv);
+
+	OffsetOut.ar(out, (src*env)!2);
+},
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
+).add;
+
 
 
 SynthDescLib.new(\lib1, s);
-~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble, \l1_reeseLightHighs, \l1_clusterKick, \l1_decayKick, \l1_bendSub,\l1_rollerBass, \l1_trigToBus, \l1_riserBass, \l1_hiHit, \l1_gruntStab, \l1_laSnare, \l1_leKick, \l1_clumpSnare, \l1_supersaw7V2,\l1fx_bpsEnvedV2, \l1fx_filterStab, \l1_pulseFitPerc, \l1fx_cleanupBoost, \l1fx_destroyLast, \l1_pressureReese2, \l1_pressureReese1, \l1_bassFeed, \l1_microSnare, \l1_sineSuperReese,\l1_superblip7, \l1fx_bpsEnvedV3, \l1_knarlReese];
+~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble, \l1_reeseLightHighs, \l1_clusterKick, \l1_decayKick, \l1_bendSub,\l1_rollerBass, \l1_trigToBus, \l1_riserBass, \l1_hiHit, \l1_gruntStab, \l1_laSnare, \l1_leKick, \l1_clumpSnare, \l1_supersaw7V2,\l1fx_bpsEnvedV2, \l1fx_filterStab, \l1_pulseFitPerc, \l1fx_cleanupBoost, \l1fx_destroyLast, \l1_pressureReese2, \l1_pressureReese1, \l1_bassFeed, \l1_microSnare, \l1_sineSuperReese,\l1_superblip7, \l1fx_bpsEnvedV3, \l1_knarlReese, \l1_darkArtic];
 ~synthsLib1.do{arg item; ("\\" ++ item); SynthDescLib.getLib(\lib1).add(SynthDescLib.global[item])};
 
 // "\nSynthDescLib.getLib(\\lib1).browse\n".postln;

@@ -255,9 +255,9 @@ SCM {
 	}
 
 	*newOscMenuedCtrlr{
-		arg ip, port, name = \notNamed;
+		arg ip, port, name = \notNamed, midiOffset;
 		var return;
-		return = SCMOSCMenuedCtrlr.new(ip, port, name);
+		return = SCMOSCMenuedCtrlr.new(ip, port, name, midiOffset);
 		ctrlrs = ctrlrs.add(return);
 		^return;
 	}
