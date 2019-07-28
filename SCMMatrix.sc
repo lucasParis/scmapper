@@ -132,9 +132,20 @@ SCMOSCMatrixMenu {
 
 		connections = matrixController.focus.controls.collect{
 			arg scmCtrl;
-			var inout;
-			inout = this.convertConnectionNameToIndexes(scmCtrl.name);
-			(\in: inout[0], \out: inout[1], \min: scmCtrl.value[0], \max: scmCtrl.value[1])
+			var inout, inIndex, outIndex, inName, outName;
+			// inout = this.convertConnectionNameToIndexes(scmCtrl.name);
+			inout = [0,1];
+
+			inName = scmCtrl.name.asString.split($_)[1].asSymbol;
+			outName = scmCtrl.name.asString.split($_)[0].asSymbol;
+			inIndex = scmMatrix.moduleData[selectedInModule].inputs.indexOf(inName);
+			outIndex = scmMatrix.moduleData[selectedOutModule].outputs.indexOf(outName);
+			// outIndex.postln;
+			// inName = scmMatrix.moduleData[selectedInModule].inputs[moduleInput];
+			// outName = scmMatrix.moduleData[selectedOutModule].outputs[outputIndex];
+
+
+			(\in: outIndex, \out: inIndex, \min: scmCtrl.value[0], \max: scmCtrl.value[1])
 		};
 		ins = connections.collectAs({arg val; val[\in]},Array);
 		outs = connections.collectAs({arg val; val[\out]}, Array);
@@ -288,7 +299,15 @@ SCMOSCMatrixMenu {
 
 								//create connection if doesn't exist yet
 								var connectionName;
-								connectionName =this.convertIndexesToConnectionName([outputIndex, moduleInput]);
+								var inName, outName;
+								// connectionName =this.convertIndexesToConnectionName([outputIndex, moduleInput]);
+
+								//get names of mod ins/outs
+								inName = scmMatrix.moduleData[selectedInModule].inputs[moduleInput];
+								outName = scmMatrix.moduleData[selectedOutModule].outputs[outputIndex];
+								// connectionName =this.convertIndexesToConnectionName([outputIndex, moduleInput]);
+								connectionName = (outName ++ "_" ++ inName).asSymbol;
+
 
 								if(	editMode == \modify)
 								{
@@ -340,8 +359,12 @@ SCMOSCMatrixMenu {
 					//loop through the module outputs and connect each to drag input
 					inputs.do{
 						arg inputIndex;
-						var connectionName;
-						connectionName = this.convertIndexesToConnectionName([ inputIndex, output]);
+						var connectionName, inName, outName;
+						// connectionName = this.convertIndexesToConnectionName([ inputIndex, output]);
+						inName = scmMatrix.moduleData[selectedInModule].inputs[output];
+						outName = scmMatrix.moduleData[selectedOutModule].outputs[inputIndex];
+						connectionName = ( outName ++ "_" ++ inName).asSymbol;
+
 						matrixController.set(connectionName, postFix:"", value:[min,max], excludeFromCallback:false);
 						scmMatrix.modifySynthConnection(selectedOutModule, selectedInModule, inputIndex, output, min* -1, max * -1);
 					}
@@ -403,6 +426,10 @@ SCMOSCMatrixMenu {
 }
 
 SCMMatrix {
+	/*
+	how does the matrix work?
+
+	*/
 
 	//data used by matrixMenu
 	var < modulesNames;
@@ -414,7 +441,7 @@ SCMMatrix {
 	//other
 	var allPossibleConnections;
 
-	//dictionary of data structures of connection controls(variable size)
+	//dictionary of data structures of connection controls(variable size) //all possible connections as keys in dict containing SCMControlDataStructure-s
 	var < connectionsDataStructureDict;
 
 	//dict to keep track of connection synths
@@ -426,17 +453,17 @@ SCMMatrix {
 
 	init{
 
+		//gather module names as list
 		modulesNames = SCM.groups.collect{ arg group; group.name; };
 
 		//send names to matrix
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			// ctrlr.sendMsg("/matrix/moduleRoutingSelect/setLabels", modulesNames);
 			ctrlr.sendMsg("/matrix/chooseModule/setLabels", modulesNames);
 		};
 
 
-		//assemble the input/output names
+		//collect the input/output names per group into a dict containing dict of inputs/outputs list
 		moduleData = modulesNames.collect(
 			{
 				arg name;
@@ -450,9 +477,10 @@ SCMMatrix {
 			}
 		).flatten.asDict;
 
+		//generate all possible combinations of modules - list of symbol names
 		allPossibleConnections = (modulesNames!2).allTuples.collect{arg array; (array[0] ++ "_" ++ array[1]).asSymbol};
 
-		//dict of SCMControlDataStructure
+		//convert names of all possible connections to dict containing SCMControlDataStructure-s
 		connectionsDataStructureDict = allPossibleConnections.collect{arg connectionName; [connectionName, SCMControlDataStructure()]}.flatten.asDict;
 
 		//dict to keep track of connection synths
@@ -466,7 +494,7 @@ SCMMatrix {
 	saveMatrix{
 		arg name;
 		var dir, file, saveDict;
-		dir = SCM.presetFolder ++ "/";//hardcoded
+		dir = SCM.presetFolder ++ "/matrix_";//hardcoded
 		dir = dir ++ name.asString;
 
 		//create writable file
@@ -529,7 +557,7 @@ SCMMatrix {
 		outModule = SCM.getGroup(outModuleName);
 
 
-		//convert from index to name
+		//convert from index to name //use name instead of index
 		outIndexName = moduleData[outModuleName][\outputs][outputIndex];
 		inIndexName = moduleData[inModuleName][\inputs][inputIndex];
 
@@ -568,6 +596,7 @@ SCMMatrix {
 		};
 
 
+		//use matrix connection name here to generate compilse string hash
 		connectionKey = [outModuleName, inModuleName, outputIndex, inputIndex].asCompileString.asSymbol;
 		if(varConnectionType != nil)
 		{
