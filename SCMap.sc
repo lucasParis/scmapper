@@ -144,6 +144,48 @@ SCM {
 			}, "/scTempo"
 		);
 
+		//midi to OSC joysticks/arduino controller
+		4.do{
+			arg i;
+			MIDIFunc.bend(
+				{
+					arg val;
+					SCM.dataOutputs.do{
+						arg tdOut;
+						tdOut.chop.sendMsg(("/tCtrlr/joysticks/" ++ i).asSymbol, ((val-8192)*(i%2).linlin(0,1,-1,1)).excess(140));//append /controls
+					};
+
+				}, i
+			);
+		};
+
+		4.do{
+			arg i;
+			MIDIFunc.cc(
+				{
+					arg val;
+					SCM.dataOutputs.do{
+						arg tdOut;
+						tdOut.chop.sendMsg(("/tCtrlr/joystickButtons/" ++ i).asSymbol, (val > 64).asInt);//append /controls
+					};
+				},20 + i
+			);
+		};
+
+		[5,8,10,12,13,16,18].do{
+			arg ccNum, i;
+			MIDIFunc.cc(
+				{
+					arg val;
+					SCM.dataOutputs.do{
+						arg tdOut;
+						tdOut.chop.sendMsg(("/tCtrlr/screenButtons/" ++ i).asSymbol, (val > 64).asInt);//append /controls
+					};
+				}, ccNum
+			);
+		};
+
+
 	}
 	/**divideTempo{
 
