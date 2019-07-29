@@ -703,6 +703,8 @@ SCMOSCMenuedCtrlr{
 
 	initCtrlrData{
 		orchestrateMenu.initCtrlrData;
+		matrixMenu.initCtrlrData;
+
 	}
 
 	updatePlayStates{

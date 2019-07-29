@@ -286,6 +286,16 @@ SCMControlDataStructure {
 
 	}
 
+	removeAllControls{
+		//remove automation callback
+		controls.keysValuesDo{
+			arg name, control;
+			control.valueInternalChangeCallback = nil;
+		};
+		controls = ();
+
+	}
+
 	removeControl{
 		arg name, postFix = "/x";
 

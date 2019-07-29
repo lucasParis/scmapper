@@ -28,12 +28,10 @@ SCMKeyboardOscMenu{
 			arg msg;
 			case {msg[1] == 8}
 			{
-				"delete".postln;
 				string = string.drop(-1);
 			}
 			{msg[1] == 13}
 			{
-				"return".postln;
 				if(enterCallback != nil)
 				{
 					enterCallback.(string);
@@ -45,8 +43,6 @@ SCMKeyboardOscMenu{
 			}
 			{true}
 			{
-				"else".postln;
-				msg[1].postln;
 				string = string ++ msg[1].asAscii.toLower;
 				string = string.toLower;
 
@@ -85,10 +81,20 @@ SCMOSCMatrixMenu {
 	//behavior variables
 	var editMode;
 
+
+	var deleteOnLoad;
+
+
+
 	*new{
 		arg netAddr, name;
 		^super.newCopyArgs(netAddr, name).init();
 	}
+
+	initCtrlrData{
+		netAddr.sendMsg("/matrix/routingVisualiser4/setModules", *SCM.groups.collect{arg group; group.name}.postln);
+	}
+
 
 	scmMatrix_ {
 		//called in SCM.setupMatrix
@@ -97,20 +103,23 @@ SCMOSCMatrixMenu {
 
 		selectedInModule = scmMatrix.modulesNames[0];
 		selectedOutModule = scmMatrix.modulesNames[1];
-		selectedKey = (selectedInModule ++ "_" ++ selectedOutModule).asSymbol;
+		selectedKey = (selectedOutModule ++ "_" ++ selectedInModule).asSymbol;
 
 		//initialise/send data
 		this.setSelectedModulesAndSendToOSC(selectedInModule, selectedOutModule);
+
+		this.sendPresetNames;
+
 	}
 
 	updatePlayStates{
 
 	}
 
-	saveMatrix{
-		arg name;
-		scmMatrix.saveMatrix(name);
-	}
+	/*	saveMatrix{
+	arg name;
+	scmMatrix.saveMatrix(name);
+	}*/
 
 
 	convertConnectionNameToIndexes{
@@ -195,7 +204,7 @@ SCMOSCMatrixMenu {
 		arg inModule, outModule;
 
 		//set our selectedkey
-		selectedKey = (inModule ++ "_" ++ outModule).asSymbol;
+		selectedKey = (outModule ++ "_" ++ inModule).asSymbol;
 
 		netAddr.sendMsg("/matrix/outputName/value", outModule);
 		netAddr.sendMsg("/matrix/inputName/value", inModule);
@@ -218,6 +227,9 @@ SCMOSCMatrixMenu {
 			arg scmCtrl, controllerName;
 			this.sendConnections();
 		};
+
+
+		deleteOnLoad = 0;
 
 		//list of controls for matrix
 		matrixCtrls = [];
@@ -317,11 +329,11 @@ SCMOSCMatrixMenu {
 									//this menu can act as the translator
 
 									//check if connection exists
-									if(scmMatrix.connectionsDataStructureDict[selectedKey].includesControl(connectionName, postFix:"") == false)
-									{
-										scmMatrix.connectionsDataStructureDict[selectedKey].addControl(SCMMetaCtrl(connectionName, [0,0], postFix:""));
-										scmMatrix.connectBusses(selectedOutModule, selectedInModule, outputIndex, moduleInput,0,0);
-									};
+									// if(scmMatrix.connectionsDataStructureDict[selectedKey].includesControl(connectionName, postFix:"") == false)
+									// {
+									// 	scmMatrix.connectionsDataStructureDict[selectedKey].addControl(SCMMetaCtrl(connectionName, [0,0], postFix:""));
+									scmMatrix.connectBusses(selectedOutModule, selectedInModule, outName, inName, 0, 0);
+									// };
 									scmMatrix.sendGlobalConnections();
 								};
 
@@ -366,7 +378,8 @@ SCMOSCMatrixMenu {
 						connectionName = ( outName ++ "_" ++ inName).asSymbol;
 
 						matrixController.set(connectionName, postFix:"", value:[min,max], excludeFromCallback:false);
-						scmMatrix.modifySynthConnection(selectedOutModule, selectedInModule, inputIndex, output, min* -1, max * -1);
+
+						scmMatrix.modifySynthConnection(selectedOutModule, selectedInModule, outName, inName, min* -1, max * -1);
 					}
 				}
 
@@ -403,9 +416,39 @@ SCMOSCMatrixMenu {
 					keyboard.enable;
 					keyboard.enterCallback = {
 						arg string;
-						this.saveMatrix(string);
+
+						scmMatrix.saveMatrixPreset(string);
 					}
 				}
+			};
+		);
+
+		//load preset
+		matrixCtrls = matrixCtrls.add(
+			SCMMetaCtrl(\loadPreset, 0, "/x").functionSet_{
+				arg val;
+				var indexLoad;
+				indexLoad = val.indexOf(1.0);
+				if(indexLoad != nil)
+				{
+					var presetName;
+
+					presetName = scmMatrix.getPresetNames[indexLoad];
+
+					scmMatrix.loadMatrixPreset(presetName, (deleteOnLoad>0.5));
+					this.sendConnections;
+
+				};
+
+			};
+		);
+
+		//delete on load
+		matrixCtrls = matrixCtrls.add(
+			SCMMetaCtrl(\deleteOnLoad, 0, "/x").functionSet_{
+				arg val;
+				deleteOnLoad = val;
+				deleteOnLoad.postln;
 			};
 		);
 
@@ -423,6 +466,28 @@ SCMOSCMatrixMenu {
 		//set controller to datastructure
 		matrixCtrlsController.setFocus(matrixCtrlsDataStructure);
 	}
+
+
+
+	sendPresetNames{
+		/*var presetPath;
+		var matrixFiles;
+		var matrixFileNames;
+		var folderFiles;
+		presetPath = PathName.new(SCM.presetFolder);
+
+		folderFiles = presetPath.entries;
+		matrixFiles = folderFiles.select{arg file; file.fileName.find("matrix")!= nil}.postln;
+
+		matrixFileNames = matrixFiles.collect{arg file; file.fileName};
+
+		*/
+		"sending preset names".postln;
+		scmMatrix.getPresetNames.postln;
+		netAddr.sendMsg("/matrix/loadPreset/setLabels", *scmMatrix.getPresetNames);
+		// scmMatrix.getPresetNames();
+	}
+
 }
 
 SCMMatrix {
@@ -446,6 +511,14 @@ SCMMatrix {
 
 	//dict to keep track of connection synths
 	var interModuleConnectionSynthsDict;
+
+	//files of presets
+	var < matrixFiles;
+
+
+	var matrixController;
+
+
 
 	*new{
 		^super.new.init();
@@ -483,15 +556,44 @@ SCMMatrix {
 		//convert names of all possible connections to dict containing SCMControlDataStructure-s
 		connectionsDataStructureDict = allPossibleConnections.collect{arg connectionName; [connectionName, SCMControlDataStructure()]}.flatten.asDict;
 
+		//
+		matrixController = SCMStructureController("doesn'tneedaname?");
+		matrixController.callbackFunction = {
+
+		};
+		// matrixController.setFocus()
+
 		//dict to keep track of connection synths
 		interModuleConnectionSynthsDict = ();
 
 		// allConnections = allPossibleConnections.collect({arg name; [name, ()]}).flatten.asDict;
 		this.sendGlobalConnections();
+
+
+
+		this.gatherPresetNames;
+	}
+
+	gatherPresetNames{
+		var presetPath;
+		var matrixFileNames;
+		var folderFiles;
+		presetPath = PathName.new(SCM.presetFolder);
+
+		folderFiles = presetPath.entries;
+		matrixFiles = folderFiles.select{arg file; file.fileName.find("matrix")!= nil};
+
+		// matrixFileNames = matrixFiles.collect{arg file; file.fileName};
+		// netAddr.sendMsg("/matrix/loadPreset/setLabels", *matrixFileNames);
+
+	}
+
+	getPresetNames{
+		^matrixFiles.collect{arg file; file.fileName};
 	}
 
 
-	saveMatrix{
+	saveMatrixPreset{
 		arg name;
 		var dir, file, saveDict;
 		dir = SCM.presetFolder ++ "/matrix_";//hardcoded
@@ -519,7 +621,86 @@ SCMMatrix {
 
 	}
 
-	loadMatrix{
+	loadMatrixPreset{
+		arg name, deleteOnLoad;
+		var file, path, dict;
+
+		//make path
+		path = SCM.presetFolder;
+		path = path ++"/"++ name;
+
+		//delete on Load
+		if(deleteOnLoad)
+		{
+
+			this.deleteAllConnectionSynths;
+			connectionsDataStructureDict.keysValuesDo{
+				arg connectionName, connectionDataStructure;
+				connectionDataStructure.removeAllControls;
+			};
+		};
+
+
+		// path.postln;
+		File.exists(path).if{
+			file = File.open(path, "r");
+
+			//read string and execute it to get the savec dict
+			dict = file.readAllString.compile.value;
+
+			//loop through dict and load values
+			// dict[\presetName];
+			dict.removeAt(\presetName);
+
+			dict.keysValuesDo{
+				arg moduleNames, connectionsDict;
+				var outName, inName, selectedKey;
+				inName = moduleNames.asString.split($_)[1].asSymbol;
+				outName = moduleNames.asString.split($_)[0].asSymbol;
+				selectedKey = (outName ++ "_" ++ inName).asSymbol;
+
+				matrixController.setFocus(connectionsDataStructureDict[selectedKey], false);
+
+				connectionsDict.keysValuesDo{
+					arg connectionNames, valuesArray;
+					var outIndex, inIndex, min,max;
+					inIndex = connectionNames.asString.split($_)[1].asSymbol;
+					// inIndex.postln;
+					// inIndex  = SCM.getGroup(inName).matrixInputs.indexOf(inIndex);
+
+					outIndex = connectionNames.asString.split($_)[0].asSymbol;
+					// outIndex = SCM.getGroup(outName).matrixOutputs.indexOf(outIndex);
+
+					min = valuesArray[1][0];
+					max = valuesArray[1][1];
+
+					outName.postln;
+					inName.postln;
+					inIndex.postln;
+					outIndex.postln;
+					min.postln;
+					max.postln;
+					if((outIndex != nil) && (inIndex != nil))
+					{
+						var connectionName;
+						this.connectBusses(outName, inName, outIndex, inIndex, min, max);
+
+						connectionName = (outIndex ++ "_" ++ inIndex).asSymbol;
+
+						matrixController.set(connectionName, postFix:"", value:[min,max], excludeFromCallback:false);
+						this.modifySynthConnection(outName, inName, outIndex, inIndex, min * -1, max * -1);
+
+						this.sendGlobalConnections;
+					};
+
+				}
+
+			}
+
+
+
+		};
+
 
 	}
 
@@ -538,10 +719,24 @@ SCMMatrix {
 		}.defer(0.2);
 	}
 
+	deleteAllConnectionSynths{
+		interModuleConnectionSynthsDict.keysValuesDo{
+			arg connectionKey, synth;
+			synth.set(\base, 0);
+			synth.set(\range, 0);
+			{
+				interModuleConnectionSynthsDict[connectionKey].free;
+				// interModuleConnectionSynthsDict[connectionKey] = nil;
+
+			}.defer(0.2);
+		};
+		interModuleConnectionSynthsDict = ();
+	}
+
 	modifySynthConnection{
-		arg outModuleName, inModuleName, outputIndex, inputIndex, min, max;
+		arg outModuleName, inModuleName, outputName, inputName, min, max;
 		var connectionKey, synth;
-		connectionKey = [outModuleName, inModuleName, outputIndex, inputIndex].asCompileString.asSymbol;
+		connectionKey = [outModuleName, inModuleName, outputName, inputName].asCompileString.asSymbol;
 		synth = interModuleConnectionSynthsDict[connectionKey];
 		synth.set(\base, min);
 		synth.set(\range, max);
@@ -549,8 +744,19 @@ SCMMatrix {
 	}
 
 	connectBusses{
-		arg outModuleName, inModuleName, outputIndex, inputIndex, min, max;
-		var inbus, outbus, inIndexName, outIndexName, inModule, outModule, varConnectionType, connectionKey,  isQuad = false;
+		arg outModuleName, inModuleName, outputName, inName, min, max;
+		var inbus, outbus, inIndexName, outIndexName, selectedKey, inModule, outModule, varConnectionType, connectionKey, connectionName,  isQuad = false;
+
+
+		connectionName = (outputName ++ "_" ++ inName).asSymbol;
+		selectedKey = (outModuleName ++ "_" ++ inModuleName).asSymbol;
+
+
+		if(connectionsDataStructureDict[selectedKey].includesControl(connectionName, postFix:"") == false)
+		{
+			connectionsDataStructureDict[selectedKey].addControl(SCMMetaCtrl(connectionName, [0,0], postFix:""));
+		};
+
 
 		//get group from name
 		inModule = SCM.getGroup(inModuleName);
@@ -558,9 +764,10 @@ SCMMatrix {
 
 
 		//convert from index to name //use name instead of index
-		outIndexName = moduleData[outModuleName][\outputs][outputIndex];
-		inIndexName = moduleData[inModuleName][\inputs][inputIndex];
-
+		// outIndexName = moduleData[outModuleName][\outputs][outputIndex];
+		// inIndexName = moduleData[inModuleName][\inputs][inputIndex];
+		outIndexName = outputName;
+		inIndexName = inName;
 
 		//get bus numbers
 		inbus = inModule.matrixBusses[inIndexName];
@@ -597,10 +804,21 @@ SCMMatrix {
 
 
 		//use matrix connection name here to generate compilse string hash
-		connectionKey = [outModuleName, inModuleName, outputIndex, inputIndex].asCompileString.asSymbol;
+		connectionKey = [outModuleName, inModuleName, outputName, inName].asCompileString.asSymbol;
 		if(varConnectionType != nil)
 		{
-			interModuleConnectionSynthsDict[connectionKey] = Synth.new(varConnectionType, [\in:outbus, out:inbus, \base:min,\range:max]);
+			if(interModuleConnectionSynthsDict[connectionKey] == nil)//makesure synth doesnt already exist
+			{
+				interModuleConnectionSynthsDict[connectionKey] = Synth.new(varConnectionType, [\in:outbus, out:inbus, \base:min,\range:max]);
+			};
+			/*{
+			//else set state
+			interModuleConnectionSynthsDict[connectionKey].set(\in, outbus);
+			interModuleConnectionSynthsDict[connectionKey].set(\out, inbus);
+			interModuleConnectionSynthsDict[connectionKey].set(\base, min);
+			interModuleConnectionSynthsDict[connectionKey].set(\range, max);
+			}*/
+
 		}
 	}
 
@@ -616,6 +834,8 @@ SCMMatrix {
 		{
 			globalConnections = "empty";
 		};
+		globalConnections.postln;
+
 
 		//update osc outputs everywhere
 		SCM.ctrlrs.do{
