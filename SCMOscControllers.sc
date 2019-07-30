@@ -26,6 +26,7 @@ SCMOSCOrchestrateMenu{
 	var moduleOffset;
 
 
+
 	var moduleNames;
 
 	*new{
@@ -40,6 +41,7 @@ SCMOSCOrchestrateMenu{
 
 		this.setupMenuCtrls;
 		// this.setupModuleCtrls;
+
 
 	}
 
@@ -296,6 +298,7 @@ SCMOSCMainMenu{
 
 	var moduleInteractionMethod;
 
+	var keyboard;
 
 
 	*new{
@@ -345,6 +348,11 @@ SCMOSCMainMenu{
 	}
 
 	init{
+
+
+		keyboard = SCMKeyboardOscMenu(netAddr);
+
+
 		//list of controls for this menu
 		mainMenuControls = [];
 
@@ -528,29 +536,39 @@ SCMOSCMainMenu{
 		mainMenuControls = mainMenuControls.add(
 			SCMMetaCtrl(\save, 0, "/x").functionSet_{
 				arg val;
+				if(val > 0.5)
+				{
+					keyboard.enable;
+					keyboard.enterCallback = {
+						arg string;
+
+						"saving".postln;
+						string.postln;
+						selectedGroup.savePreset(string);
+						// scmMatrix.saveMatrixPreset(string);
+					};
+				};
 
 			};
 		);
 
 		//presetMorph X
 		mainMenuControls = mainMenuControls.add(
-			SCMMetaCtrl(\presetMorph, 0, "/x").functionSet_{
+			SCMMetaCtrl(\presetMorph, 0, "/xy").functionSet_{
 				arg val;
+				var presets;
 
-			};
-		);
+				if(val[2] > 0.5)
+				{
+					//firsttouch
+					moduleControlsController.startPresetMorph();
+				};
 
-		//presetMorph Y
-		mainMenuControls = mainMenuControls.add(
-			SCMMetaCtrl(\presetMorph, 0, "/y").functionSet_{
-				arg val;
+				presets = 4.collect{ arg i; selectedGroup.getCtrl(("presetMenu" ++ i).asSymbol, "/selection").value.asInt};
+				// presets.postln;
 
-			};
-		);
-		//presetMorph Z
-		mainMenuControls = mainMenuControls.add(
-			SCMMetaCtrl(\presetMorph, 0, "/z").functionSet_{
-				arg val;
+
+				moduleControlsController.presetMorph(val[1], val[0]);
 
 			};
 		);
@@ -633,6 +651,7 @@ SCMOSCDirectCtrlr{
 
 		SCM.groups.do{
 			arg group;
+
 
 			moduleControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, netAddr);
 			moduleControlsControllers[group.name.asSymbol].setFocus(group.allControlsDataStructure);

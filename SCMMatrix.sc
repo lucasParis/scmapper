@@ -92,7 +92,7 @@ SCMOSCMatrixMenu {
 	}
 
 	initCtrlrData{
-		netAddr.sendMsg("/matrix/routingVisualiser4/setModules", *SCM.groups.collect{arg group; group.name}.postln);
+		netAddr.sendMsg("/matrix/routingVisualiser4/setModules", *SCM.groups.collect{arg group; group.name});
 	}
 
 
@@ -328,12 +328,7 @@ SCMOSCMatrixMenu {
 									//then this menu can focus on those connections, modifying and showing through a custom interface translator
 									//this menu can act as the translator
 
-									//check if connection exists
-									// if(scmMatrix.connectionsDataStructureDict[selectedKey].includesControl(connectionName, postFix:"") == false)
-									// {
-									// 	scmMatrix.connectionsDataStructureDict[selectedKey].addControl(SCMMetaCtrl(connectionName, [0,0], postFix:""));
 									scmMatrix.connectBusses(selectedOutModule, selectedInModule, outName, inName, 0, 0);
-									// };
 									scmMatrix.sendGlobalConnections();
 								};
 
@@ -448,7 +443,7 @@ SCMOSCMatrixMenu {
 			SCMMetaCtrl(\deleteOnLoad, 0, "/x").functionSet_{
 				arg val;
 				deleteOnLoad = val;
-				deleteOnLoad.postln;
+				// deleteOnLoad.postln;
 			};
 		);
 
@@ -470,22 +465,7 @@ SCMOSCMatrixMenu {
 
 
 	sendPresetNames{
-		/*var presetPath;
-		var matrixFiles;
-		var matrixFileNames;
-		var folderFiles;
-		presetPath = PathName.new(SCM.presetFolder);
-
-		folderFiles = presetPath.entries;
-		matrixFiles = folderFiles.select{arg file; file.fileName.find("matrix")!= nil}.postln;
-
-		matrixFileNames = matrixFiles.collect{arg file; file.fileName};
-
-		*/
-		"sending preset names".postln;
-		scmMatrix.getPresetNames.postln;
 		netAddr.sendMsg("/matrix/loadPreset/setLabels", *scmMatrix.getPresetNames);
-		// scmMatrix.getPresetNames();
 	}
 
 }
@@ -674,12 +654,6 @@ SCMMatrix {
 					min = valuesArray[1][0];
 					max = valuesArray[1][1];
 
-					outName.postln;
-					inName.postln;
-					inIndex.postln;
-					outIndex.postln;
-					min.postln;
-					max.postln;
 					if((outIndex != nil) && (inIndex != nil))
 					{
 						var connectionName;
@@ -834,7 +808,7 @@ SCMMatrix {
 		{
 			globalConnections = "empty";
 		};
-		globalConnections.postln;
+		// globalConnections.postln;
 
 
 		//update osc outputs everywhere

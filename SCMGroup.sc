@@ -68,6 +68,11 @@ SCMGroup {
 	var < matrixInputs;
 	var < matrixBusses;
 
+	//for preset morph
+	// var < presetSlotsDict;
+	var < allPresets;
+
+
 	createInputkr{
 		arg name;
 		var value;
@@ -127,6 +132,10 @@ SCMGroup {
 		arg groupName, channels_, quant_;
 		name = groupName;
 
+		//for preset morph
+		// presetSlotsDict = \empty!4;
+		allPresets = [];
+
 
 		//setup array to hold controls, arrays and proxies
 		controls = [];
@@ -169,6 +178,14 @@ SCMGroup {
 		matrixInputs = [];
 		matrixBusses = ();
 
+
+		4.do{
+			arg i;
+			this.newCtrl(("presetMenu" ++ i).asSymbol, i,"/selection");
+		};
+
+
+
 		this.newCtrl(\matrixIns, 1);
 		this.newCtrl(\matrixOuts, 1);
 
@@ -189,7 +206,39 @@ SCMGroup {
 
 	}
 
-	savePresetToFile{
+	// setPresetSlot{
+		// arg slotNumber, presetIndex;
+		// presetSlotsDict[slotNumber] = presetIndex;
+		// allPresets = [];
+	// }
+
+	savePreset{
+		arg presetName;
+		var dir, file, saveDict;
+		dir = SCM.presetFolder ++ "/" ++ name ++ "_" ++ presetName;//hardcoded
+		// dir = dir ++ name.asString;
+
+		//create writable file
+		file = File.new(dir,"w");
+
+		//datastructure to fill with save values
+		saveDict = ();
+
+		//get values for preset from ctrls in group's datastructure
+		controls.do
+		{
+			arg ctrl;
+
+			saveDict[ctrl.name] = ctrl.value;//add key/value from ctrls to dict
+		};
+		saveDict[\presetName] = presetName;
+		//write preset dict to file
+		file.write(saveDict.asCompileString);
+		file.close;
+
+	}
+
+	/*savePresetToFile{
 		arg presetNumber = 0;
 		if(SCM.enablePresetSave)
 		{
@@ -240,7 +289,7 @@ SCMGroup {
 		// this.initPresetNames;
 
 		// SCM.presetFolder
-	}
+	}*/
 
 	loadPresetFromFile{
 		// SCM.presetFolder
@@ -341,7 +390,7 @@ SCMGroup {
 
 
 		//if this is a menu control add it to that datastructure
-		menuControls = [\volume, \play, \ledsOn, \matrixOuts, \matrixIns];
+		menuControls = [\volume, \play, \ledsOn, \matrixOuts, \matrixIns, \presetMenu0, \presetMenu1, \presetMenu2, \presetMenu3];
 		if(menuControls.includes(ctrlName) == true)
 		{
 			menuControlsDataStructure.addControl(ctrl);
@@ -514,7 +563,7 @@ SCMGroup {
 			// if(scmGroupIndex != nil)
 			// {
 			// SCM.setGroupPlayStates(scmGroupIndex, 0);
-		// };
+			// };
 		}
 	}
 
@@ -534,26 +583,26 @@ SCMGroup {
 	}
 
 	/*updateMenuFeedback{
-		arg menuPath, value, quantize = false;
-		var path;
-		path = (oscAddrMenu ++ menuPath).asSymbol;
-		//update osc outputs
-		SCM.ctrlrs.do{
-			arg ctrlr;
-			ctrlr.sendMsg(path, value);//for midi if a param is mapped, store relation path->encoder/button
-		};
-		//update touchdesigner outputs
-		SCM.dataOutputs.do{
-			arg tdOut;
-			if(quantize == true,
-				{
-					SCM.proxySpace.clock.playNextBar({ tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value) })//call reset on next bar
-				},
-				{
-					tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value);//append /controls
-				}
-			);
-		};
+	arg menuPath, value, quantize = false;
+	var path;
+	path = (oscAddrMenu ++ menuPath).asSymbol;
+	//update osc outputs
+	SCM.ctrlrs.do{
+	arg ctrlr;
+	ctrlr.sendMsg(path, value);//for midi if a param is mapped, store relation path->encoder/button
+	};
+	//update touchdesigner outputs
+	SCM.dataOutputs.do{
+	arg tdOut;
+	if(quantize == true,
+	{
+	SCM.proxySpace.clock.playNextBar({ tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value) })//call reset on next bar
+	},
+	{
+	tdOut.chop.sendMsg(("/menu" ++ path).asSymbol, *value);//append /controls
+	}
+	);
+	};
 
 	}*/
 

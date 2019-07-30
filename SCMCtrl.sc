@@ -73,6 +73,8 @@ SCMMetaCtrl {
 	//for radio mode
 	var < radioCount;
 
+	//for preset morph
+	var presetMorphStartValue;
 
 	*new{
 		arg ctrlName, defaultValue, postFix, valueType = \float;// \bool \int
@@ -133,6 +135,9 @@ SCMMetaCtrl {
 		randomValue = rrand(0.0,1.0);
 		randomStartValue = defaultValue;
 		disableRandom = false;
+
+		//preset Morph
+		presetMorphStartValue = defaultValue;
 
 	}
 
@@ -440,6 +445,14 @@ SCMMetaCtrl {
 			};
 		};
 
+	}
+
+	startPresetMorph{
+		presetMorphStartValue = value;
+	}
+
+	presetMorph{
+		arg amount, value;
 	}
 
 

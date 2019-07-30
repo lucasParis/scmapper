@@ -141,6 +141,16 @@ SCMStructureController{
 		focus.endShiftUpDown();
 	}
 
+	startPresetMorph{
+		focus.startPresetMorph();
+	}
+
+	presetMorph{
+		arg amount, value;
+		focus.presetMorph(amount, value);
+
+	}
+
 	startRandomize{
 		focus.startRandomize();
 	}
@@ -344,6 +354,21 @@ SCMControlDataStructure {
 			// name.postln;
 			scmCtrl.endShiftUpDown();
 			// this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
+		};
+	}
+
+	startPresetMorph{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.startPresetMorph();
+		};
+	}
+
+	presetMorph{
+		arg amount, value;
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.presetMorph(amount, value);
 		};
 	}
 
