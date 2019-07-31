@@ -241,6 +241,15 @@ SCMOSCOrchestrateMenu{
 		);
 
 		menuControls = menuControls.add(
+			SCMMetaCtrl(\presets, 0, '/x').functionSet_{
+				arg val;
+
+			};
+
+		);
+		netAddr.sendMsg("/orchestrate/presets", '@labels', *({arg i; "preset" ++ i}!90).clump(9).flop.flatten);
+
+		menuControls = menuControls.add(
 			SCMMetaCtrl(\plays, 0!10, '/x').functionSet_{
 				arg vals;
 				//set already is available in controller
