@@ -240,6 +240,7 @@ SCM {
 			arg ctrlr;
 			ctrlr.updatePlayStates;
 			ctrlr.sendMsg("/mainMenu/changeModule/light", (playStates * 0.6).extend(30,-0.5));
+			ctrlr.sendMsg("/playStates", (playStates * 1).extend(30,0));
 		};
 		//also send to orchestrate and matrix
 
@@ -334,12 +335,13 @@ SCM {
 		//send group names to lemur
 		ctrlrs.do{
 			arg ctrlr;
-			ctrlr.sendMsg('/mainMenu/changeModule/names', names);
+			ctrlr.sendMsg('/names', names);
 			ctrlr.sendMsg('/moduleNames', names);
 		};
 		SCM.ctrlrs.do{
 			arg ctrlr;
-			ctrlr.sendMsg("/mainMenu/changeModule/light", (playStates * 0.6).extend(16,-0.5));
+			ctrlr.sendMsg("/mainMenu/changeModule/light", (playStates * 0.6).extend(30,-0.5));
+			ctrlr.sendMsg("/playStates", (playStates).extend(30,0));
 		};
 
 	}

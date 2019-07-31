@@ -25,6 +25,8 @@ SCMOSCOrchestrateMenu{
 	//for meta control: need a controller connected to the module data structure that shifts things
 	var moduleOffset;
 
+	var > mainMenuShortcut;
+
 
 
 	var moduleNames;
@@ -254,6 +256,23 @@ SCMOSCOrchestrateMenu{
 				};
 			};
 		);
+		menuControls = menuControls.add(
+			SCMMetaCtrl(\gotoModule, 0!10, '/x').functionSet_{
+				arg vals;
+				var index;
+				index = vals.indexOf(1.0);
+				if(index != nil)
+				{
+					if(mainMenuShortcut!= nil)
+					{
+						var groupName;
+						groupName = moduleNames[index + moduleOffset].postln;
+
+						mainMenuShortcut.selectGroup(groupName.asSymbol);
+					};
+				};
+			};
+		);
 
 		//convert to dict
 		menuControls = menuControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
@@ -314,6 +333,7 @@ SCMOSCMainMenu{
 
 		//get group from SCM
 		scmGroup = SCM.getGroup(groupName);
+
 		if(scmGroup != nil)
 		{
 			//store selected group
@@ -769,6 +789,7 @@ SCMOSCMenuedCtrlr{
 		matrixMenu.refToMainMenu = mainMenu;
 
 		orchestrateMenu = SCMOSCOrchestrateMenu(netAddr, "orchestrate");
+		orchestrateMenu.mainMenuShortcut = mainMenu;
 
 
 		// output clock, simple stuff
@@ -877,8 +898,11 @@ SCMLemurCtrlr{
 		//check if it's valid
 		if(groupName.isKindOf(Symbol)){
 			//check if it is in active groups
+
 			var scmGroup = SCM.getGroup(groupName);
 
+			groupName.postln;
+			scmGroup.postln;
 			if(scmGroup != nil,{
 				//if found, store name and group reference
 				selectedGroupName = groupName;
