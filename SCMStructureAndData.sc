@@ -146,8 +146,8 @@ SCMStructureController{
 	}
 
 	presetMorph{
-		arg amount, value;
-		focus.presetMorph(amount, value);
+		arg name, postFix, amount, value;
+		focus.presetMorph(name, postFix, amount, value);
 
 	}
 
@@ -365,11 +365,21 @@ SCMControlDataStructure {
 	}
 
 	presetMorph{
-		arg amount, value;
-		controls.keysValuesDo{
-			arg name, scmCtrl;
-			scmCtrl.presetMorph(amount, value);
+		arg name, postFix, amount, value;
+		// controls[]
+		if(controls[(name ++ postFix.asString).asSymbol] != nil)
+		{
+			controls[(name ++ postFix.asString).asSymbol].presetMorph(amount, value);
+			this.executeCallback(name, postFix, \normal, nil);
+
 		};
+		//
+		// controls.keysValuesDo{
+		// 	arg name, scmCtrl;
+		// 	if(controls[(name ++ postFix.asString).asSymbol] != nil)
+		//
+		// 	scmCtrl.presetMorph(amount, value);
+		// };
 	}
 
 	startRandomize{

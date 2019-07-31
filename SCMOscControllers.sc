@@ -343,7 +343,13 @@ SCMOSCMainMenu{
 			moduleGenericMenuControlsController = SCMStructureController(\mainMenu, netAddr);
 			moduleGenericMenuControlsController.setFocus(scmGroup.menuControlsDataStructure);
 
-			// and send values from group'menu to UI
+			//send preset names
+			4.do{
+				arg i;
+				netAddr.sendMsg(("/extraPresetMenu/presetMenu" ++ i), '@items', *scmGroup.allPresets.collect{arg dict; dict[\name]});
+			};
+
+
 		};
 	}
 
@@ -557,6 +563,16 @@ SCMOSCMainMenu{
 			SCMMetaCtrl(\presetMorph, 0, "/xy").functionSet_{
 				arg val;
 				var presets;
+				var x, weights, lowerPreset, higherPreset, fraction;
+
+				x = val[0] * 3;
+				// x = 0 * 4;
+				lowerPreset = x.floor;
+				lowerPreset = lowerPreset.clip(0,2);
+				higherPreset = x.ceil;
+				higherPreset = higherPreset.clip(1,3);
+				fraction = x - lowerPreset;
+				// weights = 1-((0..3)-x).abs.clip(0,1);
 
 				if(val[2] > 0.5)
 				{
@@ -564,11 +580,57 @@ SCMOSCMainMenu{
 					moduleControlsController.startPresetMorph();
 				};
 
-				presets = 4.collect{ arg i; selectedGroup.getCtrl(("presetMenu" ++ i).asSymbol, "/selection").value.asInt};
+				//convert from morph x index to menu selected presetIndex
+				lowerPreset = selectedGroup.getCtrl(("presetMenu" ++ lowerPreset.asInt).asSymbol, "/selection").value.asInt;
+				higherPreset = selectedGroup.getCtrl(("presetMenu" ++ higherPreset.asInt).asSymbol, "/selection").value.asInt;
+
+				//convert from menu selected presetIndex to presetDict
+				lowerPreset = selectedGroup.allPresets[lowerPreset];
+				higherPreset = selectedGroup.allPresets[higherPreset];
+
+
+				moduleControlsController.focus.controls.keysValuesDo
+				{
+					arg name, control;
+					var postFix, interpedValue;
+					var lowValue, highValue;
+					postFix = control.postFix;
+
+					//add name/postfix to structure controller and datastructure
+
+					//after diner:
+					// - add name + postfix to presetMorph in controlstruct and datastruct
+					// - make sure postfix is ok in presets saved
+					if(lowerPreset[\values].includesKey((name).asSymbol))
+					{
+						if(higherPreset[\values].includesKey((name).asSymbol))
+						{
+							lowValue = lowerPreset[\values][(name).asSymbol];
+							highValue = higherPreset[\values][(name).asSymbol];
+							interpedValue = (lowValue * (1- fraction)) + (highValue * fraction);
+							moduleControlsController.presetMorph(name.asString.split($/)[0], postFix, val[1], interpedValue);
+						};
+					};
+				};
+				// presets = 4.collect{
+				// 	arg i;
+				// 	var index;
+				// 	// if()
+				// 	index = selectedGroup.getCtrl(("presetMenu" ++ i).asSymbol, "/selection").value.asInt;
+				//
+				// };
 				// presets.postln;
 
+				/*presets[0].keysValuesDo{
+				arg ctrlName, value;
+				4.do{
 
-				moduleControlsController.presetMorph(val[1], val[0]);
+				}*/
+
+				// };
+
+
+
 
 			};
 		);

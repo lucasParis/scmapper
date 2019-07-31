@@ -453,6 +453,50 @@ SCMMetaCtrl {
 
 	presetMorph{
 		arg amount, value;
+
+		if(valueType == \float)
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,presetMorphStartValue, value,1);
+				this.hardSet(value);
+			};
+
+			if(valueType == \radio)
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,presetMorphStartValue, value,1).round(1/(radioCount-1));
+				this.hardSet(value);
+			};
+
+			if(valueType == \int)
+			{
+				if(automationIsHappening)
+				{
+					this.stopAutomation;
+				};
+				value = amount.lincurve(0,1,presetMorphStartValue, value,1).round(1/intSteps);
+				this.hardSet(value);
+			};
+
+			if(valueType == \bool)
+			{
+				if(amount > 0.98)
+				{
+					value = value;
+				}
+				{
+					value = presetMorphStartValue;
+				};
+
+				this.hardSet(value);
+			};
+
 	}
 
 

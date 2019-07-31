@@ -179,10 +179,6 @@ SCMGroup {
 		matrixBusses = ();
 
 
-		4.do{
-			arg i;
-			this.newCtrl(("presetMenu" ++ i).asSymbol, i,"/selection");
-		};
 
 
 
@@ -201,16 +197,79 @@ SCMGroup {
 			};
 
 			SCM.updatePlayStates;
-
 		};
+
+		this.loadAllPresets;
+
+		4.do{
+			arg i;
+			var presetInit;
+			presetInit = i+1;
+			presetInit = presetInit.min(allPresets.size-1);
+			// if(presetInit > allPresets.size-1/)
+			// {
+			//
+		// }
+			this.newCtrl(("presetMenu" ++ i).asSymbol, presetInit,"/selection");
+		};
+
 
 	}
 
 	// setPresetSlot{
-		// arg slotNumber, presetIndex;
-		// presetSlotsDict[slotNumber] = presetIndex;
-		// allPresets = [];
+	// arg slotNumber, presetIndex;
+	// presetSlotsDict[slotNumber] = presetIndex;
+	// allPresets = [];
+
 	// }
+
+	loadAllPresets{
+		var presetFolder;
+		presetFolder = PathName.new(SCM.presetFolder);
+		allPresets = presetFolder.entries.select{arg entry; entry.fileName.contains(name.asString)};
+
+		allPresets = allPresets.collect{
+			arg filePath;
+			var file, path, dict, returnDict;
+
+			returnDict = ();
+			// make path
+			// path = SCM.presetFolder;
+			// path = path ++"/"++ name.asString ++"_"++ presetNumber;//append group/preset to get file name
+			// path.postln;
+
+			File.exists(filePath.fullPath).if{
+				file = File.open(filePath.fullPath, "r");
+
+				//read string and execute it to get the savec dict
+				dict = file.readAllString.compile.value;
+
+				//loop through dict and load values
+				returnDict[\name] = dict[\presetName];
+
+				dict.removeAt(\presetName);
+				returnDict[\values] = dict;
+
+				/*dict.keysValuesDo{
+					arg key, value;
+					var ctrl;
+					ctrl = this.getCtrl(key.asSymbol);
+
+					if(ctrl != nil)
+					{
+						ctrl.setPrepValue(value);
+					};
+
+				};*/
+				returnDict;
+			};
+		};
+
+
+		allPresets = [(name:\empty, \values:())] ++ 	allPresets;
+		allPresets;
+
+	}
 
 	savePreset{
 		arg presetName;
@@ -229,7 +288,7 @@ SCMGroup {
 		{
 			arg ctrl;
 
-			saveDict[ctrl.name] = ctrl.value;//add key/value from ctrls to dict
+			saveDict[(ctrl.name ++ ctrl.postFix).asSymbol] = ctrl.value;//add key/value from ctrls to dict
 		};
 		saveDict[\presetName] = presetName;
 		//write preset dict to file
@@ -239,56 +298,56 @@ SCMGroup {
 	}
 
 	/*savePresetToFile{
-		arg presetNumber = 0;
-		if(SCM.enablePresetSave)
-		{
-			{//defered to other thread
-				var win;
-				//create popup UI for save dialog
-				win = Window.new("save", Rect(Window.availableBounds.center.x-100,Window.availableBounds.center.y , 200,50)).front;
-				//textfield with callback
-				TextField.new(win,Rect(10,10,180,30)).action_( {
-					arg obj;
-					{
-						var file, dir, saveDict, presetName;
+	arg presetNumber = 0;
+	if(SCM.enablePresetSave)
+	{
+	{//defered to other thread
+	var win;
+	//create popup UI for save dialog
+	win = Window.new("save", Rect(Window.availableBounds.center.x-100,Window.availableBounds.center.y , 200,50)).front;
+	//textfield with callback
+	TextField.new(win,Rect(10,10,180,30)).action_( {
+	arg obj;
+	{
+	var file, dir, saveDict, presetName;
 
-						presetName = obj.value.asString;
-						filePresetNames[presetNumber] = presetName;
-						//preset files on HD
-						dir = SCM.presetFolder ++ "/";//hardcoded
-						dir = dir ++ name.asString++"_"++ presetNumber.asString;//new file name according to group and entered name
+	presetName = obj.value.asString;
+	filePresetNames[presetNumber] = presetName;
+	//preset files on HD
+	dir = SCM.presetFolder ++ "/";//hardcoded
+	dir = dir ++ name.asString++"_"++ presetNumber.asString;//new file name according to group and entered name
 
-						//create writable file
-						file = File.new(dir,"w");
+	//create writable file
+	file = File.new(dir,"w");
 
-						//datastructure to fill with save values
-						saveDict = ();
+	//datastructure to fill with save values
+	saveDict = ();
 
-						//get values for preset from ctrls in group's datastructure
-						controls.do
-						{
-							arg ctrl;
+	//get values for preset from ctrls in group's datastructure
+	controls.do
+	{
+	arg ctrl;
 
-							saveDict[ctrl.name] = ctrl.value;//add key/value from ctrls to dict
-						};
-						saveDict[\presetName] = presetName;
-						//write preset dict to file
-						file.write(saveDict.asCompileString);
-						file.close;
+	saveDict[ctrl.name] = ctrl.value;//add key/value from ctrls to dict
+	};
+	saveDict[\presetName] = presetName;
+	//write preset dict to file
+	file.write(saveDict.asCompileString);
+	file.close;
 
-					}.defer;//defered to other thread
+	}.defer;//defered to other thread
 
-					//close window
-					{win.close}.defer;
+	//close window
+	{win.close}.defer;
 
-				});
-			}.defer;
+	});
+	}.defer;
 
-		};
-		//reload names
-		// this.initPresetNames;
+	};
+	//reload names
+	// this.initPresetNames;
 
-		// SCM.presetFolder
+	// SCM.presetFolder
 	}*/
 
 	loadPresetFromFile{
