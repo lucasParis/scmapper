@@ -72,6 +72,9 @@ SCMGroup {
 	// var < presetSlotsDict;
 	var < allPresets;
 
+	//dict of busses from reply
+	var replyBusses;
+
 
 	createInputkr{
 		arg name;
@@ -179,6 +182,7 @@ SCMGroup {
 		matrixBusses = ();
 
 
+		replyBusses = ();
 
 
 
@@ -209,7 +213,7 @@ SCMGroup {
 			// if(presetInit > allPresets.size-1/)
 			// {
 			//
-		// }
+			// }
 			this.newCtrl(("presetMenu" ++ i).asSymbol, presetInit,"/selection");
 		};
 
@@ -251,14 +255,14 @@ SCMGroup {
 				returnDict[\values] = dict;
 
 				/*dict.keysValuesDo{
-					arg key, value;
-					var ctrl;
-					ctrl = this.getCtrl(key.asSymbol);
+				arg key, value;
+				var ctrl;
+				ctrl = this.getCtrl(key.asSymbol);
 
-					if(ctrl != nil)
-					{
-						ctrl.setPrepValue(value);
-					};
+				if(ctrl != nil)
+				{
+				ctrl.setPrepValue(value);
+				};
 
 				};*/
 				returnDict;
@@ -358,7 +362,6 @@ SCMGroup {
 		//make path
 		path = SCM.presetFolder;
 		path = path ++"/"++ name.asString ++"_"++ presetNumber;//append group/preset to get file name
-		path.postln;
 
 		File.exists(path).if{
 			file = File.open(path, "r");
@@ -534,8 +537,14 @@ SCMGroup {
 		^Pseq(ids.clump(poly), inf);
 	}
 
+	getIDBus
+	{
+		arg idName, parameterName, countIndex = 0;
+		^replyBusses[idName.asSymbol][parameterName.asSymbol][countIndex];
+	}
+
 	newID{
-		arg count, instrument;
+		arg count, instrument, idName = \none;
 		var assignedID;
 
 		assignedID = [];
@@ -548,6 +557,11 @@ SCMGroup {
 			assignedID = assignedID.add(SCM.replyIDCount);// add to local array
 		};
 
+		if(idName != \none)
+		{
+			replyBusses[idName.asSymbol] = ();
+		};
+
 		//if synthdef is setup to reroute OSC replies
 		SynthDescLib.global[instrument].metadata.includesKey(\oscReplies).if
 		{
@@ -555,6 +569,23 @@ SCMGroup {
 			SynthDescLib.global[instrument].metadata[\oscReplies].do
 			{
 				arg addr;
+				var signalSize;
+
+				if(idName != \none)
+				{
+					signalSize = SynthDescLib.global[instrument].metadata['oscRepliesWithSize'][addr.asSymbol];
+
+					replyBusses[idName.asSymbol][addr.split($/).last.asSymbol] = ();
+					//bus stored as [givenname][parameterName][countnumber]
+					assignedID.do{
+						arg id, i;
+
+						replyBusses[idName.asSymbol][addr.split($/).last.asSymbol][i] = Bus.control(Server.local, signalSize);
+					};
+				};
+
+
+
 
 				//OSC callback for the replies (rerouting to touch), based on replyids stored in database
 				OSCdef(
@@ -572,6 +603,18 @@ SCMGroup {
 							addrOut = addr.replace("/" ++ instrument.asString, "");//remove instrument from address
 							addrOut= "/" ++ name.asString ++ "/" ++ instrument.asString ++ "/" ++ idIndex.asString ++ addrOut;// format address with group/instrmnt/indx/par
 
+							//write values to bus
+							if(idName != \none)
+							{
+								var index;
+								index = assignedID.find([replyID]);//search for the replyID in the localdatabase
+								if(index != nil)
+								{
+
+									replyBusses[idName.asSymbol][addr.split($/).last.asSymbol][index].set(*values);
+								};
+							};
+
 							//send values
 							// touchdesignerCHOP.sendMsg(addrOut, *values);
 
@@ -585,6 +628,7 @@ SCMGroup {
 				);
 			};
 		};
+
 
 		^assignedID;//return assigned id
 	}

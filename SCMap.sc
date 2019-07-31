@@ -495,6 +495,44 @@ SCM {
 
 
 
+	*setupServerWin10{
+		arg channels = 2;
+		Server.local.options.memSize_(2.pow(20));
+		Server.local.options.numWireBufs = 512;
+		Server.local.options.maxSynthDefs  =2048;
+		Server.local.options.hardwareBufferSize  =96;
+		Server.local.options.numOutputBusChannels = channels;
+		Server.local.options.device = "ASIO Fireface USB";
+
+
+		// ServerBoot.add({"hello".postln;}, Server.local);
+
+		Server.local.waitForBoot(
+			{
+				var pathSCM;
+				//try to find path of SCM to load resources
+				Quarks.installed.do({arg quark; (quark.name == "scmapper").if{pathSCM = quark.localPath};});
+				(pathSCM == nil).if{
+					//post warning if not found
+					20.do{"warning problem with SCM path on serberboot".postln};
+				}
+				{
+					//otherwise load resources
+					(pathSCM ++ "/resourcesSC/noteFX.scd").load;
+					(pathSCM ++ "/resourcesSC/synthlib.scd").load;
+					(pathSCM ++ "/resourcesSC/matrixRouting.scd").load;
+					(pathSCM ++ "/resourcesSC/busPlayer.scd").load;
+					(pathSCM ++ "/resourcesSC/evtToPyDict.scd").load;
+				};
+				//initialise SCM
+				Server.local.latency = 0.05;
+				SCM.init();
+
+			}
+		)
+
+	}
+
 	*setupServer{
 		arg channels = 2;
 		Server.local.options.memSize_(2.pow(20));
