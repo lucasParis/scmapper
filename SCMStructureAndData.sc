@@ -332,7 +332,6 @@ SCMControlDataStructure {
 		arg shiftValue;
 		controls.keysValuesDo{
 			arg name, scmCtrl;
-			// name.postln;
 			scmCtrl.shiftUpDown(shiftValue);
 			this.executeCallback(scmCtrl.name, scmCtrl.postFix, \normal, nil);
 		};
@@ -445,7 +444,6 @@ SCMControlDataStructure {
 		arg name, postFix, val, interactionMethod = \normal, sourceFocuser = nil; // , hash; //use hash to not send back to where the control came from
 		name = name.asSymbol;
 
-		// val.postln;
 		if(controls[(name ++ postFix.asString).asSymbol] != nil)
 		{
 			/*if(controls[(name ++ postFix.asString).asSymbol].isRadio == true)

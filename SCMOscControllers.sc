@@ -30,6 +30,7 @@ SCMOSCOrchestrateMenu{
 
 
 	var moduleNames;
+	var allPresetsNames;
 
 	*new{
 		arg netAddr, name;
@@ -94,9 +95,30 @@ SCMOSCOrchestrateMenu{
 		};
 
 		this.updatePlayStates;
+		this.sendPresetNames;
 
 		//send orchestrate/plays/x
 
+	}
+	sendPresetNames{
+		var presetExists;
+		allPresetsNames = [];
+		10.do{
+			arg i;
+			var group;
+			group = SCM.getGroup(moduleNames[i + moduleOffset]);
+			// group.postln;
+			allPresetsNames = allPresetsNames.add(group.allPresets.collect{arg dict; dict[\name]});
+
+
+		};
+
+		presetExists = allPresetsNames.collect{arg array; (0.1!array.size).extend(9,-0.2)};
+		allPresetsNames = allPresetsNames.collect{arg array; array.extend(9,' ')};
+
+		// netAddr.sendMsg("/orchestrate/presets", '@labels', *({arg i; "preset" ++ i}!90).clump(9).flop.flatten);
+		netAddr.sendMsg("/orchestrate/presets", '@labels', *(allPresetsNames.flatten.clump(9).flop.flatten));
+		netAddr.sendMsg("/orchestrate/presets/light", *(presetExists.flatten.clump(9).flop.flatten));
 	}
 
 	setupModuleCtrls{
@@ -210,6 +232,9 @@ SCMOSCOrchestrateMenu{
 			metaItemsControlsDict[i] = metaControls;
 			metaItemsDataStructureDict[i] = metaDataStructure;
 
+
+			this.sendPresetNames;
+
 		};
 	}
 
@@ -243,11 +268,53 @@ SCMOSCOrchestrateMenu{
 		menuControls = menuControls.add(
 			SCMMetaCtrl(\presets, 0, '/x').functionSet_{
 				arg val;
+				var index, moduleIndex, presetIndex, group;
+				index = val.indexOf(1.0);
+				if(index!= nil)
+				{
+					moduleIndex = index%10;
+					presetIndex = (index/9).floor.asInt;
 
+					//load preset
+
+					group = SCM.groups[moduleIndex + moduleOffset];
+					if(group.allPresets.size > presetIndex)
+					{
+
+						if(group.allPresets[presetIndex][\name] != \empty)
+						{
+							modulesControlsControllersDict[moduleIndex].focus.controls.keysValuesDo
+							{
+								arg name, control;
+								var postFix, presetValue;
+
+								postFix = ("/" ++ name.asString.split($/)[1]).asSymbol;
+
+								//add name/postfix to structure controller and datastructure
+
+								//after diner:
+								// - add name + postfix to presetMorph in controlstruct and datastruct
+								// - make sure postfix is ok in presets saved
+
+
+
+								// group.allPresets[presetIndex][\values].postln;
+								presetValue = group.allPresets[presetIndex][\values][(name).asSymbol];
+
+								// modulesControlsControllersDict[moduleIndex].focus.controls.postln;
+								modulesControlsControllersDict[moduleIndex].set(name.asString.split($/)[0].asSymbol, postFix, presetValue);
+
+							};
+
+						};
+					}
+
+
+				};
 			};
-
 		);
-		netAddr.sendMsg("/orchestrate/presets", '@labels', *({arg i; "preset" ++ i}!90).clump(9).flop.flatten);
+
+		//gather presets
 
 		menuControls = menuControls.add(
 			SCMMetaCtrl(\plays, 0!10, '/x').functionSet_{
@@ -275,7 +342,7 @@ SCMOSCOrchestrateMenu{
 					if(mainMenuShortcut!= nil)
 					{
 						var groupName;
-						groupName = moduleNames[index + moduleOffset].postln;
+						groupName = moduleNames[index + moduleOffset];
 
 						mainMenuShortcut.selectGroup(groupName.asSymbol);
 					};
@@ -577,8 +644,8 @@ SCMOSCMainMenu{
 					keyboard.enterCallback = {
 						arg string;
 
-						"saving".postln;
-						string.postln;
+						// "saving".postln;
+						// string.postln;
 						selectedGroup.savePreset(string);
 						// scmMatrix.saveMatrixPreset(string);
 					};
@@ -910,8 +977,6 @@ SCMLemurCtrlr{
 
 			var scmGroup = SCM.getGroup(groupName);
 
-			groupName.postln;
-			scmGroup.postln;
 			if(scmGroup != nil,{
 				//if found, store name and group reference
 				selectedGroupName = groupName;
@@ -952,7 +1017,6 @@ SCMLemurCtrlr{
 		//listener for menu group currentToPrep
 		this.setupInstanceListener('/masterMenu2/currentToPrep/x', {
 			arg args;
-			"current to prep".postln;
 			if(groupReference != nil){
 				if(args[0] > 0.5)
 				{
