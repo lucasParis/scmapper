@@ -14,6 +14,7 @@ SCMStructureController{
 
 	var containerName;
 	var netAddr;
+	var recvPort;
 
 
 	var formatAddressWithPostFix;
@@ -28,8 +29,8 @@ SCMStructureController{
 	var <> callbackFunction;
 
 	*new{
-		arg containerName = "interface1", netAddr;
-		^super.newCopyArgs(containerName, netAddr).init();
+		arg containerName = "interface1", netAddr = nil, recvPort = nil;
+		^super.newCopyArgs(containerName, netAddr, recvPort).init();
 	}
 
 	init {
@@ -61,8 +62,11 @@ SCMStructureController{
 		{
 			focus.controls.keysValuesDo{
 				arg name, scmCtrl;
-				netAddr.sendMsg(formatAddressWithoutPostFix.(containerName, scmCtrl.name), '@color', colors[interactionMethod]);
-				netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), *scmCtrl.getValueByInteractionMethod(interactionMethod));
+				if(netAddr != nil)
+				{
+					netAddr.sendMsg(formatAddressWithoutPostFix.(containerName, scmCtrl.name), '@color', colors[interactionMethod]);
+					netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), *scmCtrl.getValueByInteractionMethod(interactionMethod));
+				};
 			};
 		};
 
@@ -104,7 +108,10 @@ SCMStructureController{
 			callbackFunction.(scmCtrl, containerName);
 		}
 		{
-			netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), *value);
+			if(netAddr != nil)
+			{
+				netAddr.sendMsg(formatAddressWithPostFix.(containerName, scmCtrl.name, scmCtrl.postFix), *value);
+			};
 		}
 	}
 
@@ -225,7 +232,10 @@ SCMStructureController{
 					valueOut = radioValue;
 				};
 
-				netAddr.sendMsg(ctrlAddress, *valueOut);
+				if(netAddr!= nil)
+				{
+					netAddr.sendMsg(ctrlAddress, *valueOut);
+				};
 				// addListener
 				listenerList = listenerList.add(
 					OSCFunc(
@@ -240,7 +250,7 @@ SCMStructureController{
 							};
 
 							focus.set(scmCtrl.name, scmCtrl.postFix, val, this.interactionMethod, this);
-						}, ctrlAddress,  netAddr
+						}, ctrlAddress,  netAddr, recvPort
 					)
 				);
 			};
@@ -448,12 +458,12 @@ SCMControlDataStructure {
 		{
 			/*if(controls[(name ++ postFix.asString).asSymbol].isRadio == true)
 			{
-				var radioValue;
+			var radioValue;
 
-				radioValue = val.find([1]);
-				(radioValue != nil).if{
-					val = radioValue;
-				};
+			radioValue = val.find([1]);
+			(radioValue != nil).if{
+			val = radioValue;
+			};
 			};*/
 			controls[(name ++ postFix.asString).asSymbol].setValueByInteractionMethod(val, interactionMethod);
 

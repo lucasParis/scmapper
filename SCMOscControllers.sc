@@ -811,10 +811,10 @@ SCMOSCDirectCtrlr{
 			arg group;
 
 
-			moduleControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, netAddr);
+			moduleControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, nil, 20000);//netAddr // removed netaddr for changing td ports
 			moduleControlsControllers[group.name.asSymbol].setFocus(group.allControlsDataStructure);
 
-			moduleGenericMenuControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, netAddr);
+			moduleGenericMenuControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, nil, 20000);//netAddr // removed netaddr for changing td ports
 			moduleGenericMenuControlsControllers[group.name.asSymbol].setFocus(group.menuControlsDataStructure);
 		};
 	}
