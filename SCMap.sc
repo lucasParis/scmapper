@@ -306,9 +306,9 @@ SCM {
 	}
 
 	*newOscDirectCtrlr{
-		arg ip, port, name = \notNamed;
+		arg  port, name = \notNamed;//ip,
 		var return;
-		return = SCMOSCDirectCtrlr.new(ip, port, name);
+		return = SCMOSCDirectCtrlr.new(port, name);//ip,
 		ctrlrs = ctrlrs.add(return);
 		^return;
 	}

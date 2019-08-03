@@ -767,8 +767,9 @@ SCMOSCMainMenu{
 
 
 SCMOSCDirectCtrlr{
-	var < netAddr;
+	// var < netAddr;
 	var name;
+	var port;
 
 	var < mainMenu;
 	var < matrixMenu;
@@ -778,20 +779,21 @@ SCMOSCDirectCtrlr{
 
 
 	*new{
-		arg ip, port, name;
-		^super.new.init(ip, port, name);
+		arg port, name;// ip,
+		^super.new.init(port, name);//ip,
 	}
 
 	init{
-		arg ip, port, name_, globalCtrlrIndex_;
+		arg port_, name_, globalCtrlrIndex_;//ip,
 		name = name_;
-		netAddr = NetAddr(ip, port);
+		port = port_;
+		// netAddr = NetAddr(ip, port);
 
 
 
 
 
-		// output clock, simple stuff
+		/*// output clock, simple stuff
 		SCM.proxySpace.clock.play({
 			var beatCount;
 			//get beats loop over 2 bars
@@ -800,6 +802,7 @@ SCMOSCDirectCtrlr{
 			//wait until next 16h
 			0.25;
 		},4);
+		*/
 	}
 
 	initCtrlrData{
@@ -811,10 +814,10 @@ SCMOSCDirectCtrlr{
 			arg group;
 
 
-			moduleControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, nil, 20000);//netAddr // removed netaddr for changing td ports
+			moduleControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, nil, port);//netAddr // removed netaddr for changing td ports
 			moduleControlsControllers[group.name.asSymbol].setFocus(group.allControlsDataStructure);
 
-			moduleGenericMenuControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, nil, 20000);//netAddr // removed netaddr for changing td ports
+			moduleGenericMenuControlsControllers[group.name.asSymbol] =  SCMStructureController(group.name.asSymbol, nil, port);//netAddr // removed netaddr for changing td ports
 			moduleGenericMenuControlsControllers[group.name.asSymbol].setFocus(group.menuControlsDataStructure);
 		};
 	}
@@ -825,12 +828,12 @@ SCMOSCDirectCtrlr{
 
 	sendMsg{
 		arg path, value;
-		netAddr.sendMsg(path, *value);
+			// netAddr.sendMsg(path, *value);
 	}
 
 	sendColorMsg{
 		arg path, color;
-		netAddr.sendMsg(path, '@color', color);
+			// netAddr.sendMsg(path, '@color', color);
 	}
 }
 
