@@ -278,7 +278,7 @@ SCMGroup {
 	savePreset{
 		arg presetName;
 		var dir, file, saveDict;
-		dir = SCM.presetFolder ++ "/" ++ name ++ "_" ++ presetName;//hardcoded
+		dir = SCM.presetFolder +/+ name ++ "_" ++ presetName;//hardcoded
 		// dir = dir ++ name.asString;
 
 		//create writable file
@@ -361,7 +361,7 @@ SCMGroup {
 
 		//make path
 		path = SCM.presetFolder;
-		path = path ++"/"++ name.asString ++"_"++ presetNumber;//append group/preset to get file name
+		path = path +/+ name.asString ++"_"++ presetNumber;//append group/preset to get file name
 
 		File.exists(path).if{
 			file = File.open(path, "r");

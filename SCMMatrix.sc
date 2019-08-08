@@ -576,7 +576,7 @@ SCMMatrix {
 	saveMatrixPreset{
 		arg name;
 		var dir, file, saveDict;
-		dir = SCM.presetFolder ++ "/matrix_";//hardcoded
+		dir = SCM.presetFolder +/+ "matrix_";//hardcoded
 		dir = dir ++ name.asString;
 
 		//create writable file
@@ -607,7 +607,7 @@ SCMMatrix {
 
 		//make path
 		path = SCM.presetFolder;
-		path = path ++"/"++ name;
+		path = path +/+ name;
 
 		//delete on Load
 		if(deleteOnLoad)
