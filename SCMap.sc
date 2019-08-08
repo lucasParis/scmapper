@@ -600,6 +600,16 @@ SCMTDDataOut{
 		dat = NetAddr(ip, 10000);
 		chop = NetAddr(ip, 10001);
 
+		SCM.proxySpace.clock.play({
+			var beatCount;
+			//get beats loop over 2 bars
+			beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
+			chop.sendMsg("/clockCount", beatCount);
+			//wait until next 16h
+			0.25;
+		},4);
+
+
 	}
 
 

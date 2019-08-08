@@ -77,8 +77,8 @@ SCMMetaCtrl {
 	var presetMorphStartValue;
 
 	*new{
-		arg ctrlName, defaultValue, postFix, valueType = \float;// \bool \int
-		^super.new.init(ctrlName, defaultValue, postFix, valueType);
+		arg ctrlName, defaultValue, postFix, valueType = \float, parentGroupName = nil;// \bool \int
+		^super.new.init(ctrlName, defaultValue, postFix, valueType, parentGroupName);
 	}
 
 	disableAllMeta_{
@@ -96,13 +96,18 @@ SCMMetaCtrl {
 	}
 
 	init{
-		arg ctrlName, defaultValue_, postFix_, valueType_;
+		arg ctrlName, defaultValue_, postFix_, valueType_, parentGroupName_;
 		name = ctrlName.asSymbol;
 		value = defaultValue_;
 		postFix = postFix_.asSymbol;
 		isRadio = false;
 		defaultValue = defaultValue_;
 		valueType = valueType_;
+
+		oscAddr = "/" ++ parentGroupName_ ++ "/" ++ name ++ postFix;
+		oscAddr = oscAddr.asSymbol;
+
+
 
 		//prep
 		preparedValue = defaultValue;
@@ -138,6 +143,13 @@ SCMMetaCtrl {
 
 		//preset Morph
 		presetMorphStartValue = defaultValue;
+
+		//to td
+		SCM.dataOutputs.do{
+			arg tdOut;
+			tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *value);//append /controls
+		};
+
 
 	}
 

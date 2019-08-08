@@ -445,7 +445,7 @@ SCMGroup {
 		var menuControls;
 
 		//new ctrl
-		ctrl = SCMMetaCtrl.new(ctrlName, defaultValue, postFix);
+		ctrl = SCMMetaCtrl.new(ctrlName, defaultValue, postFix, parentGroupName: name);
 		// add control to this group
 		controls = controls.add(ctrl);
 

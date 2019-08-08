@@ -46,6 +46,8 @@ SCMPattern {
 	var splitMixBusses;
 	var splitBusPlayers;
 
+	var triggerBusses;
+
 
 
 	*new{
@@ -53,8 +55,22 @@ SCMPattern {
 		^super.new.init(patternName, pattern, parent, channels, manualMode, independentPlay, trigBus, manualGrouping, splitMixing, manualMuteLast);
 	}
 
+	makeTrigBus{
+		arg name;
+		triggerBusses[name] = Bus.audio(Server.local,1);
+
+	}
+
+	getTrigBus{
+		arg name;
+		^In.ar(triggerBusses[name],1);
+	}
+
+
 	init{
 		arg patternName, pattern, parent, channelCount, manualMode_, independentPlay_, trigBus_, manualGrouping_, splitMixing_, manualMuteLast_;
+
+		triggerBusses = ();
 
 		//set variables
 		parentGroup = parent;
@@ -149,7 +165,8 @@ SCMPattern {
 
 			trigPat = Pbindf(rawPattern,
 				\instrument, 'l1_trigToBus',
-				\trigOut, triggerBus,
+				// \trigOut, triggerBus,
+				\trigOut, Pfunc{arg e; if(triggerBusses[e[\mixingName]]!= nil){triggerBusses[e[\mixingName]]}{triggerBus}}
 			);
 
 			rawPattern = Ppar([rawPattern,trigPat]);
