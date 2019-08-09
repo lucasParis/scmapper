@@ -526,9 +526,14 @@ metadata:(specs: ( attack:ControlSpec(0,1, 2), chirp:ControlSpec(0,1), envAmount
 // (
 SynthDef(\l1_supersaw7, {
 	arg freq = 1000, detune = 0.3, release = 0.2, mix = 0.4, amp = 1, out = 0, gate = 1, attack = 0, modPhase = 0, pitchbend = 0, replyID = -1;
-	var src, env, paned;
+	var src, env, paned, quitAfter;
 	freq = (pitchbend.midiratio) * freq;
-	env = EnvGen.ar(Env.adsr(attack, 0.1,0.8,release ),gate, doneAction:2);
+	env = EnvGen.ar(Env.adsr(attack, 0.1,0.8,release ),gate);
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
+
+
 
 	SendReply.kr(Impulse.kr(60), "/l1_supersaw7/env", env, replyID);
 
@@ -539,7 +544,7 @@ SynthDef(\l1_supersaw7, {
 	OffsetOut.ar(out, src*amp!2);
 
 },
-metadata:(specs: (detune: ControlSpec(0,10,4), release: ControlSpec(0,2, 2), mix: ControlSpec(0,1), attack: ControlSpec(0,1,2)), oscReplies:["/l1_supersaw7/env"] )).add;
+metadata:(specs: (detune: ControlSpec(0,10,4), release: ControlSpec(0,2, 2), mix: ControlSpec(0,1), attack: ControlSpec(0,1,2)), oscReplies:["/l1_supersaw7/env"], oscRepliesWithSize:('/l1_supersaw7/env':1) )).add;
 // )
 // (instrument: \supersaw7, dur: 0.4, freq:36.midicps, amp:1, detune:0.4, release:0.1, mix:300, attack:0, modPhase:0.8).play;
 // ~randomMetadataPlay.value(\supersaw7, 200.0, 1)
