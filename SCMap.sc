@@ -421,6 +421,7 @@ SCM {
 		if(evt[\timingOffset].size > 0)
 		{
 			delay = 0;
+			evt[\timingOffset] = evt[\timingOffset] * SCM.proxySpace.clock.tempo.reciprocal;
 		};
 
 		if(evt[\lag] != nil)

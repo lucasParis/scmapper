@@ -55,7 +55,7 @@ SCMStructureController{
 		arg method;
 		var colors, color;
 		interactionMethod = method;
-		colors = (	\prepare: 8336384, \normal: 4868682, \automate: 2129688);
+		colors = (\fastPrep:	8348416, \prepare: 8336384, \normal: 4868682, \automate: 2129688);//5197647
 
 		//send color to all focus's controls with selected interaction mode's color
 		if(focus != nil)
@@ -162,6 +162,10 @@ SCMStructureController{
 		focus.startRandomize();
 	}
 
+	currentToPrep{
+		focus.currentToPrep();
+	}
+
 	randomize{
 		arg val;
 		focus.randomize(val);
@@ -179,6 +183,14 @@ SCMStructureController{
 
 	checkForAutomationAndGo{
 		focus.checkForAutomationAndGo;
+	}
+
+	enterFastPrep{
+		focus.enterFastPrep;
+	}
+
+	exitFastPrep{
+		focus.exitFastPrep;
 	}
 
 	stopAutomation{
@@ -300,8 +312,8 @@ SCMControlDataStructure {
 
 		//add callback to this for automation
 		controls[(name ++ postFix.asString).asSymbol].valueInternalChangeCallback = {
-			arg name, postFix;
-			this.onInternalChangeCallback(name, postFix);
+			arg name, postFix, interactionMethod;
+			this.onInternalChangeCallback(name, postFix, interactionMethod);
 		};
 
 	}
@@ -373,6 +385,13 @@ SCMControlDataStructure {
 		};
 	}
 
+	currentToPrep{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.currentToPrep();
+		};
+	}
+
 	presetMorph{
 		arg name, postFix, amount, value;
 		// controls[]
@@ -413,6 +432,19 @@ SCMControlDataStructure {
 		controls.keysValuesDo{
 			arg name, scmCtrl;
 			scmCtrl.startFadeToPrep();
+		};
+	}
+	enterFastPrep{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.enterFastPrep();
+		};
+	}
+
+	exitFastPrep{
+		controls.keysValuesDo{
+			arg name, scmCtrl;
+			scmCtrl.exitFastPrep();
 		};
 	}
 
@@ -472,13 +504,14 @@ SCMControlDataStructure {
 	}
 
 	onInternalChangeCallback{
-		arg name, postFix;
-		this.executeCallback(name, postFix);
+		arg name, postFix, interactionMethod;
+		this.executeCallback(name, postFix, interactionMethod);
 	}
 
 	executeCallback{
 		arg name, postFix, interactionMethod = \normal, sourceFocuser = nil;
 		//send value to focusers if they are in the right mode
+
 		focusers.keysValuesDo{
 			arg focuserHash, focuser;
 
@@ -486,6 +519,7 @@ SCMControlDataStructure {
 			if(focuserHash != sourceFocuser.hash && focuser.interactionMethod == interactionMethod)
 			{
 				var value = controls[(name ++ postFix.asString).asSymbol].getValueByInteractionMethod(interactionMethod);
+
 				focuser.valueChangedFromFocus(value, controls[(name ++ postFix.asString).asSymbol]);
 			};
 		};

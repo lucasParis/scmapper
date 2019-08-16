@@ -86,12 +86,16 @@ SCMOSCOrchestrateMenu{
 			// netAddr.sendMsg("/orchestrate/module" ++ i ++ "/active" , moduleIsPlaying);
 
 			//----- for menu items
-			moduleMenuDataStructureToFocusOn = SCM.groups[i+moduleOffset].menuControlsDataStructure;
-			modulesMenuControllersDict[i].setFocus(moduleMenuDataStructureToFocusOn);
+			if( SCM.groups[i+moduleOffset]!= nil)
+			{
+				moduleMenuDataStructureToFocusOn = SCM.groups[i+moduleOffset].menuControlsDataStructure;
+				modulesMenuControllersDict[i].setFocus(moduleMenuDataStructureToFocusOn);
 
-			//----- for other controls
-			moduleControlsDataStructureToFocusOn = SCM.groups[i+moduleOffset].allControlsDataStructure;
-			modulesControlsControllersDict[i].setFocus(moduleControlsDataStructureToFocusOn);
+				//----- for other controls
+				moduleControlsDataStructureToFocusOn = SCM.groups[i+moduleOffset].allControlsDataStructure;
+				modulesControlsControllersDict[i].setFocus(moduleControlsDataStructureToFocusOn);
+			};
+
 		};
 
 		this.updatePlayStates;
@@ -107,9 +111,10 @@ SCMOSCOrchestrateMenu{
 			arg i;
 			var group;
 			group = SCM.getGroup(moduleNames[i + moduleOffset]);
-			// group.postln;
-			allPresetsNames = allPresetsNames.add(group.allPresets.collect{arg dict; dict[\name]});
-
+			if(group != nil)
+			{
+				allPresetsNames = allPresetsNames.add(group.allPresets.collect{arg dict; dict[\name]});
+			};
 
 		};
 
@@ -146,95 +151,97 @@ SCMOSCOrchestrateMenu{
 
 			//----- menu controls
 			//create a controller
-			mainMenuController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
+			if(SCM.groups[i] != nil)
+			{
+				mainMenuController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
 
-			//set
-			moduleMenuDataStructureToFocusOn = SCM.groups[i].menuControlsDataStructure;
-			mainMenuController.setFocus(moduleMenuDataStructureToFocusOn);
+				//set
+				moduleMenuDataStructureToFocusOn = SCM.groups[i].menuControlsDataStructure;
+				mainMenuController.setFocus(moduleMenuDataStructureToFocusOn);
 
-			//store for later
-			modulesMenuControllersDict[i] = mainMenuController;
-
-
-			//----- all other controls
-			//create a controller
-			mainModuleController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
-
-			//set
-			moduleControlsDataStructureToFocusOn = SCM.groups[i].allControlsDataStructure;
-			mainModuleController.setFocus(moduleControlsDataStructureToFocusOn);
-
-			//store for later
-			modulesControlsControllersDict[i] = mainModuleController;
+				//store for later
+				modulesMenuControllersDict[i] = mainMenuController;
 
 
+				//----- all other controls
+				//create a controller
+				mainModuleController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
 
-			//create controls for meta control (focusing on allcontrolsDatastructure)
-			// randomize
-			metaControls = [];
+				//set
+				moduleControlsDataStructureToFocusOn = SCM.groups[i].allControlsDataStructure;
+				mainModuleController.setFocus(moduleControlsDataStructureToFocusOn);
 
-			metaControls = metaControls.add(
-				SCMMetaCtrl(\randomize, 0, "/x").functionSet_{
-					arg val;
-					var value, firstTouch;
-					value = val[0];
-					firstTouch = val[1];
-					if(firstTouch > 0.5)
-					{
-						mainModuleController.startRandomize();
+				//store for later
+				modulesControlsControllersDict[i] = mainModuleController;
+
+
+
+				//create controls for meta control (focusing on allcontrolsDatastructure)
+				// randomize
+				metaControls = [];
+
+				metaControls = metaControls.add(
+					SCMMetaCtrl(\randomize, 0, "/x").functionSet_{
+						arg val;
+						var value, firstTouch;
+						value = val[0];
+						firstTouch = val[1];
+						if(firstTouch > 0.5)
+						{
+							mainModuleController.startRandomize();
+						};
+
+						mainModuleController.randomize(value);
+						// moduleGenericMenuControlsController.jump;
 					};
-
-					mainModuleController.randomize(value);
-					// moduleGenericMenuControlsController.jump;
-				};
-			);
+				);
 
 
 
-			//shiftUpDown x
-			metaControls = metaControls.add(
-				SCMMetaCtrl(\shiftUpDown, 0.5, "/x").functionSet_{
-					arg val;
-					var value, firstTouch;
-					var deadZone = 0.08;
-					// val.postln;
-					value = val[0].linlin(0,1,-1,1).excess(deadZone);
-					value = value.linlin(-1+deadZone,1-deadZone, -1,1);
-					firstTouch = val[1];
-					if(firstTouch > 0.5)
-					{
-						mainModuleController.startShiftUpDown();
+				//shiftUpDown x
+				metaControls = metaControls.add(
+					SCMMetaCtrl(\shiftUpDown, 0.5, "/x").functionSet_{
+						arg val;
+						var value, firstTouch;
+						var deadZone = 0.08;
+						// val.postln;
+						value = val[0].linlin(0,1,-1,1).excess(deadZone);
+						value = value.linlin(-1+deadZone,1-deadZone, -1,1);
+						firstTouch = val[1];
+						if(firstTouch > 0.5)
+						{
+							mainModuleController.startShiftUpDown();
+						};
+
+						mainModuleController.shiftUpDown(value);
 					};
+				);
 
-					mainModuleController.shiftUpDown(value);
+				//convert to dict
+				metaControls = metaControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
+
+				//init controller and data structure
+				metaController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
+				metaDataStructure = SCMControlDataStructure();
+
+				//copy the controls over to the datastructure
+				metaControls.keysValuesDo{
+					arg key, ctrl;
+					metaDataStructure.addControl(ctrl);
 				};
-			);
 
-			//convert to dict
-			metaControls = metaControls.collect{arg ctrl; [(ctrl.name ++ ctrl.postFix).asSymbol, ctrl]}.flatten.asDict;
+				// moduleInteractionMethod = \normal;
 
-			//init controller and data structure
-			metaController = SCMStructureController(('orchestrate/module' ++ i).asSymbol, netAddr);
-			metaDataStructure = SCMControlDataStructure();
+				//set controller to datastructure
+				metaController.setFocus(metaDataStructure);
 
-			//copy the controls over to the datastructure
-			metaControls.keysValuesDo{
-				arg key, ctrl;
-				metaDataStructure.addControl(ctrl);
+				metaItemsControllerDict[i] = metaController;
+				metaItemsControlsDict[i] = metaControls;
+				metaItemsDataStructureDict[i] = metaDataStructure;
+
+
+				this.sendPresetNames;
 			};
-
-			// moduleInteractionMethod = \normal;
-
-			//set controller to datastructure
-			metaController.setFocus(metaDataStructure);
-
-			metaItemsControllerDict[i] = metaController;
-			metaItemsControlsDict[i] = metaControls;
-			metaItemsDataStructureDict[i] = metaDataStructure;
-
-
-			this.sendPresetNames;
-
 		};
 	}
 
@@ -302,7 +309,8 @@ SCMOSCOrchestrateMenu{
 								presetValue = group.allPresets[presetIndex][\values][(name).asSymbol];
 
 								// modulesControlsControllersDict[moduleIndex].focus.controls.postln;
-								modulesControlsControllersDict[moduleIndex].set(name.asString.split($/)[0].asSymbol, postFix, presetValue);
+								// modulesControlsControllersDict[moduleIndex].set(name.asString.split($/)[0].asSymbol, postFix, presetValue);
+								modulesControlsControllersDict[moduleIndex].presetMorph(name.asString.split($/)[0].asSymbol, postFix, 1, presetValue);
 
 							};
 
@@ -594,6 +602,36 @@ SCMOSCMainMenu{
 			};
 		);
 
+		//fast prep
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\fastPrep, 0, "/x").midiButtonMap_(6 + midiOffset, false).functionSet_{
+				arg val;
+				if(val>0.5)
+				{
+					this.setModuleInteractionMethod(\fastPrep);
+					moduleControlsController.enterFastPrep;
+
+				}
+				{
+
+					this.setModuleInteractionMethod(\normal);
+					moduleControlsController.exitFastPrep;
+				};
+			};
+		);
+
+		//currentToPrep
+		mainMenuControls = mainMenuControls.add(
+			SCMMetaCtrl(\currentToPrep, 0, "/x").midiButtonMap_(10 + midiOffset,false).functionSet_{//
+				arg val;
+				if(val>0.5)
+				{
+					moduleControlsController.currentToPrep;
+					// this.setModuleInteractionMethod(\prepare);
+				};
+			};
+		);
+
 		//matrixOuts
 		/*mainMenuControls = mainMenuControls.add(
 		SCMMetaCtrl(\matrixOuts, 0, "/x").functionSet_{
@@ -625,13 +663,13 @@ SCMOSCMainMenu{
 			};
 		);
 
-		//fast Prep
+/*		//fast Prep
 		mainMenuControls = mainMenuControls.add(
 			SCMMetaCtrl(\fastPrep, 0, "/x").functionSet_{
 				arg val;
 
 			};
-		);
+		);*/
 
 
 		//save preset
@@ -795,12 +833,12 @@ SCMOSCDirectCtrlr{
 
 		/*// output clock, simple stuff
 		SCM.proxySpace.clock.play({
-			var beatCount;
-			//get beats loop over 2 bars
-			beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
-			// this.sendMsg("/clockCount", beatCount);
-			//wait until next 16h
-			0.25;
+		var beatCount;
+		//get beats loop over 2 bars
+		beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
+		// this.sendMsg("/clockCount", beatCount);
+		//wait until next 16h
+		0.25;
 		},4);
 		*/
 	}
@@ -828,12 +866,12 @@ SCMOSCDirectCtrlr{
 
 	sendMsg{
 		arg path, value;
-			// netAddr.sendMsg(path, *value);
+		// netAddr.sendMsg(path, *value);
 	}
 
 	sendColorMsg{
 		arg path, color;
-			// netAddr.sendMsg(path, '@color', color);
+		// netAddr.sendMsg(path, '@color', color);
 	}
 }
 

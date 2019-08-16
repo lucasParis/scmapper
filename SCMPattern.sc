@@ -131,6 +131,7 @@ SCMPattern {
 			//do the extraction
 			streamForNameExtraction = streamForNameExtraction.asStream;
 			{streamForNameExtraction.next(())}!100;
+			// splitMixBusses.postln;
 
 
 			//add pfunc that maps from mixing name to bus
@@ -253,7 +254,12 @@ SCMPattern {
 			};
 
 			//callback for pattern's end
-			rawPattern = Pfset(nil, rawPattern, {	independantIsPlaying  = false;	independentPlayCtrl.hardSet(0,toFunction:false);});
+			rawPattern = Pfset(nil, rawPattern, {
+				independantIsPlaying  = false;
+				independentPlayCtrl.hardSet(0,toFunction:false);
+				independentPlayCtrl.valueInternalChangeCallback.(independentPlayCtrl.name, independentPlayCtrl.postFix);
+
+			});
 
 		};
 

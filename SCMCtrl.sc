@@ -76,6 +76,10 @@ SCMMetaCtrl {
 	//for preset morph
 	var presetMorphStartValue;
 
+	// for fast prep
+	var fastPrepWasSet;
+	var fastPrepValue;
+
 	*new{
 		arg ctrlName, defaultValue, postFix, valueType = \float, parentGroupName = nil;// \bool \int
 		^super.new.init(ctrlName, defaultValue, postFix, valueType, parentGroupName);
@@ -108,6 +112,8 @@ SCMMetaCtrl {
 		oscAddr = oscAddr.asSymbol;
 
 
+		fastPrepValue = value;
+		fastPrepWasSet = false;
 
 		//prep
 		preparedValue = defaultValue;
@@ -277,7 +283,7 @@ SCMMetaCtrl {
 				{
 					this.hardSet((midiValue>64).asInt);
 				};
-				valueInternalChangeCallback.(name, postFix);
+				valueInternalChangeCallback.(name, postFix, \normal);
 		},index, 0);
 
 	}
@@ -342,7 +348,7 @@ SCMMetaCtrl {
 
 							//notify datastructure(s)
 
-							valueInternalChangeCallback.(name, postFix);
+							valueInternalChangeCallback.(name, postFix, \normal);
 
 							if(SCM.proxySpace.clock.beats > automationEndTime)
 							{
@@ -361,6 +367,23 @@ SCMMetaCtrl {
 		// inAutomateMode = false;
 	}
 
+	enterFastPrep{
+		fastPrepWasSet = false;
+	}
+
+	exitFastPrep{
+		if(fastPrepWasSet == true)
+		{
+			if(automationIsHappening)
+			{
+				this.stopAutomation;
+			};
+			this.hardSet(fastPrepValue);
+			valueInternalChangeCallback.(name, postFix, \normal);
+
+		};
+	}
+
 
 	//controller/datastructure model
 	getValueByInteractionMethod{
@@ -369,6 +392,9 @@ SCMMetaCtrl {
 
 		returnVal = case
 		{interactionMethod == \normal}
+		{
+			value;
+		}{interactionMethod == \fastPrep}
 		{
 			value;
 		}{interactionMethod == \prepare}
@@ -402,6 +428,11 @@ SCMMetaCtrl {
 
 	}
 
+
+	currentToPrep{
+		preparedValue = value;
+		valueInternalChangeCallback.(name, postFix, \prepare);
+	}
 
 	startFadeToPrep{
 		fadePrepStartValue = value;
@@ -516,13 +547,13 @@ SCMMetaCtrl {
 		randomStartValue = value;
 		randomValue = rrand(0.0,1.0);
 
-		//factor to reduce influence
-		randomValue = metaFactor.linlin(0,1,randomStartValue, randomValue);
-
 		if(value.size > 0)
 		{
 			randomValue = value.size.collect{rrand(0.0,1.0)};
-		}
+		};
+		//factor to reduce influence
+		randomValue = metaFactor.linlin(0,1,randomStartValue, randomValue);
+
 	}
 
 	randomize{
@@ -652,6 +683,10 @@ SCMMetaCtrl {
 		}{interactionMethod == \prepare}
 		{
 			preparedValue = val;
+		}{interactionMethod == \fastPrep}
+		{
+			fastPrepValue = val;
+			fastPrepWasSet = true;
 		}{interactionMethod == \automate}
 		{
 			// automateValue = val;

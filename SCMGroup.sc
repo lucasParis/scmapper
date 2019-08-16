@@ -110,6 +110,14 @@ SCMGroup {
 		^value;
 	}
 
+	getInputar{
+		arg name;
+		var channels = 2, value;
+
+		value = InFeedback.ar(matrixBusses[name],channels) * this.getCtrl(\matrixIns).asSignal;
+		^value;
+	}
+
 	createOutputar{
 		arg name, sig;
 		var channels = 2, value;
@@ -710,7 +718,7 @@ SCMGroup {
 	}*/
 
 	sendTrigger{
-		arg nameSig, signal;
+		arg nameSig, signal, indexMode = false;
 		var address;
 
 		//prepare osc output address
@@ -724,8 +732,18 @@ SCMGroup {
 				arg msg;
 				var values;
 
+				if(indexMode == true)
+				{
+					var trigIndex;
+					trigIndex = msg[3..].indexOf(1.0);
+					values = [nameSig.asString ++ trigIndex, 1];//get the signal values
+
+				}
+				{
+					values = [nameSig.asString, 1];//get the signal values
+				};
 				// values = msg[3..];//get the signal values
-				values = [nameSig.asString, 1];//get the signal values
+
 				//send to touch, with sync delay
 				SCM.dataOutputs.do{
 					arg tdOut;
@@ -735,7 +753,7 @@ SCMGroup {
 		}, address);//oscdef addr for signal reply
 
 		//create sendreply
-		SendReply.ar(signal, address, 1);
+		SendReply.ar(signal, address, signal);
 
 	}
 
