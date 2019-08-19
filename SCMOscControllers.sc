@@ -306,11 +306,16 @@ SCMOSCOrchestrateMenu{
 
 
 								// group.allPresets[presetIndex][\values].postln;
-								presetValue = group.allPresets[presetIndex][\values][(name).asSymbol];
+								//check if control exists in preset
+								if(group.allPresets[presetIndex][\values].includesKey((name).asSymbol))
+								{
 
-								// modulesControlsControllersDict[moduleIndex].focus.controls.postln;
-								// modulesControlsControllersDict[moduleIndex].set(name.asString.split($/)[0].asSymbol, postFix, presetValue);
-								modulesControlsControllersDict[moduleIndex].presetMorph(name.asString.split($/)[0].asSymbol, postFix, 1, presetValue);
+									presetValue = group.allPresets[presetIndex][\values][(name).asSymbol];
+
+									// modulesControlsControllersDict[moduleIndex].focus.controls.postln;
+									// modulesControlsControllersDict[moduleIndex].set(name.asString.split($/)[0].asSymbol, postFix, presetValue);
+									modulesControlsControllersDict[moduleIndex].presetMorph(name.asString.split($/)[0].asSymbol, postFix, 1, presetValue);
+								};
 
 							};
 
@@ -663,12 +668,12 @@ SCMOSCMainMenu{
 			};
 		);
 
-/*		//fast Prep
+		/*		//fast Prep
 		mainMenuControls = mainMenuControls.add(
-			SCMMetaCtrl(\fastPrep, 0, "/x").functionSet_{
-				arg val;
+		SCMMetaCtrl(\fastPrep, 0, "/x").functionSet_{
+		arg val;
 
-			};
+		};
 		);*/
 
 
