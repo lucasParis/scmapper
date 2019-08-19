@@ -1988,11 +1988,12 @@ SynthDef.new(\l1_bassFeed,{
 	snd = fb * amp * env;
 
 	snd = snd.clip(-1,1);
+	SendReply.kr(Impulse.kr(60), "/l1_bassFeed/ampFollow", Amplitude.ar(HPF.ar(snd, 300),0.016,0.02).excess(0.03), replyID);
 
 
 	OffsetOut.ar(out, snd!2);
 },
-metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1_bassFeed/env", "/l1_bassFeed/pulse"])
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1_bassFeed/env", "/l1_bassFeed/pulse", "/l1_bassFeed/ampFollow"])
 ).add;
 
 
