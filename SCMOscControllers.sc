@@ -114,6 +114,7 @@ SCMOSCOrchestrateMenu{
 			if(group != nil)
 			{
 				allPresetsNames = allPresetsNames.add(group.allPresets.collect{arg dict; dict[\name]});
+
 			};
 
 		};
@@ -280,16 +281,18 @@ SCMOSCOrchestrateMenu{
 				if(index!= nil)
 				{
 					moduleIndex = index%10;
-					presetIndex = (index/9).floor.asInt;
+					presetIndex = (index/10).floor.asInt;
+					// presetIndex.postln;
 
 					//load preset
 
 					group = SCM.groups[moduleIndex + moduleOffset];
 					if(group.allPresets.size > presetIndex)
 					{
-
+						// group.allPresets.collect({arg group; group[\name]}).postln;
 						if(group.allPresets[presetIndex][\name] != \empty)
 						{
+							// group.allPresets[presetIndex][\name].postln;
 							modulesControlsControllersDict[moduleIndex].focus.controls.keysValuesDo
 							{
 								arg name, control;
