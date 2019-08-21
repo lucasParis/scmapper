@@ -714,7 +714,7 @@ SCMOSCMainMenu{
 				higherPreset = x.ceil;
 				higherPreset = higherPreset.clip(1,3);
 				fraction = x - lowerPreset;
-				fraction = fraction.linlin(0.1,0.9,0,1);
+				fraction = fraction.linlin(0.3,0.7,0,1);
 
 				// weights = 1-((0..3)-x).abs.clip(0,1);
 
