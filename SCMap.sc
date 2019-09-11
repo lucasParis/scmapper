@@ -497,13 +497,14 @@ SCM {
 
 
 	*setupServerWin10{
-		arg channels = 2;
+		arg channels = 2, soundcard = "ASIO Fireface USB";
 		Server.local.options.memSize_(2.pow(20));
 		Server.local.options.numWireBufs = 512;
+		// Server.local.options.sampleRate = 48000;
 		Server.local.options.maxSynthDefs  =2048;
 		Server.local.options.hardwareBufferSize  =96;
 		Server.local.options.numOutputBusChannels = channels;
-		Server.local.options.device = "ASIO Fireface USB";
+		Server.local.options.device = soundcard;
 
 
 		// ServerBoot.add({"hello".postln;}, Server.local);
