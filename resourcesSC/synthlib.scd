@@ -2379,10 +2379,51 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 ).add;
 
 
+SynthDef.new(\l1_notchyBass,{
+	arg freq, amp = 1, out = 0, gate = 1, replyID = -1, seed = 1243, f1shift = 0, f2shift = 0, env1Scale = 0, fenvScale = 0, subVolume = 1, syncEnvMax = 2;
+	var src, env, quitAfter;
+	var env1, fenv, pulse, sub;
+
+	RandID.ir(id: 0);
+	RandSeed.ir(trig: 1, seed: seed);
+
+	env = Env.adsr(0.01, 0.3,1,0.05,amp).ar(0, gate);
+
+	quitAfter = Done.kr(env);
+	quitAfter = DelayN.kr(quitAfter, 2/60, 2/60);// twoframe delay
+	quitAfter = FreeSelf.kr(quitAfter);
+
+	pulse = Impulse.ar(1);
+	env1 = Env([ 0.0, 1.0, 0.53, 0.2, 0.23, 0.08, 0.0, 0.0 ], [ 0.0, 0.28, 0.22, 0.15, 0.19, 0.16, 0.0 ], [ 0.0, 6.0, -2.6241135597229, -4.0, -7.0, -4.0, -4.0 ], nil, 0).ar(0,pulse, (env1Scale*12).midiratio);
+	// src = src * SinOscFB.ar(43 * 4,0.4);
+	fenv = Env([ 1, 1.0, 0.64, 0.23, 0.62, 0.13, 0.0, 0.48, 0.25 ], [ 0.001, 0.15, 0.11, 0.15, 0.03, 0.13, 0.2, 0.23 ], [ -3.0, -0.8, 8.2, -6.6, 1.2, 4.4, -6.2 ], nil, 0).ar(0,pulse, (fenvScale*12).midiratio);
+	// src  = RLPFD.ar(src*4, fenv.linexp(0,1,100,10000).lag(0.003) * (src *10),0.8,2,mul:2).softclip;
+	src = SyncSaw.ar(freq * env1.linlin(0,1,1,1.04),freq * env1.linlin(0,1,1,syncEnvMax) ,mul: fenv.lincurve(0,1,0.1,1,-4))!2;
+
+	src  = MoogFF.ar(src, fenv.linexp(0,1,200,10000) * (f1shift*12).midiratio,0.3,mul:1).softclip;
+	src   = src   + Decimator.ar(src,bits:3, mul:-14.dbamp);
+	src = SVF.ar(src, fenv.lag(0.4).lincurve(0,1,15000,100, -4) * (f2shift*12).midiratio, 0.01,0,0,0,1);
+
+	sub = SinOsc.ar(fenv.linlin(0,1,50,20),mul:env1.lincurve(0,1,0,1,-3).lag(0.05) * subVolume);
+
+	src = LRLowCut.ar(src, 120, 4);
+
+
+
+
+	// SendReply.kr(Impulse.kr(60), "/instrument/param", env, replyID);
+
+	src = src + (sub!2);
+
+	OffsetOut.ar(out, (src*env));
+},
+metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/param"])
+).add;
+
 
 
 SynthDescLib.new(\lib1, s);
-~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble, \l1_reeseLightHighs, \l1_clusterKick, \l1_decayKick, \l1_bendSub,\l1_rollerBass, \l1_trigToBus, \l1_riserBass, \l1_hiHit, \l1_gruntStab, \l1_laSnare, \l1_leKick, \l1_clumpSnare, \l1_supersaw7V2,\l1fx_bpsEnvedV2, \l1fx_filterStab, \l1_pulseFitPerc, \l1fx_cleanupBoost, \l1fx_destroyLast, \l1_pressureReese2, \l1_pressureReese1, \l1_bassFeed, \l1_microSnare, \l1_sineSuperReese,\l1_superblip7, \l1fx_bpsEnvedV3, \l1_knarlReese, \l1_darkArtic, \l1_formantBassRattle, \l1_supersaw7_v2, \l1fx_notchMove, \l1_formantBassRattle];
+~synthsLib1 = [\l1_fxDown, \l1_ambiance, \l1_transient, \l1_noiseChord, \l1_hatWN, \l1_hatWN2, \l1_kick, \l1_bassSwell, \l1_supersaw7, \l1_fxDucker, \l1_hoover, \l1_12brass, \l1_brassReese, \l1_harmonicWash, \l1fx_mashedVerbPitch, \l1fx_lighterSpace, \l1_noiseChaos, \l1_samplePlayer, \l1fx_simpleVerb, \l1fx_reverseAmp, \l1_LaserSync, \l1_fullBass, \l1_deepbass, \l1fx_bpsEnved, \l1_simpleSines, \l1fx_pitchWave, \l1_digitoneV2, \l1_moreSyncSaw, \l1_reeseDouble, \l1_reeseLightHighs, \l1_clusterKick, \l1_decayKick, \l1_bendSub,\l1_rollerBass, \l1_trigToBus, \l1_riserBass, \l1_hiHit, \l1_gruntStab, \l1_laSnare, \l1_leKick, \l1_clumpSnare, \l1_supersaw7V2,\l1fx_bpsEnvedV2, \l1fx_filterStab, \l1_pulseFitPerc, \l1fx_cleanupBoost, \l1fx_destroyLast, \l1_pressureReese2, \l1_pressureReese1, \l1_bassFeed, \l1_microSnare, \l1_sineSuperReese,\l1_superblip7, \l1fx_bpsEnvedV3, \l1_knarlReese, \l1_darkArtic, \l1_formantBassRattle, \l1_supersaw7_v2, \l1fx_notchMove, \l1_formantBassRattle, \l1_notchyBass];
 ~synthsLib1.do{arg item; ("\\" ++ item); SynthDescLib.getLib(\lib1).add(SynthDescLib.global[item])};
 
 // "\nSynthDescLib.getLib(\\lib1).browse\n".postln;
