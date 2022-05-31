@@ -816,7 +816,7 @@ SCMOSCMainMenu{
 
 SCMOSCDirectCtrlr{
 	// var < netAddr;
-	var name;
+	var < name;
 	var port;
 
 	var < mainMenu;
@@ -889,7 +889,7 @@ SCMOSCDirectCtrlr{
 
 SCMOSCMenuedCtrlr{
 	var < netAddr;
-	var name;
+	var < name;
 	var < midiOffset;
 
 	var < mainMenu;

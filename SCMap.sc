@@ -224,6 +224,8 @@ SCM {
 		};
 
 		masterGroup = SCMGroup.new(\masterFX, channels);
+		// groups = groups.add(masterGroup);
+
 		masterGroup.serverGroup = Group.new(masterServerGroup, 'addToTail');
 		masterGroup.linkProxy(\input, input);
 		masterGroup.groupFX(function);
@@ -280,20 +282,20 @@ SCM {
 
 	}
 
-	/** getCtrl{
-	arg name;
-	var result;
-	//loop through controls and find the one with this name
-	result = controls.select{ arg control; control.name == name; };
-	if(result.size > 0){result = result[0]} {result = nil};
-	^result;
-	}*/
+	 *getCtrlr{
+		arg name_;
+		var result;
+		//loop through controls and find the one with this name
+		result = SCM.ctrlrs.select{ arg control; control.name == name_; };
+		if(result.size > 0){result = result[0]} {result = nil};
+		^result;
+	}
 
 	*newTDDataOut{
-		arg ip = "127.0.0.1";
+		arg ip = "127.0.0.1", portDat = 10000, portChop = 10001, sendClock = true;
 		var dataOut;
 		// dataOutputs.send
-		dataOut = SCMTDDataOut.new(ip);
+		dataOut = SCMTDDataOut.new(ip, portDat, portChop, sendClock);
 		dataOutputs = dataOutputs.add(dataOut);
 	}
 
@@ -504,6 +506,8 @@ SCM {
 		Server.local.options.maxSynthDefs  =2048;
 		Server.local.options.hardwareBufferSize  =96;
 		Server.local.options.numOutputBusChannels = channels;
+		Server.local.options.numInputBusChannels = channels;
+
 		Server.local.options.device = soundcard;
 
 
@@ -591,25 +595,31 @@ SCMTDDataOut{
 	var < chop;
 	var ip;
 
+	var <> outputClock;
+
 	*new{
-		arg ip;
-		^super.new.init(ip);
+		arg ip, portDat = 10000, portChop = 10001,outputClock = true;
+		^super.new.init(ip, portDat, portChop, outputClock);
 	}
 
 	init{
-		arg tdIP;
+		arg tdIP, portDat, portChop, outputClock_;
 		ip = tdIP;
-		dat = NetAddr(ip, 10000);
-		chop = NetAddr(ip, 10001);
+		dat = NetAddr(ip, portDat);
+		chop = NetAddr(ip, portChop);
+		outputClock = outputClock_;
 
-		SCM.proxySpace.clock.play({
-			var beatCount;
-			//get beats loop over 2 bars
-			beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
-			chop.sendMsg("/clockCount", beatCount);
-			//wait until next 16h
-			0.25;
-		},4);
+		if(outputClock == true){
+
+			SCM.proxySpace.clock.play({
+				var beatCount;
+				//get beats loop over 2 bars
+				beatCount = SCM.proxySpace.clock.beats.mod(8)*4;
+				chop.sendMsg("/clockCount", beatCount);
+				//wait until next 16h
+				0.25;
+			},4);
+		};
 
 
 	}

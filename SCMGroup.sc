@@ -13,6 +13,7 @@ SCMVisualGroup{
 	var < matrixBusses;
 
 
+
 	createInput{
 
 	}
@@ -52,11 +53,13 @@ SCMGroup {
 	var quant;
 
 	var sharedSignals;
+	var sharedSignalsKR;
 	var < activePresets;
 
 	// var < scmGroupIndex;
 	var < filePresetNames;
 
+	var < dictPresets;
 
 
 	//menuFocusers
@@ -81,7 +84,7 @@ SCMGroup {
 		var value;
 		matrixInputs = matrixInputs.add(name);
 		matrixBusses[name] = Bus.control(Server.local);
-
+		matrixBusses[name].set(0);
 		value = In.kr(matrixBusses[name]) * this.getCtrl(\matrixIns).asSignal;
 		^value;
 	}
@@ -133,6 +136,18 @@ SCMGroup {
 	}
 
 
+	setCtrlValue{
+		arg ctrlname, val, postfix = "/x";
+		var ctrl, keyname;
+		ctrl = this.getCtrl(ctrlname, postfix);
+
+		if(ctrl != nil)
+		{
+			allControlsDataStructure.set(ctrlname, postfix, val, \normal);
+		};
+
+	}
+
 
 	*new{
 		arg groupName, channels = 2, quant = 4;
@@ -147,13 +162,14 @@ SCMGroup {
 		// presetSlotsDict = \empty!4;
 		allPresets = [];
 
-
+		dictPresets = ();
 		//setup array to hold controls, arrays and proxies
 		controls = [];
 		patterns = [];
 		proxies = [];
 
 		sharedSignals = ();
+		sharedSignalsKR = ();
 
 		isPlaying = false;
 
@@ -225,7 +241,7 @@ SCMGroup {
 			this.newCtrl(("presetMenu" ++ i).asSymbol, presetInit,"/selection");
 		};
 
-
+		this.preLoadPresets();
 	}
 
 	// setPresetSlot{
@@ -395,6 +411,96 @@ SCMGroup {
 		};
 	}
 
+	preLoadPresets{
+		var path;
+
+		//make path
+		path = SCM.presetFolder;
+		path = path +/+ name.asString ++"_";//append group/preset to get file name
+
+		PathName.new(SCM.presetFolder).files.do{
+			arg file;
+			var openfile, presetName;
+			if( file.fileName.find( name.asString ++"_") != nil){
+				presetName = file.fileName.split($_)[1];
+
+				openfile = File.open( file.fullPath, "r");
+				 dictPresets[presetName.asSymbol] =  openfile.readAllString.compile.value ;
+			}{
+
+			};
+		};
+
+		// File.exists(path).if{
+		// file = File.open(path, "r");
+			// dictPresets[presetName] = file;
+	}
+
+	loadPreset{
+		arg presetName;
+		// var file, path, dict;
+		var dict;
+/*
+		//make path
+		path = SCM.presetFolder;
+		path = path +/+ name.asString ++"_"++ presetName;//append group/preset to get file name*/
+
+		dict = dictPresets[presetName];
+
+		if(dict != nil){
+			//loop through dict and load value
+			dict.removeAt(\presetName);
+
+			dict.keysValuesDo{
+				arg key, value;
+				var ctrl, keyname, postfix;
+
+				keyname = key.asString.split($/)[0].asSymbol;
+				postfix = ("/" ++ key.asString.split($/)[1]).asSymbol;
+
+				ctrl = this.getCtrl(keyname, postfix);
+
+				if(ctrl != nil)
+				{
+					// allControlsDataStructure.set(keyname, postfix, value, \normal);
+					allControlsDataStructure.startPresetMorph();
+					allControlsDataStructure.presetMorph(keyname, postfix, 1, value);
+				};
+
+			};
+		}{
+
+		};
+
+		/*File.exists(path).if{
+			file = File.open(path, "r");
+
+			//read string and execute it to get the savec dict
+			dict = file.readAllString.compile.value;
+
+			//loop through dict and load value
+			dict.removeAt(\presetName);
+
+			dict.keysValuesDo{
+				arg key, value;
+				var ctrl, keyname, postfix;
+
+				keyname = key.asString.split($/)[0].asSymbol;
+				postfix = ("/" ++ key.asString.split($/)[1]).asSymbol;
+
+				ctrl = this.getCtrl(keyname, postfix);
+
+				if(ctrl != nil)
+				{
+					// allControlsDataStructure.set(keyname, postfix, value, \normal);
+					allControlsDataStructure.startPresetMorph();
+					allControlsDataStructure.presetMorph(keyname, postfix, 1, value);
+				};
+
+			};
+		};*/
+	}
+
 	initPresetNames{
 		filePresetNames = 5.collect{
 			arg i;
@@ -436,6 +542,15 @@ SCMGroup {
 		OffsetOut.ar(bus,signal);
 	}
 
+	shareSignalKR{
+		arg name, signal;
+		var bus;
+		bus = Bus.control(Server.local, 1);
+		sharedSignalsKR[name] = bus;
+		Out.kr(bus, signal);
+		// OffsetOut.ar(bus,signal);
+	}
+
 	getSignal{
 		arg name;
 		var result;
@@ -443,6 +558,18 @@ SCMGroup {
 		if(sharedSignals[name] != nil)
 		{
 			result = In.ar(sharedSignals[name],sharedSignals[name].numChannels);
+		};
+		^result;
+	}
+
+	getSignalKRValue{
+		arg name, function;
+		var result;
+		result = nil;
+		if(sharedSignalsKR[name] != nil)
+		{
+			// result = In.ar(sharedSignals[name],sharedSignals[name].numChannels);
+			result = sharedSignalsKR[name].get(function);
 		};
 		^result;
 	}

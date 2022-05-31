@@ -35,6 +35,8 @@ SCMMetaCtrl {
 	//for function callback
 	var <> functionSet;
 
+	var <> dataOut;
+
 	// for automate
 	var <> disableAutomation;
 	var automateValue;
@@ -65,6 +67,7 @@ SCMMetaCtrl {
 	var randomValue;
 	var randomStartValue;
 	var <> disableRandom;
+	var <> randomThresh;
 
 	//for fade to Prep
 	var fadePrepStartValue;
@@ -79,6 +82,8 @@ SCMMetaCtrl {
 	// for fast prep
 	var fastPrepWasSet;
 	var fastPrepValue;
+
+	var <> sendToTD;
 
 	*new{
 		arg ctrlName, defaultValue, postFix, valueType = \float, parentGroupName = nil;// \bool \int
@@ -111,6 +116,8 @@ SCMMetaCtrl {
 		oscAddr = "/" ++ parentGroupName_ ++ "/" ++ name ++ postFix;
 		oscAddr = oscAddr.asSymbol;
 
+		randomThresh = 0.98;
+		sendToTD = true;
 
 		fastPrepValue = value;
 		fastPrepWasSet = false;
@@ -260,9 +267,11 @@ SCMMetaCtrl {
 		};
 
 		//to td
-		SCM.dataOutputs.do{
-			arg tdOut;
-			tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *value);//append /controls
+		if(sendToTD == true){
+			SCM.dataOutputs.do{
+				arg tdOut;
+				tdOut.chop.sendMsg(("/controls" ++ oscAddr).asSymbol, *value);//append /controls
+			};
 		};
 	}
 
@@ -592,9 +601,9 @@ SCMMetaCtrl {
 
 			if(valueType == \bool)
 			{
-				if(amount > 0.98)
+				if(amount > randomThresh)
 				{
-					value = randomValue.round(1).asInt;
+					value = randomValue.round(1);
 				}
 				{
 					value = randomStartValue;

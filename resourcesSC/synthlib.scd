@@ -1059,7 +1059,7 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1fx_bpsEnve
 
 
 SynthDef.new(\l1_simpleSines,{
-	arg freq, amp = 1,pulseRate = 2, attack = 3, release = 3, out = 0, gate = 1, replyID = -1;
+	arg freq, amp = 1,pulseRate = 2, attack = 3, release = 3, out = 0, gate = 1, replyID = -1, pan = 0;
 	var src, env, quitAfter, pulse, div, compensate;
 	env = Env.adsr(attack, 0.3,1,release,1,2).ar(0, gate);
 
@@ -1076,10 +1076,11 @@ SynthDef.new(\l1_simpleSines,{
 	SendReply.kr(Impulse.kr(60), "/l1_simpleSines/pulse", pulse, replyID);
 	SendReply.kr(Impulse.kr(60), "/l1_simpleSines/div", div, replyID);
 
-	src = SinOscFB.ar([freq, freq*2 * pulse.lincurve(0,1,1,1.06,20) * div.linlin(0,1,1,1.01)],0.2, mul:[pulse.lag(0.02,0).lincurve(0,1,1,0, -1),1]*amp*env*compensate*0.4);
+	src = SinOscFB.ar([freq, freq*2 * pulse.lincurve(0,1,1,1.06,20) * div.linlin(0,1,1,1.01)],0.2, mul:[pulse.lag(0.02,0).lincurve(0,1,1,0, -1),1]*amp*env*compensate*0.4).sum;
 
+	src = Pan2.ar(src, pan);
 
-	OffsetOut.ar(out, src!2);
+	OffsetOut.ar(out, src);
 },
 metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/l1_simpleSines/env", "/l1_simpleSines/pulse", "/l1_simpleSines/div"])
 ).add;
@@ -1660,7 +1661,7 @@ metadata:(specs:(/*len:ControlSpec.new(0.1, 20), */), oscReplies:["/instrument/p
 ).add;
 
 SynthDef(\l1_supersaw7V2, {
-	arg freq = 1000, detune = 0.3, release = 0.2, mix = 0.4, amp = 1, out = 0, gate = 1, attack = 0, modPhase = 0, pitchbend = 0, replyID = -1, pitchLen = 0.5, pitchAmt = 5, dip=1, dipEnd = 0.4, dipLen = 0.4, centerRatio = 1;
+	arg freq = 1000, detune = 0.3, release = 0.2, mix = 0.4, amp = 1, out = 0, gate = 1, attack = 0, modPhase = 0, pitchbend = 0, replyID = -1, pitchLen = 0.5, pitchAmt = 5, dip=1, dipEnd = 0.4, dipLen = 0.4, centerRatio = 1, pan = 0;
 	var src, env, paned, pitchEnvs, srcTuned, dipEnv, voices;
 
 	voices = 4;
@@ -1686,8 +1687,9 @@ SynthDef(\l1_supersaw7V2, {
 	srcTuned = LFSaw.ar(freq *centerRatio*(pitchEnvs[0] * pitchAmt).midiratio, 0, mul:env * (1/(centerRatio.linlin(1,16,1,4,nil))).clip(0,1) );
 	src = SelectX.ar(mix, [srcTuned*1/3, src.sum * 1/((voices+1)*0.6)]);
 	src= src.softclip;
+	src = Pan2.ar(src, pan);
 	// src = (src*3).tanh * 0.33;
-	OffsetOut.ar(out, src*amp!2);
+	OffsetOut.ar(out, src*amp);
 
 },
 metadata:(specs: (detune: ControlSpec(0,10,4), release: ControlSpec(0,2, 2), mix: ControlSpec(0,1), attack: ControlSpec(0,1,2)), oscReplies:["/l1_supersaw7V2/env", "/l1_supersaw7V2/pitchEnv"] )).add;
