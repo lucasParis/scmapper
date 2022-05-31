@@ -45,6 +45,7 @@ SCM {
 
 	*init{
 		"initialising SCM".postln;
+		100.do{"BRANNNNNNNCH".postln;};
 
 		if(NetAddr.langPort != 57120)
 		{
